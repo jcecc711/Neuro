@@ -59,6 +59,13 @@ phase list, spectrum and other tabs. For an edge-to-edge app without Safari's ba
 landscape from its own icon. In Safari you can also tap the full-screen button in the brain viewer
 where the browser allows it, or hide the toolbar from the **aA** menu.
 
+**Hosted app (no computer needed for demo sessions).** `python -m nova.site` builds NOVA as a
+static web app in `_site/` (page, manifest, icons and an offline service worker), and the
+`Pages` GitHub Actions workflow publishes it to GitHub Pages on every push. Open the Pages
+address in Safari on the iPad, tap Share > **Add to Home Screen**, and NOVA opens full screen in
+landscape from its icon, even offline. To turn it on: repository **Settings > Pages > Source:
+GitHub Actions** (Pages on a private repository needs a paid GitHub plan).
+
 ### Learn and the training plan
 
 The **Learn** section explains what's different in the ADHD brain, what EEG shows (and doesn't),
@@ -119,27 +126,58 @@ blocks while arrival and integration keep their length.
 - the target rhythm, whether it should go up or down, and optionally a rhythm to measure
   it against (for example theta relative to beta),
 - the sensor sites, length, number of blocks and how often to reward,
-- the soundscape, eyes open or closed, and an optional binaural beat.
+- the soundscape, eyes open or closed, and the rhythm cue frequency (it matches the target band unless you pick one).
 
 Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
 
 ## Soundscapes
 
-All sound is synthesized live in the browser, so every session sounds slightly different:
-detuned pads in a long reverb, a low drone, a texture layer, and bell chimes, moving through
-a slow chord progression. Each phase has its own voicing; each new phase opens on a new chord.
+All sound is synthesized live in the browser and kept deliberately soft, so every session
+sounds slightly different:
+
+- **Pads:** sine and triangle chords under a slowly moving low-pass, in a long, dark reverb.
+- **Bass:** a warm sub-bass line that follows the chord root (about 46-92 Hz) and swells like a breath.
+- **Voices:** a wordless female choir ("ooh", "oh", "aah"), two voices in harmony, each a small
+  ensemble with natural vibrato. It sings more when you're on target. Switch it off with **Voices**.
+- **Bells and textures:** slow-attack harmonic bells, rain, waves or air, all kept below 3 kHz.
+- **Master:** a gentle compressor, a high shelf (-7 dB above 3.2 kHz) and a 7 kHz roll-off.
+
+Each phase has its own voicing; each new phase opens on a new chord.
 
 | Soundscape | Character |
 |---|---|
-| Aurora | airy Lydian pads and glass shimmer |
-| Deep Ocean | low swells, slow waves, distant bells |
-| Celestial | bright bells over a floating major drone |
+| Aurora | airy Lydian pads, soft glass bells and distant voices |
+| Deep Ocean | low swells, slow waves, a deep bass and humming voices |
+| Celestial | a floating major choir over warm bass |
 | Forest Rain | soft rain, warm pads, wooden chimes |
 | Nebula | dark, slow drones with a glowing upper layer |
-| Dawn | warm, rising major chords |
+| Dawn | warm, rising major chords and gentle singing |
 
-You can preview any soundscape before a session, and switch soundscape or volume during one.
-Programs with a binaural beat play it quietly under the soundscape (headphones required).
+You can preview any soundscape before a session, and switch soundscape, volume, voices and the
+rhythm cue during one.
+
+### Rhythm cue: the exact target frequency
+
+During training, a quiet **rhythm cue** pulses at the exact frequency of the protocol you're
+training: a binaural pair whose ears differ by exactly that many Hz (the left ear on the
+soundscape's root note at 110-220 Hz, the right ear exactly the cue frequency above it), plus a
+soft low tone whose loudness pulses at the same rate. Because the left tone matches the pads'
+root, every beat in the mix lands on the cue frequency. It bypasses the reverb so the rhythm
+stays exact.
+
+| Protocol | Cue | Why |
+|---|---|---|
+| alpha, alpha asymmetry | 10 Hz | centre of alpha (8-12 Hz) |
+| SMR, SMR-still | 13.5 Hz | centre of SMR (12-15 Hz) |
+| theta/beta (down) | 16 Hz | the beta side, since the goal is more beta relative to theta |
+| alpha-theta | 7.5 Hz | the theta-alpha crossover |
+| beta, beta-left | 18 Hz | centre of beta (15-22 Hz) |
+| frontal-midline theta | 6 Hz | centre of theta (4-8 Hz) |
+
+It's off during the baseline so calibration hears only your brain, quieter during rest, and fades
+out across the cooldown. Binaural beats need headphones (AirPods work; turn Spatial Audio off).
+The cue is complementary: the training itself is the feedback, and evidence that audio rhythms
+entrain the brain is weak (see below). Turn it off with **Rhythm cue**.
 
 ## Supported hardware
 

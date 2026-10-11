@@ -107,3 +107,19 @@ def test_home_screen_app_assets():
         assert icon[:8] == b"\x89PNG\r\n\x1a\n"
     finally:
         server.stop()
+
+
+def test_static_site_build(tmp_path):
+    import json
+
+    from nova.site import build
+
+    out = build(tmp_path / "site")
+    html = (out / "index.html").read_text()
+    assert 'href="manifest.webmanifest"' in html and 'register("sw.js")' in html
+    assert 'href="/manifest.webmanifest"' not in html
+    manifest = json.loads((out / "manifest.webmanifest").read_text())
+    assert manifest["start_url"] == "./" and manifest["display"] == "fullscreen"
+    assert all(not i["src"].startswith("/") for i in manifest["icons"])
+    for name in ("sw.js", "icon-180.png", "icon-512.png", ".nojekyll"):
+        assert (out / name).exists()

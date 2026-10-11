@@ -30,6 +30,9 @@ BANDS: dict[str, Band] = {
     "total": (1.0, 40.0),
 }
 
+# Centre frequency of each band, used for the soundscape's rhythm cue.
+CUE_HZ: dict[str, float] = {"delta": 2.5, "theta": 6.0, "alpha": 10.0, "smr": 13.5, "beta": 18.0, "hibeta": 25.0, "gamma": 35.0}
+
 # Homologous left/right pairs, best first, for asymmetry protocols.
 FRONTAL_PAIRS: tuple[tuple[str, str], ...] = (("F3", "F4"), ("AF3", "AF4"), ("AF7", "AF8"), ("F7", "F8"), ("Fp1", "Fp2"))
 
@@ -47,6 +50,7 @@ class Protocol:
     sites: tuple[str, ...] = field(default=())
     kind: str = "power"  # "power", "ratio" or "asymmetry"
     pairs: tuple[tuple[str, str], ...] = ()
+    cue: float | None = None  # rhythm-cue frequency in Hz; defaults from the target band
 
     def __post_init__(self) -> None:
         for band in (self.reward, self.ratio_over, *self.inhibits):
@@ -74,8 +78,21 @@ class Protocol:
             sites=tuple(spec.get("sites", ())),
         )
 
+    @property
+    def cue_hz(self) -> float:
+        """The frequency the soundscape's rhythm cue pulses at: the centre of the rhythm the
+        protocol is building (for a ratio trained down, the rhythm in the denominator)."""
+        if self.cue is not None:
+            return self.cue
+        if self.kind == "asymmetry":
+            return CUE_HZ["alpha"]
+        if self.ratio_over and self.direction < 0:
+            return CUE_HZ[self.ratio_over]
+        return CUE_HZ[self.reward]
+
     def to_spec(self) -> dict:
         return {
+            "cue_hz": self.cue_hz,
             "name": self.name,
             "reward": self.reward,
             "ratio_over": self.ratio_over,
@@ -166,6 +183,7 @@ PROTOCOLS: dict[str, Protocol] = {
             direction=-1,
             inhibits=("delta", "hibeta"),
             sites=("Cz", "Fz", "FCz"),
+            cue=16.0,  # low beta: alert but calm
         ),
         Protocol(
             name="alpha-theta",
@@ -174,6 +192,7 @@ PROTOCOLS: dict[str, Protocol] = {
             ratio_over="alpha",
             inhibits=("delta", "hibeta"),
             sites=("Pz", "O1", "O2", "TP9", "TP10"),
+            cue=7.5,  # the alpha-theta crossover
         ),
         Protocol(
             name="beta",

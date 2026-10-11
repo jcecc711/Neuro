@@ -277,6 +277,13 @@ details.builder[open] summary { margin-bottom: 12px; }
 .readouts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .readouts b { color: var(--ink); font-weight: 500; }
 .ctl { display: grid; gap: 5px; }
+.switch-row { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.switch-row input { appearance: none; -webkit-appearance: none; width: 38px; height: 22px; border-radius: 11px; background: rgba(120, 120, 128, 0.32); position: relative; margin: 0; cursor: pointer; transition: background .2s; flex: none; }
+.switch-row input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3); }
+.switch-row input:checked { background: #30d158; }
+.switch-row input:checked::after { transform: translateX(16px); }
+.switch-row input:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+.switch-row b { font-weight: 500; color: var(--ink); }
 
 /* Learn */
 .learn { display: grid; gap: 16px; }
@@ -693,8 +700,8 @@ details.builder summary::marker { color: var(--link); }
             <select id="bRate"><option value="0.7">Gentle (70%)</option><option value="0.6" selected>Balanced (60%)</option><option value="0.5">Challenging (50%)</option></select></div>
           <div class="field"><label for="bScape">Soundscape</label><select id="bScape"></select></div>
           <div class="field"><label for="bEyes">Eyes</label><select id="bEyes"><option value="open">Open</option><option value="closed">Closed</option></select></div>
-          <div class="field"><label for="bBinaural">Binaural beat</label>
-            <select id="bBinaural"><option value="">None</option><option value="6">6 Hz theta</option><option value="10">10 Hz alpha</option><option value="14">14 Hz SMR</option><option value="18">18 Hz beta</option></select></div>
+          <div class="field"><label for="bBinaural">Rhythm cue</label>
+            <select id="bBinaural"><option value="">Match target band</option><option value="6">6 Hz theta</option><option value="7.5">7.5 Hz theta-alpha</option><option value="10">10 Hz alpha</option><option value="13.5">13.5 Hz SMR</option><option value="18">18 Hz beta</option></select></div>
           <div class="field"><label for="bSave">&nbsp;</label><button id="bSave" type="submit">Save program</button></div>
         </form>
         <p class="note" id="builderNote"></p>
@@ -808,6 +815,8 @@ details.builder summary::marker { color: var(--link); }
           </div>
           <div class="ctl"><label class="eyebrow" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.7"></div>
           <div class="ctl"><label class="eyebrow" for="scapeSwitch">Soundscape</label><select id="scapeSwitch"></select></div>
+          <label class="switch-row"><input type="checkbox" id="voicesToggle" checked><span>Voices</span></label>
+          <label class="switch-row"><input type="checkbox" id="cueToggle" checked><span>Rhythm cue <b id="cueText"></b></span></label>
         </div>
         <div class="phase-rows" id="phaseRows" aria-label="Session phases"></div>
       </div>
@@ -817,7 +826,7 @@ details.builder summary::marker { color: var(--link); }
       </div>
       <div class="pane" data-pane="spectrum" hidden>
         <canvas id="spectrum" aria-label="Power spectrum"></canvas>
-        <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>Binaural <b id="binText">off</b></span></div>
+        <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>Rhythm cue <b id="binText">off</b></span></div>
       </div>
       <div class="pane" data-pane="channels" hidden><canvas id="traces" aria-label="EEG traces per channel"></canvas></div>
       <div class="pane" data-pane="indices" hidden><div class="indices" id="indices"></div></div>
@@ -906,6 +915,7 @@ details.builder summary::marker { color: var(--link); }
         <li><span>Open NOVA, choose a program and a length, and tap <strong>Listen</strong> to set a comfortable level. Keep it low; the sound is meant to sit in the background.</span></li>
         <li><span>Tap <strong>Begin session</strong>. NOVA keeps the screen awake, and the sound plays even if the silent switch is on.</span></li>
         <li><span><strong>With a headset:</strong> the iPad can't connect to EEG headsets from the browser. Run <code>nova app --host 0.0.0.0</code> on a computer the headset connects to, then open the address it prints on the iPad (same Wi-Fi). Without one, the <strong>Demo signal</strong> plays the full session with real audio.</span></li>
+        <li><span><strong>Rhythm cue:</strong> during training a quiet pulse plays at the exact frequency you're training (10 Hz for alpha, 13.5 Hz for SMR, 6 Hz for frontal theta). In AirPods each ear gets a slightly different tone, so the beat lands at precisely that rate. It's a gentle companion to the feedback, not the treatment itself, and evidence that sound rhythms shift brainwaves is weak. Turn it off under <strong>Details</strong>.</span></li>
       </ol>
     </section>
 
@@ -979,7 +989,7 @@ details.builder summary::marker { color: var(--link); }
   </div>
 </div>
 
-<script type="application/json" id="nova-programs">{"programs":[{"id":"focus-adhd","name":"Focus Builder","category":"condition","target":"ADHD and attention","summary":"Alternates lowering the theta/beta ratio at the top of the head with raising SMR over the right motor strip: the two most studied attention protocols.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Relax your shoulders and jaw. The sound brightens when you're calm and alert.","binaural":null,"protocol_name":"smr"},{"name":"Steady attention","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep a calm, steady attention on the sound. Brighter means you've found it.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Still body, clear mind","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Stay still and relaxed, eyes soft. Let the sound open up around you.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Sustain","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.55,"guidance":"Hold that steady attention a little longer. No need to strain.","binaural":null,"protocol_name":"theta-beta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"aurora","eyes":"open","evidence":"Most studied","evidence_note":"Theta/beta and SMR training are the most researched neurofeedback protocols. Meta-analyses report improvements in parent-rated ADHD symptoms; effects are smaller in blinded ratings. Courses usually run 30-40 sessions.","sites":["Cz","C4"],"caution":"","minutes":24.5,"protocols":{"smr":{"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"theta-beta":{"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"mood-depression","name":"Mood Lift","category":"condition","target":"Low mood and depression","summary":"Trains frontal alpha asymmetry toward relatively more left-frontal activity, a pattern associated with approach motivation and positive mood.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha-asymmetry","reward_rate":0.75,"guidance":"Settle into a light, curious mood. Rewards come easily at first.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Brighten","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Think of something you're looking forward to. Let the sound warm up.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Reach toward","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Picture a place or person that feels good to move toward.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Carry it","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.55,"guidance":"Keep that warmth gently in mind as the sound rises.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"dawn","eyes":"open","evidence":"Emerging","evidence_note":"Frontal alpha asymmetry training has small studies with encouraging results, but evidence is preliminary. Use alongside care from a clinician, not instead of it.","sites":["F3","F4"],"caution":"If you are in crisis or thinking about harming yourself, contact local emergency services or a crisis line (call or text 988 in the US).","minutes":24.5,"protocols":{"alpha-asymmetry":{"name":"alpha-asymmetry","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":[],"kind":"asymmetry","label":"alpha asymmetry (R-L)"}}},{"id":"calm-anxiety","name":"Calm Waters","category":"condition","target":"Anxiety","summary":"Raises posterior alpha, the rhythm of relaxed wakefulness, with eyes closed, then deepens into slower theta-alpha calm.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Close your eyes and settle. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha","reward_rate":0.75,"guidance":"Eyes closed. The sound grows fuller as you relax.","binaural":null,"protocol_name":"alpha"},{"name":"Open the breath","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Eyes closed. Breathe out slowly; let the waves carry the sound.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Soften","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Let your forehead, jaw and hands go soft.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Drift","kind":"training","minutes":4,"protocol":"alpha-theta","reward_rate":0.55,"guidance":"Let thoughts drift past like clouds. Nothing to do.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"ocean","eyes":"closed","evidence":"Limited","evidence_note":"Alpha up-training has small studies reporting reduced anxiety. Evidence is limited but the training is gentle and low-risk.","sites":["Pz","O1","O2"],"caution":"","minutes":23.5,"protocols":{"alpha":{"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"},"alpha-theta":{"name":"alpha-theta","reward":"theta","ratio_over":"alpha","direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","TP9","TP10"],"kind":"ratio","label":"theta/alpha"}}},{"id":"stress-recovery","name":"Unwind","category":"condition","target":"Stress","summary":"Builds calm, still alertness with SMR training, then moves into relaxed alpha while discouraging high-beta tension.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Drop your shoulders. Rewards come often as you settle.","binaural":null,"protocol_name":"smr"},{"name":"Ground","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Feel your feet and the chair. Stay still; let the rain brighten.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Release","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Let your eyes close if you like. Unclench, exhale, let go.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Rest in it","kind":"training","minutes":4,"protocol":"alpha","reward_rate":0.55,"guidance":"Stay with the calm. The sound will hold you there.","binaural":null,"protocol_name":"alpha"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"rain","eyes":"open","evidence":"Limited","evidence_note":"SMR and alpha training are widely used for stress regulation. Research is limited, and results vary between people.","sites":["C4","Pz"],"caution":"","minutes":23.5,"protocols":{"smr":{"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"alpha":{"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"}}},{"id":"energy-fatigue","name":"Recharge","category":"condition","target":"Fatigue and low energy","summary":"Raises beta at the top of the head for alert engagement while holding down slow theta.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":2,"protocol":"beta","reward_rate":0.75,"guidance":"Take three energizing breaths, then watch the sound come alive.","binaural":null,"protocol_name":"beta"},{"name":"Wake up","kind":"training","minutes":4,"protocol":"beta","reward_rate":0.6,"guidance":"Sit up tall, eyes open. Bring bright, interested attention to the sound.","binaural":null,"protocol_name":"beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Clear the fog","kind":"training","minutes":4,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep your mind gently busy: notice each new bell.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Bright focus","kind":"training","minutes":4,"protocol":"beta","reward_rate":0.55,"guidance":"Hold that alert, easy energy.","binaural":null,"protocol_name":"beta"},{"name":"Integrate","kind":"cooldown","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"celestial","eyes":"open","evidence":"Limited","evidence_note":"Beta up-training for alertness has limited evidence. Stop if you feel tense or get a headache, and avoid it late in the evening.","sites":["Cz","Fz"],"caution":"","minutes":20.0,"protocols":{"beta":{"name":"beta","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["Cz","Fz","C3"],"kind":"power","label":"rel. beta"},"theta-beta":{"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"deep-rest","name":"Deep Rest","category":"state","target":"Deep relaxation","summary":"Classic eyes-closed alpha-theta training: drift toward the edge of sleep while staying aware.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Close your eyes and settle. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha","reward_rate":0.75,"guidance":"Eyes closed. Breathe slowly; the sound deepens as you relax.","binaural":null,"protocol_name":"alpha"},{"name":"Descend","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Eyes closed. Let your body grow heavy.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Twilight","kind":"training","minutes":6,"protocol":"alpha-theta","reward_rate":0.6,"guidance":"Let images come and go. Stay just awake enough to hear the bells.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Deep","kind":"training","minutes":6,"protocol":"alpha-theta","reward_rate":0.55,"guidance":"Float. There's nothing to hold on to.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Integrate","kind":"cooldown","minutes":3.0,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"nebula","eyes":"closed","evidence":"Limited","evidence_note":"Alpha-theta training is used for deep relaxation and in addiction and trauma programs. Best done lying back, eyes closed, when you don't need to be alert afterward.","sites":["Pz","O1","O2"],"caution":"","minutes":27.0,"protocols":{"alpha":{"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"},"alpha-theta":{"name":"alpha-theta","reward":"theta","ratio_over":"alpha","direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","TP9","TP10"],"kind":"ratio","label":"theta/alpha"}}},{"id":"peak-focus","name":"Peak Focus","category":"state","target":"Calm, sharp concentration","summary":"SMR for a quiet body and steady mind, then beta for engaged concentration.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Settle your body. The sound brightens as you become still.","binaural":null,"protocol_name":"smr"},{"name":"Quiet body","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Stay physically still. Let your attention rest on the sound.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Engage","kind":"training","minutes":5,"protocol":"beta","reward_rate":0.6,"guidance":"Bring curious, focused attention to each detail of the sound.","binaural":null,"protocol_name":"beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Flow","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.55,"guidance":"Relaxed and alert at once. Let it feel easy.","binaural":null,"protocol_name":"smr"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"celestial","eyes":"open","evidence":"Limited","evidence_note":"SMR and beta training for performance have mixed evidence in healthy adults.","sites":["C4","Cz"],"caution":"","minutes":24.5,"protocols":{"smr":{"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"beta":{"name":"beta","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["Cz","Fz","C3"],"kind":"power","label":"rel. beta"}}},{"id":"impulse-control","name":"Impulse Control","category":"condition","target":"ADHD: impulsivity and restlessness","summary":"Trains the quiet-body, steady-mind state (SMR) with strict inhibits: rewards stop the moment slow-wave drift or muscle tension bursts in. You practise noticing an urge and letting it pass without acting, and the sound tells you when you've held it.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr-still","reward_rate":0.75,"guidance":"Settle your hands and jaw. The sound brightens when your body and mind are still.","binaural":null,"protocol_name":"smr-still"},{"name":"Notice the urge","kind":"training","minutes":5,"protocol":"smr-still","reward_rate":0.6,"guidance":"When you feel an urge to move, look away or check something, notice it. Breathe. Let it pass. Stay still.","binaural":null,"protocol_name":"smr-still"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Steady attention","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep your attention gently on the sound. When your mind drifts, come back without judging.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Hold the stillness","kind":"training","minutes":5,"protocol":"smr-still","reward_rate":0.55,"guidance":"Each urge you let pass keeps the sound open. Nothing to fix, just stay.","binaural":null,"protocol_name":"smr-still"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"rain","eyes":"open","evidence":"Most studied","evidence_note":"SMR training over the sensorimotor strip is one of the standard ADHD protocols, with the strongest evidence for hyperactivity and impulsivity. The urge-surfing guidance comes from mindfulness-based approaches; pairing it with feedback is NOVA's design choice, not a tested protocol.","sites":["C4","Cz"],"caution":"","minutes":24.5,"protocols":{"smr-still":{"name":"smr-still","reward":"smr","ratio_over":null,"direction":"up","inhibits":["delta","theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"theta-beta":{"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"willpower","name":"Willpower","category":"state","target":"Self-control and discipline","summary":"Trains frontal-midline theta, the rhythm of the brain's effort and self-monitoring system, while you hold a chosen focus, then consolidates with calm SMR.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"fm-theta","reward_rate":0.75,"guidance":"Count your breaths from one to ten, then start again. Stay with the count.","binaural":null,"protocol_name":"fm-theta"},{"name":"Choose and hold","kind":"training","minutes":5,"protocol":"fm-theta","reward_rate":0.6,"guidance":"Pick one intention for today. Hold it in mind, plainly, the way you'd hold a weight steady.","binaural":null,"protocol_name":"fm-theta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Settle the body","kind":"training","minutes":4,"protocol":"smr-still","reward_rate":0.6,"guidance":"Let the effort drop into stillness. Calm body, clear mind.","binaural":null,"protocol_name":"smr-still"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Return on purpose","kind":"training","minutes":5,"protocol":"fm-theta","reward_rate":0.55,"guidance":"Each time your mind wanders, return to your intention on purpose. That return is the rep.","binaural":null,"protocol_name":"fm-theta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"nebula","eyes":"open","evidence":"Emerging","evidence_note":"Frontal-midline theta rises when we exert cognitive control. Small trials training it upward (e.g. Enriquez-Geppert et al., 2014) found improved cognitive control and working memory in healthy adults. There is no single 'willpower wave'; this trains a system that supports it.","sites":["Fz"],"caution":"","minutes":23.5,"protocols":{"fm-theta":{"name":"fm-theta","reward":"theta","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Fz","FCz","AFz"],"kind":"power","label":"rel. theta"},"smr-still":{"name":"smr-still","reward":"smr","ratio_over":null,"direction":"up","inhibits":["delta","theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"}}},{"id":"positive-action","name":"Positive Action","category":"state","target":"Motivation and follow-through","summary":"Shifts frontal activity toward the left hemisphere, a pattern linked to approach motivation and goal pursuit, then builds alert left-frontal beta while you rehearse taking action.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha-asymmetry","reward_rate":0.75,"guidance":"Think of a recent small win. Let that feeling build.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Want it","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Picture something you want to do today. Feel the pull toward it.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"See yourself do it","kind":"training","minutes":4,"protocol":"beta-left","reward_rate":0.6,"guidance":"Rehearse the first concrete step: where you'll be, what your hands do.","binaural":null,"protocol_name":"beta-left"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Commit","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.55,"guidance":"Say the next action to yourself in one sentence. Let the sound rise with it.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"dawn","eyes":"open","evidence":"Emerging","evidence_note":"Relatively greater left-frontal activity is associated with approach motivation (Harmon-Jones and colleagues). Asymmetry training has small, encouraging studies; left-frontal beta training for motivation is exploratory.","sites":["F3","F4"],"caution":"","minutes":23.5,"protocols":{"alpha-asymmetry":{"name":"alpha-asymmetry","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":[],"kind":"asymmetry","label":"alpha asymmetry (R-L)"},"beta-left":{"name":"beta-left","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["F3","AF3","FC3","AF7"],"kind":"power","label":"rel. beta"}}}],"soundscapes":{"aurora":"Aurora: airy Lydian pads and glass shimmer","ocean":"Deep Ocean: low swells, slow waves, distant bells","celestial":"Celestial: bright bells over a floating major drone","rain":"Forest Rain: soft rain, warm pads, wooden chimes","nebula":"Nebula: dark, slow drones with a glowing upper layer","dawn":"Dawn: warm, rising major chords"},"tracks":[{"id":"attention","name":"Track 1: Attention and impulse control","goal":"Lower the slow-wave drift and restlessness typical of ADHD, and practise letting impulses pass.","programs":["focus-adhd","impulse-control"],"sessions":20,"cadence":"3 sessions a week, 30-45 min, alternating the two programs"},{"id":"willpower","name":"Track 2: Willpower, discipline and positive action","goal":"Strengthen the brain's effort and self-control system, and approach-oriented motivation.","programs":["willpower","positive-action"],"sessions":20,"cadence":"3 sessions a week, 30-45 min, after Track 1 (or alongside it from week 4)"}],"lengths":[15,20,30,45,60]}</script>
+<script type="application/json" id="nova-programs">{"programs":[{"id":"focus-adhd","name":"Focus Builder","category":"condition","target":"ADHD and attention","summary":"Alternates lowering the theta/beta ratio at the top of the head with raising SMR over the right motor strip: the two most studied attention protocols.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Relax your shoulders and jaw. The sound brightens when you're calm and alert.","binaural":null,"protocol_name":"smr"},{"name":"Steady attention","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep a calm, steady attention on the sound. Brighter means you've found it.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Still body, clear mind","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Stay still and relaxed, eyes soft. Let the sound open up around you.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Sustain","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.55,"guidance":"Hold that steady attention a little longer. No need to strain.","binaural":null,"protocol_name":"theta-beta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"aurora","eyes":"open","evidence":"Most studied","evidence_note":"Theta/beta and SMR training are the most researched neurofeedback protocols. Meta-analyses report improvements in parent-rated ADHD symptoms; effects are smaller in blinded ratings. Courses usually run 30-40 sessions.","sites":["Cz","C4"],"caution":"","minutes":24.5,"protocols":{"smr":{"cue_hz":13.5,"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"theta-beta":{"cue_hz":16.0,"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"mood-depression","name":"Mood Lift","category":"condition","target":"Low mood and depression","summary":"Trains frontal alpha asymmetry toward relatively more left-frontal activity, a pattern associated with approach motivation and positive mood.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha-asymmetry","reward_rate":0.75,"guidance":"Settle into a light, curious mood. Rewards come easily at first.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Brighten","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Think of something you're looking forward to. Let the sound warm up.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Reach toward","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Picture a place or person that feels good to move toward.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Carry it","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.55,"guidance":"Keep that warmth gently in mind as the sound rises.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"dawn","eyes":"open","evidence":"Emerging","evidence_note":"Frontal alpha asymmetry training has small studies with encouraging results, but evidence is preliminary. Use alongside care from a clinician, not instead of it.","sites":["F3","F4"],"caution":"If you are in crisis or thinking about harming yourself, contact local emergency services or a crisis line (call or text 988 in the US).","minutes":24.5,"protocols":{"alpha-asymmetry":{"cue_hz":10.0,"name":"alpha-asymmetry","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":[],"kind":"asymmetry","label":"alpha asymmetry (R-L)"}}},{"id":"calm-anxiety","name":"Calm Waters","category":"condition","target":"Anxiety","summary":"Raises posterior alpha, the rhythm of relaxed wakefulness, with eyes closed, then deepens into slower theta-alpha calm.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Close your eyes and settle. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha","reward_rate":0.75,"guidance":"Eyes closed. The sound grows fuller as you relax.","binaural":null,"protocol_name":"alpha"},{"name":"Open the breath","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Eyes closed. Breathe out slowly; let the waves carry the sound.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Soften","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Let your forehead, jaw and hands go soft.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Drift","kind":"training","minutes":4,"protocol":"alpha-theta","reward_rate":0.55,"guidance":"Let thoughts drift past like clouds. Nothing to do.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"ocean","eyes":"closed","evidence":"Limited","evidence_note":"Alpha up-training has small studies reporting reduced anxiety. Evidence is limited but the training is gentle and low-risk.","sites":["Pz","O1","O2"],"caution":"","minutes":23.5,"protocols":{"alpha":{"cue_hz":10.0,"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"},"alpha-theta":{"cue_hz":7.5,"name":"alpha-theta","reward":"theta","ratio_over":"alpha","direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","TP9","TP10"],"kind":"ratio","label":"theta/alpha"}}},{"id":"stress-recovery","name":"Unwind","category":"condition","target":"Stress","summary":"Builds calm, still alertness with SMR training, then moves into relaxed alpha while discouraging high-beta tension.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Drop your shoulders. Rewards come often as you settle.","binaural":null,"protocol_name":"smr"},{"name":"Ground","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Feel your feet and the chair. Stay still; let the rain brighten.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Release","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Let your eyes close if you like. Unclench, exhale, let go.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Rest in it","kind":"training","minutes":4,"protocol":"alpha","reward_rate":0.55,"guidance":"Stay with the calm. The sound will hold you there.","binaural":null,"protocol_name":"alpha"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"rain","eyes":"open","evidence":"Limited","evidence_note":"SMR and alpha training are widely used for stress regulation. Research is limited, and results vary between people.","sites":["C4","Pz"],"caution":"","minutes":23.5,"protocols":{"smr":{"cue_hz":13.5,"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"alpha":{"cue_hz":10.0,"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"}}},{"id":"energy-fatigue","name":"Recharge","category":"condition","target":"Fatigue and low energy","summary":"Raises beta at the top of the head for alert engagement while holding down slow theta.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":2,"protocol":"beta","reward_rate":0.75,"guidance":"Take three energizing breaths, then watch the sound come alive.","binaural":null,"protocol_name":"beta"},{"name":"Wake up","kind":"training","minutes":4,"protocol":"beta","reward_rate":0.6,"guidance":"Sit up tall, eyes open. Bring bright, interested attention to the sound.","binaural":null,"protocol_name":"beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Clear the fog","kind":"training","minutes":4,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep your mind gently busy: notice each new bell.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Bright focus","kind":"training","minutes":4,"protocol":"beta","reward_rate":0.55,"guidance":"Hold that alert, easy energy.","binaural":null,"protocol_name":"beta"},{"name":"Integrate","kind":"cooldown","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"celestial","eyes":"open","evidence":"Limited","evidence_note":"Beta up-training for alertness has limited evidence. Stop if you feel tense or get a headache, and avoid it late in the evening.","sites":["Cz","Fz"],"caution":"","minutes":20.0,"protocols":{"beta":{"cue_hz":18.0,"name":"beta","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["Cz","Fz","C3"],"kind":"power","label":"rel. beta"},"theta-beta":{"cue_hz":16.0,"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"deep-rest","name":"Deep Rest","category":"state","target":"Deep relaxation","summary":"Classic eyes-closed alpha-theta training: drift toward the edge of sleep while staying aware.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Close your eyes and settle. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha","reward_rate":0.75,"guidance":"Eyes closed. Breathe slowly; the sound deepens as you relax.","binaural":null,"protocol_name":"alpha"},{"name":"Descend","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Eyes closed. Let your body grow heavy.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Twilight","kind":"training","minutes":6,"protocol":"alpha-theta","reward_rate":0.6,"guidance":"Let images come and go. Stay just awake enough to hear the bells.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Deep","kind":"training","minutes":6,"protocol":"alpha-theta","reward_rate":0.55,"guidance":"Float. There's nothing to hold on to.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Integrate","kind":"cooldown","minutes":3.0,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"nebula","eyes":"closed","evidence":"Limited","evidence_note":"Alpha-theta training is used for deep relaxation and in addiction and trauma programs. Best done lying back, eyes closed, when you don't need to be alert afterward.","sites":["Pz","O1","O2"],"caution":"","minutes":27.0,"protocols":{"alpha":{"cue_hz":10.0,"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"},"alpha-theta":{"cue_hz":7.5,"name":"alpha-theta","reward":"theta","ratio_over":"alpha","direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","TP9","TP10"],"kind":"ratio","label":"theta/alpha"}}},{"id":"peak-focus","name":"Peak Focus","category":"state","target":"Calm, sharp concentration","summary":"SMR for a quiet body and steady mind, then beta for engaged concentration.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Settle your body. The sound brightens as you become still.","binaural":null,"protocol_name":"smr"},{"name":"Quiet body","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Stay physically still. Let your attention rest on the sound.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Engage","kind":"training","minutes":5,"protocol":"beta","reward_rate":0.6,"guidance":"Bring curious, focused attention to each detail of the sound.","binaural":null,"protocol_name":"beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Flow","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.55,"guidance":"Relaxed and alert at once. Let it feel easy.","binaural":null,"protocol_name":"smr"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"celestial","eyes":"open","evidence":"Limited","evidence_note":"SMR and beta training for performance have mixed evidence in healthy adults.","sites":["C4","Cz"],"caution":"","minutes":24.5,"protocols":{"smr":{"cue_hz":13.5,"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"beta":{"cue_hz":18.0,"name":"beta","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["Cz","Fz","C3"],"kind":"power","label":"rel. beta"}}},{"id":"impulse-control","name":"Impulse Control","category":"condition","target":"ADHD: impulsivity and restlessness","summary":"Trains the quiet-body, steady-mind state (SMR) with strict inhibits: rewards stop the moment slow-wave drift or muscle tension bursts in. You practise noticing an urge and letting it pass without acting, and the sound tells you when you've held it.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr-still","reward_rate":0.75,"guidance":"Settle your hands and jaw. The sound brightens when your body and mind are still.","binaural":null,"protocol_name":"smr-still"},{"name":"Notice the urge","kind":"training","minutes":5,"protocol":"smr-still","reward_rate":0.6,"guidance":"When you feel an urge to move, look away or check something, notice it. Breathe. Let it pass. Stay still.","binaural":null,"protocol_name":"smr-still"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Steady attention","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep your attention gently on the sound. When your mind drifts, come back without judging.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Hold the stillness","kind":"training","minutes":5,"protocol":"smr-still","reward_rate":0.55,"guidance":"Each urge you let pass keeps the sound open. Nothing to fix, just stay.","binaural":null,"protocol_name":"smr-still"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"rain","eyes":"open","evidence":"Most studied","evidence_note":"SMR training over the sensorimotor strip is one of the standard ADHD protocols, with the strongest evidence for hyperactivity and impulsivity. The urge-surfing guidance comes from mindfulness-based approaches; pairing it with feedback is NOVA's design choice, not a tested protocol.","sites":["C4","Cz"],"caution":"","minutes":24.5,"protocols":{"smr-still":{"cue_hz":13.5,"name":"smr-still","reward":"smr","ratio_over":null,"direction":"up","inhibits":["delta","theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"theta-beta":{"cue_hz":16.0,"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"willpower","name":"Willpower","category":"state","target":"Self-control and discipline","summary":"Trains frontal-midline theta, the rhythm of the brain's effort and self-monitoring system, while you hold a chosen focus, then consolidates with calm SMR.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"fm-theta","reward_rate":0.75,"guidance":"Count your breaths from one to ten, then start again. Stay with the count.","binaural":null,"protocol_name":"fm-theta"},{"name":"Choose and hold","kind":"training","minutes":5,"protocol":"fm-theta","reward_rate":0.6,"guidance":"Pick one intention for today. Hold it in mind, plainly, the way you'd hold a weight steady.","binaural":null,"protocol_name":"fm-theta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Settle the body","kind":"training","minutes":4,"protocol":"smr-still","reward_rate":0.6,"guidance":"Let the effort drop into stillness. Calm body, clear mind.","binaural":null,"protocol_name":"smr-still"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Return on purpose","kind":"training","minutes":5,"protocol":"fm-theta","reward_rate":0.55,"guidance":"Each time your mind wanders, return to your intention on purpose. That return is the rep.","binaural":null,"protocol_name":"fm-theta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"nebula","eyes":"open","evidence":"Emerging","evidence_note":"Frontal-midline theta rises when we exert cognitive control. Small trials training it upward (e.g. Enriquez-Geppert et al., 2014) found improved cognitive control and working memory in healthy adults. There is no single 'willpower wave'; this trains a system that supports it.","sites":["Fz"],"caution":"","minutes":23.5,"protocols":{"fm-theta":{"cue_hz":6.0,"name":"fm-theta","reward":"theta","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Fz","FCz","AFz"],"kind":"power","label":"rel. theta"},"smr-still":{"cue_hz":13.5,"name":"smr-still","reward":"smr","ratio_over":null,"direction":"up","inhibits":["delta","theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"}}},{"id":"positive-action","name":"Positive Action","category":"state","target":"Motivation and follow-through","summary":"Shifts frontal activity toward the left hemisphere, a pattern linked to approach motivation and goal pursuit, then builds alert left-frontal beta while you rehearse taking action.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha-asymmetry","reward_rate":0.75,"guidance":"Think of a recent small win. Let that feeling build.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Want it","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Picture something you want to do today. Feel the pull toward it.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"See yourself do it","kind":"training","minutes":4,"protocol":"beta-left","reward_rate":0.6,"guidance":"Rehearse the first concrete step: where you'll be, what your hands do.","binaural":null,"protocol_name":"beta-left"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Commit","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.55,"guidance":"Say the next action to yourself in one sentence. Let the sound rise with it.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"dawn","eyes":"open","evidence":"Emerging","evidence_note":"Relatively greater left-frontal activity is associated with approach motivation (Harmon-Jones and colleagues). Asymmetry training has small, encouraging studies; left-frontal beta training for motivation is exploratory.","sites":["F3","F4"],"caution":"","minutes":23.5,"protocols":{"alpha-asymmetry":{"cue_hz":10.0,"name":"alpha-asymmetry","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":[],"kind":"asymmetry","label":"alpha asymmetry (R-L)"},"beta-left":{"cue_hz":18.0,"name":"beta-left","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["F3","AF3","FC3","AF7"],"kind":"power","label":"rel. beta"}}}],"soundscapes":{"aurora":"Aurora: airy Lydian pads, soft glass bells and distant voices","ocean":"Deep Ocean: low swells, slow waves, a deep bass and humming voices","celestial":"Celestial: a floating major choir over warm bass","rain":"Forest Rain: soft rain, warm pads, wooden chimes","nebula":"Nebula: dark, slow drones with a glowing upper layer","dawn":"Dawn: warm, rising major chords and gentle singing"},"tracks":[{"id":"attention","name":"Track 1: Attention and impulse control","goal":"Lower the slow-wave drift and restlessness typical of ADHD, and practise letting impulses pass.","programs":["focus-adhd","impulse-control"],"sessions":20,"cadence":"3 sessions a week, 30-45 min, alternating the two programs"},{"id":"willpower","name":"Track 2: Willpower, discipline and positive action","goal":"Strengthen the brain's effort and self-control system, and approach-oriented motivation.","programs":["willpower","positive-action"],"sessions":20,"cadence":"3 sessions a week, 30-45 min, after Track 1 (or alongside it from week 4)"}],"lengths":[15,20,30,45,60]}</script>
 <script>
 "use strict";
 (() => {
@@ -1284,50 +1294,62 @@ class DemoRunner {
 }
 
 /* =====================================================================
-   Soundscapes (Web Audio). Every track is synthesized live: detuned pads
-   through a long generated reverb, a drone, a noise texture, bell chimes,
-   and a shimmer layer that blooms when the brain meets its target.
+   Soundscapes (Web Audio). Every track is synthesized live and kept soft:
+   sine and triangle pads under a low-pass, a warm bass line, a wordless
+   female choir (formant-shaped voices with vibrato), a dark reverb and a
+   gentle high shelf on the master. A separate rhythm cue pulses at the
+   exact target frequency of the current protocol.
    ===================================================================== */
 const N = (root, semis) => root * Math.pow(2, semis / 12);
+// Female vowel formants (Hz) and their relative levels: soft "oo", "oh", "ah" and "uh".
+const VOWELS = { oo: [370, 950, 2670], oh: [560, 900, 2700], ah: [850, 1220, 2810], uh: [700, 1300, 2780] };
+const FORMANT_BW = [90, 110, 160], FORMANT_GAIN = [1, 0.55, 0.12];
 const PRESETS = {
   aurora: { name: "Aurora", root: 174.61, chords: [[0, 7, 16, 23], [2, 9, 18, 23], [4, 11, 19, 26], [-3, 4, 12, 23]],
-    wave: "triangle", cutoff: 950, bright: 3400, reverb: 8, chordSec: 24, wet: 0.95,
-    tex: { type: "bandpass", freq: 3200, q: 0.5, level: 0.035, wave: 0.05, depth: 0.5 },
-    chime: { kind: "glass", every: 6.5, oct: 2, decay: 4.5 }, drone: 0.07 },
+    wave: "triangle", cutoff: 620, bright: 1450, reverb: 8, chordSec: 26, wet: 0.95,
+    tex: { type: "bandpass", freq: 1800, q: 0.4, level: 0.02, wave: 0.05, depth: 0.5 },
+    chime: { kind: "glass", every: 9, decay: 6 }, drone: 0.05, bass: 0.15, choir: 1, vowels: ["oo", "ah", "oh"] },
   ocean: { name: "Deep Ocean", root: 146.83, chords: [[0, 7, 15, 22], [-2, 5, 14, 21], [3, 10, 17, 24], [-5, 2, 12, 19]],
-    wave: "sine", cutoff: 700, bright: 2200, reverb: 9, chordSec: 30, wet: 1.0,
-    tex: { type: "lowpass", freq: 480, q: 0.4, level: 0.16, wave: 0.075, depth: 0.85 },
-    chime: { kind: "bell", every: 9, oct: 1, decay: 7 }, drone: 0.1 },
-  celestial: { name: "Celestial", root: 220, chords: [[0, 7, 14, 16], [-3, 4, 9, 16], [2, 9, 16, 21], [5, 12, 16, 24]],
-    wave: "triangle", cutoff: 1300, bright: 4200, reverb: 7, chordSec: 20, wet: 0.9,
-    tex: { type: "bandpass", freq: 5200, q: 0.6, level: 0.02, wave: 0.04, depth: 0.4 },
-    chime: { kind: "bell", every: 4.5, oct: 2, decay: 5 }, drone: 0.06 },
+    wave: "sine", cutoff: 480, bright: 1050, reverb: 9, chordSec: 32, wet: 1.0,
+    tex: { type: "lowpass", freq: 420, q: 0.4, level: 0.12, wave: 0.075, depth: 0.85 },
+    chime: { kind: "bell", every: 12, decay: 8 }, drone: 0.07, bass: 0.17, choir: 0.9, vowels: ["oo", "oh"] },
+  celestial: { name: "Celestial", root: 196, chords: [[0, 7, 14, 16], [-3, 4, 9, 16], [2, 9, 16, 21], [5, 12, 16, 24]],
+    wave: "triangle", cutoff: 700, bright: 1600, reverb: 8, chordSec: 22, wet: 0.95,
+    tex: { type: "bandpass", freq: 2200, q: 0.5, level: 0.012, wave: 0.04, depth: 0.4 },
+    chime: { kind: "bell", every: 7, decay: 6 }, drone: 0.05, bass: 0.13, choir: 1.1, vowels: ["ah", "oo", "uh"] },
   rain: { name: "Forest Rain", root: 196, chords: [[0, 7, 14, 16], [5, 12, 16, 21], [-2, 5, 14, 19], [-3, 4, 12, 19]],
-    wave: "triangle", cutoff: 900, bright: 2800, reverb: 6, chordSec: 26, wet: 0.8,
-    tex: { type: "highpass", freq: 2600, q: 0.3, level: 0.075, wave: 0.6, depth: 0.25 },
-    chime: { kind: "wood", every: 5, oct: 2, decay: 1.1 }, drone: 0.07 },
+    wave: "triangle", cutoff: 600, bright: 1300, reverb: 6, chordSec: 28, wet: 0.85,
+    tex: { type: "bandpass", freq: 1500, q: 0.3, level: 0.05, wave: 0.6, depth: 0.25 },
+    chime: { kind: "wood", every: 8, decay: 1.6 }, drone: 0.05, bass: 0.14, choir: 0.8, vowels: ["oo", "oh"] },
   nebula: { name: "Nebula", root: 164.81, chords: [[0, 7, 15, 22], [-4, 3, 12, 19], [-2, 5, 14, 17], [-7, 0, 10, 17]],
-    wave: "sawtooth", cutoff: 420, bright: 1600, reverb: 10, chordSec: 34, wet: 1.0,
-    tex: { type: "lowpass", freq: 320, q: 0.5, level: 0.07, wave: 0.03, depth: 0.6 },
-    chime: { kind: "glass", every: 11, oct: 1, decay: 8 }, drone: 0.11 },
+    wave: "sine", cutoff: 420, bright: 950, reverb: 10, chordSec: 36, wet: 1.0,
+    tex: { type: "lowpass", freq: 300, q: 0.5, level: 0.06, wave: 0.03, depth: 0.6 },
+    chime: { kind: "glass", every: 14, decay: 9 }, drone: 0.08, bass: 0.18, choir: 1, vowels: ["oo", "oh", "uh"] },
   dawn: { name: "Dawn", root: 130.81, chords: [[0, 7, 16, 19], [5, 12, 16, 21], [7, 14, 19, 23], [9, 16, 19, 24]],
-    wave: "sawtooth", cutoff: 760, bright: 2700, reverb: 7, chordSec: 22, wet: 0.9,
-    tex: { type: "bandpass", freq: 1400, q: 0.4, level: 0.03, wave: 0.05, depth: 0.5 },
-    chime: { kind: "glass", every: 6, oct: 2, decay: 4 }, drone: 0.08 },
+    wave: "triangle", cutoff: 600, bright: 1400, reverb: 7, chordSec: 24, wet: 0.9,
+    tex: { type: "bandpass", freq: 1200, q: 0.4, level: 0.02, wave: 0.05, depth: 0.5 },
+    chime: { kind: "glass", every: 9, decay: 5 }, drone: 0.06, bass: 0.15, choir: 1.1, vowels: ["ah", "oh", "oo"] },
 };
 // Which pad voices sound in each phase kind (root, fifth, third, colour tone), and layer balance.
 const VOICING = { baseline: [1, 1, 1, 0.4], training: [1, 1, 1, 1], rest: [1, 1, 0.3, 0], cooldown: [1, 1, 0.7, 0.2], idle: [1, 1, 1, 0.6] };
-const LAYERS = { baseline: { pad: 0.9, drone: 1, tex: 1 }, training: { pad: 1, drone: 0.8, tex: 0.75 }, rest: { pad: 0.7, drone: 1, tex: 1.2 }, cooldown: { pad: 0.8, drone: 1, tex: 0.9 }, idle: { pad: 1, drone: 1, tex: 1 } };
+const LAYERS = {
+  baseline: { pad: 0.9, drone: 1, tex: 1, bass: 0.8, choir: 0.5 }, training: { pad: 1, drone: 0.8, tex: 0.75, bass: 0.9, choir: 1 },
+  rest: { pad: 0.7, drone: 1, tex: 1.2, bass: 1, choir: 0.8 }, cooldown: { pad: 0.8, drone: 1, tex: 0.9, bass: 1, choir: 0.7 },
+  idle: { pad: 1, drone: 1, tex: 1, bass: 1, choir: 0.9 },
+};
+// Rhythm cue: how strongly it sounds in each phase. Off during baseline so calibration hears only your brain.
+const CUE_LEVEL = { baseline: 0, training: 1, rest: 0.35, cooldown: 1, idle: 0 };
+const CUE_BANDS = { delta: 2.5, theta: 6, alpha: 10, smr: 13.5, beta: 18, hibeta: 25, gamma: 35 };
 
 function makeImpulse(ctx, seconds) {
   const rate = ctx.sampleRate, len = Math.floor(rate * seconds), buf = ctx.createBuffer(2, len, rate);
-  const pre = Math.floor(rate * 0.03), tau = seconds / 6.9;
+  const pre = Math.floor(rate * 0.04), tau = seconds / 6.9;
   for (let ch = 0; ch < 2; ch++) {
-    const d = buf.getChannelData(ch); let lp = 0;
+    const d = buf.getChannelData(ch); let lp = 0, lp2 = 0;
     for (let i = pre; i < len; i++) {
-      const t = (i - pre) / rate; const k = 0.25 + 0.7 * Math.exp(-t / (tau * 0.7)); // the tail darkens as it decays
-      lp += k * ((Math.random() * 2 - 1) - lp);
-      d[i] = lp * Math.exp(-t / tau);
+      const t = (i - pre) / rate; const k = 0.08 + 0.32 * Math.exp(-t / (tau * 0.6)); // dark from the start, darker as it decays
+      lp += k * ((Math.random() * 2 - 1) - lp); lp2 += k * (lp - lp2);
+      d[i] = lp2 * Math.exp(-t / tau) * 2.2;
     }
   }
   return buf;
@@ -1342,11 +1364,21 @@ function makeNoise(ctx, seconds = 6) {
   }
   return buf;
 }
+// A breathy glottal-like wave: harmonics roll off faster than a sawtooth, so the voice is soft.
+function makeVoiceWave(ctx) {
+  const n = 40, real = new Float32Array(n), imag = new Float32Array(n);
+  for (let k = 1; k < n; k++) imag[k] = Math.pow(k, -1.75);
+  return ctx.createPeriodicWave(real, imag);
+}
+const fold = (f, lo, hi) => { while (f > hi) f /= 2; while (f < lo) f *= 2; return f; };
 
 class Scape {
   constructor(engine, id) {
-    const ctx = engine.ctx, p = PRESETS[id]; this.ctx = ctx; this.p = p; this.id = id; this.nodes = [];
+    const ctx = engine.ctx, p = PRESETS[id]; this.ctx = ctx; this.p = p; this.id = id; this.nodes = []; this.timers = [];
+    this.engine = engine;
     const G = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
+    const F = (type, f, q = 0.7) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
+    this.G = G; this.F = F;
     this.out = G(0); this.out.connect(engine.bus);
     this.dry = G(0.5); this.dry.connect(this.out);
     this.wet = G(p.wet); this.wet.connect(this.out);
@@ -1354,45 +1386,104 @@ class Scape {
     this.send = G(1); this.send.connect(this.verb);
     const now = ctx.currentTime;
     const osc = (type, f) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; o.start(now); this.nodes.push(o); return o; };
+    this.osc = osc;
 
-    // Pad: four chord voices of detuned oscillators into a slowly moving low-pass filter.
-    this.padFilter = ctx.createBiquadFilter(); this.padFilter.type = "lowpass"; this.padFilter.frequency.value = p.cutoff; this.padFilter.Q.value = 0.6;
+    // Pad: four chord voices of gently detuned oscillators into a slowly moving low-pass filter.
+    this.padFilter = F("lowpass", p.cutoff, 0.5);
     this.padAmp = G(0); this.padFilter.connect(this.padAmp); this.padAmp.connect(this.dry); this.padAmp.connect(this.send);
-    const fLfo = osc("sine", 0.031); const fDepth = G(p.cutoff * 0.18); fLfo.connect(fDepth); fDepth.connect(this.padFilter.frequency);
+    const fLfo = osc("sine", 0.027); const fDepth = G(p.cutoff * 0.15); fLfo.connect(fDepth); fDepth.connect(this.padFilter.frequency);
     this.breath = osc("sine", 0.1); this.breathDepth = G(0); this.breath.connect(this.breathDepth); this.breathDepth.connect(this.padAmp.gain);
     this.chordIdx = Math.floor(rand() * p.chords.length);
     this.voices = p.chords[this.chordIdx].map((semi, v) => {
       const g = G(0); g.connect(this.padFilter);
       const f = N(p.root, semi);
       const oscs = [osc(p.wave, f), osc(p.wave, f), osc("sine", f / 2)];
-      oscs[0].detune.value = -7; oscs[1].detune.value = 7;
-      const mix = [0.5, 0.5, v === 0 ? 0.6 : 0.15].map(G);
+      oscs[0].detune.value = -5; oscs[1].detune.value = 5;
+      const mix = [0.5, 0.5, v === 0 ? 0.35 : 0.1].map(G);
       oscs.forEach((o, i) => { o.connect(mix[i]); mix[i].connect(g); });
-      const vib = osc("sine", 0.12 + v * 0.037); const vd = G(2.5); vib.connect(vd); oscs.forEach(o => vd.connect(o.detune));
+      const vib = osc("sine", 0.11 + v * 0.031); const vd = G(2); vib.connect(vd); oscs.forEach(o => vd.connect(o.detune));
       return { g, oscs, semi };
     });
 
-    // Shimmer: the chord two octaves up, mostly into the reverb. This is the reward bloom.
-    this.shimFilter = ctx.createBiquadFilter(); this.shimFilter.type = "highpass"; this.shimFilter.frequency.value = 700;
+    // Shimmer: the chord one octave up in soft sines, low-passed and mostly in the reverb. This is the reward bloom.
+    this.shimFilter = F("lowpass", 1800, 0.5);
     this.shimAmp = G(0); this.shimFilter.connect(this.shimAmp); this.shimAmp.connect(this.send);
-    const shimDry = G(0.15); this.shimAmp.connect(shimDry); shimDry.connect(this.dry);
-    this.shim = this.voices.map((v, i) => { const o = osc(i % 2 ? "triangle" : "sine", N(p.root, v.semi + 24)); const g = G(0.22); o.connect(g); g.connect(this.shimFilter); return o; });
+    const shimDry = G(0.1); this.shimAmp.connect(shimDry); shimDry.connect(this.dry);
+    this.shim = this.voices.map(v => { const o = osc("sine", N(p.root, v.semi + 12)); const g = G(0.16); o.connect(g); g.connect(this.shimFilter); return o; });
 
     // Drone: root and fifth an octave down.
     this.droneAmp = G(0); this.droneAmp.connect(this.dry); this.droneAmp.connect(this.send);
     [0, 7].forEach((s, i) => { const o = osc("sine", N(p.root, s - 12)); const g = G(i ? 0.5 : 1); o.connect(g); g.connect(this.droneAmp); });
 
-    // Texture: looping pink noise shaped into air, waves or rain, swelling on a slow cycle.
+    // Bass: the chord root down in the 46-92 Hz range, a pure sine sub plus a rounded triangle body,
+    // swelling slowly like a breath. It glides to each new chord's root.
+    const bf = this.bassFreq();
+    this.bassFilter = F("lowpass", 210, 0.5);
+    this.bassAmp = G(0); this.bassFilter.connect(this.bassAmp); this.bassAmp.connect(this.dry);
+    const bassVerb = G(0.12); this.bassAmp.connect(bassVerb); bassVerb.connect(this.send);
+    this.bassSub = osc("sine", bf); this.bassBody = osc("triangle", bf); this.bassUpper = osc("sine", bf * 2);
+    const bSwell = G(0.8); const bl = osc("sine", 0.043); const bld = G(0.2); bl.connect(bld); bld.connect(bSwell.gain);
+    [[this.bassSub, 1], [this.bassBody, 0.45], [this.bassUpper, 0.18]].forEach(([o, v]) => { const g = G(v); o.connect(g); g.connect(bSwell); });
+    bSwell.connect(this.bassFilter);
+
+    // Texture: looping pink noise shaped into air, waves or rain, swelling on a slow cycle, never above 3 kHz.
     const src = ctx.createBufferSource(); src.buffer = engine.noise; src.loop = true; src.start(now, rand() * 5); this.nodes.push(src);
-    const tf = ctx.createBiquadFilter(); tf.type = p.tex.type; tf.frequency.value = p.tex.freq; tf.Q.value = p.tex.q;
+    const tf = F(p.tex.type, p.tex.freq, p.tex.q), tlp = F("lowpass", 2800, 0.5);
     this.texAmp = G(0); const swell = G(1 - p.tex.depth / 2);
     const tl = osc("sine", p.tex.wave); const td = G(p.tex.depth / 2); tl.connect(td); td.connect(swell.gain);
-    src.connect(tf); tf.connect(swell); swell.connect(this.texAmp); this.texAmp.connect(this.dry);
+    src.connect(tf); tf.connect(tlp); tlp.connect(swell); swell.connect(this.texAmp); this.texAmp.connect(this.dry);
     const ts = G(0.4); this.texAmp.connect(ts); ts.connect(this.send);
+
+    // Choir: two wordless female voices (mezzo and alto) in harmony, each a small ensemble of three
+    // slightly detuned singers with vibrato, shaped by vowel formants and bathed in reverb.
+    this.choirAmp = G(0); this.choirLevel = 0;
+    const choirLP = F("lowpass", 3200, 0.5); choirLP.connect(this.choirAmp);
+    this.choirAmp.connect(this.send); const cDry = G(0.22); this.choirAmp.connect(cDry); cDry.connect(this.dry);
+    this.singers = [{ lo: 300, hi: 600, pan: 0.3 }, { lo: 200, hi: 400, pan: -0.3 }].map((r, vi) => {
+      const env = G(0), mix = G(0.5);
+      const formants = [0, 1, 2].map(i => { const b = F("bandpass", VOWELS.oo[i], VOWELS.oo[i] / FORMANT_BW[i]); const g = G(FORMANT_GAIN[i]);
+        mix.connect(b); b.connect(g); g.connect(env); return b; });
+      const f0 = fold(N(p.root, p.chords[this.chordIdx][vi ? 0 : 2]), r.lo, r.hi);
+      const vib = osc("sine", 5.1 + vi * 0.35), vibDepth = G(0); vib.connect(vibDepth);
+      const oscs = [-6, 0, 7].map((cents, k) => {
+        const o = ctx.createOscillator(); o.setPeriodicWave(engine.voiceWave); o.frequency.value = f0; o.detune.value = cents; o.start(now); this.nodes.push(o);
+        vibDepth.connect(o.detune);
+        const drift = osc("sine", 0.13 + k * 0.07 + vi * 0.05), dd = G(3); drift.connect(dd); dd.connect(o.detune);
+        o.connect(mix); return o;
+      });
+      // A little breath noise through the same vowel.
+      const air = ctx.createBufferSource(); air.buffer = engine.noise; air.loop = true; air.start(now, rand() * 5); this.nodes.push(air);
+      const airHP = F("highpass", 1200, 0.5), airG = G(0.05); air.connect(airHP); airHP.connect(airG); airG.connect(mix);
+      let tail = env;
+      if (ctx.createStereoPanner) { const pan = ctx.createStereoPanner(); pan.pan.value = r.pan; env.connect(pan); tail = pan; }
+      tail.connect(choirLP);
+      return { ...r, env, formants, oscs, vibDepth, index: vi };
+    });
+    this.singers.forEach((v, i) => this.timers.push(setTimeout(() => this.sing(v), (1.5 + i * 4.5 + rand() * 2) * 1000)));
 
     this.kind = "idle"; this.bloom = 0;
     this.chordTimer = setInterval(() => this.nextChord(), p.chordSec * 1000);
     this.setKind("idle", true);
+  }
+  bassFreq() { return fold(N(this.p.root, this.p.chords[this.chordIdx][0]), 46, 92); }
+  setVowel(v, name, t, tau) { const f = VOWELS[name]; v.formants.forEach((b, i) => { b.frequency.setTargetAtTime(f[i], t, tau); b.Q.setTargetAtTime(f[i] / FORMANT_BW[i], t, tau); }); }
+  // One sung phrase: choose a chord tone in range, swell in, morph the vowel, swell out, rest.
+  sing(v) {
+    if (this.disposed) return;
+    const ctx = this.ctx, p = this.p, t = ctx.currentTime + 0.05;
+    const chord = p.chords[this.chordIdx];
+    const tones = chord.map(s => fold(N(p.root, s), v.lo, v.hi));
+    const f = tones[(v.index ? 0 : 2 + Math.floor(rand() * 2)) % tones.length];
+    v.oscs.forEach(o => o.frequency.setTargetAtTime(f, t, 0.08));
+    const vw = p.vowels;
+    this.setVowel(v, vw[Math.floor(rand() * vw.length)], t, 0.05);
+    const rise = 3 + rand() * 2.5, hold = 2.5 + rand() * 4, fall = 4 + rand() * 3, gap = 1.5 + rand() * 4.5;
+    const g = v.env.gain; g.cancelScheduledValues(t); g.setValueAtTime(0, t);
+    g.linearRampToValueAtTime(1, t + rise); g.setValueAtTime(1, t + rise + hold); g.linearRampToValueAtTime(0, t + rise + hold + fall);
+    // Vibrato blooms in after the note settles, as a singer's does.
+    const vd = v.vibDepth.gain; vd.cancelScheduledValues(t); vd.setValueAtTime(2, t); vd.linearRampToValueAtTime(13, t + rise + 1);
+    this.setVowel(v, vw[Math.floor(rand() * vw.length)], t + rise + hold * 0.4, 1.4);
+    this.timers.push(setTimeout(() => this.sing(v), (rise + hold + fall + gap) * 1000));
   }
   nextChord() {
     const p = this.p; this.chordIdx = (this.chordIdx + 1) % p.chords.length;
@@ -1400,64 +1491,103 @@ class Scape {
     this.voices.forEach((v, i) => {
       v.semi = chord[i]; const f = N(p.root, chord[i]);
       v.oscs[0].frequency.setTargetAtTime(f, t, 2.2); v.oscs[1].frequency.setTargetAtTime(f, t, 2.2); v.oscs[2].frequency.setTargetAtTime(f / 2, t, 2.2);
-      this.shim[i].frequency.setTargetAtTime(N(p.root, chord[i] + 24), t, 2.2);
+      this.shim[i].frequency.setTargetAtTime(N(p.root, chord[i] + 12), t, 2.2);
     });
+    const bf = this.bassFreq();
+    this.bassSub.frequency.setTargetAtTime(bf, t, 3); this.bassBody.frequency.setTargetAtTime(bf, t, 3); this.bassUpper.frequency.setTargetAtTime(bf * 2, t, 3);
   }
   setKind(kind, instant = false) {
     if (kind === this.kind && !instant) return;
     const changed = kind !== this.kind; this.kind = kind;
     const t = this.ctx.currentTime, tau = instant ? 0.01 : 3;
     const L = LAYERS[kind] || LAYERS.idle, V = VOICING[kind] || VOICING.idle;
-    this.voices.forEach((v, i) => v.g.gain.setTargetAtTime(0.11 * V[i], t, tau));
+    this.voices.forEach((v, i) => v.g.gain.setTargetAtTime(0.055 * V[i], t, tau));
     this.padAmp.gain.setTargetAtTime(0.9 * L.pad, t, tau);
-    this.droneAmp.gain.setTargetAtTime(this.p.drone * L.drone, t, tau);
+    this.droneAmp.gain.setTargetAtTime(0.6 * this.p.drone * L.drone, t, tau);
+    this.bassAmp.gain.setTargetAtTime(this.p.bass * L.bass, t, tau);
     this.texAmp.gain.setTargetAtTime(this.p.tex.level * 4 * L.tex, t, tau);
     this.breathDepth.gain.setTargetAtTime(kind === "rest" ? 0.45 : 0, t, tau);
+    this.applyChoir(instant ? 0.01 : 2.5);
     if (changed && !instant) this.nextChord(); // each new phase opens on a new chord
+  }
+  // The choir sings louder when you're on target; engine.voices switches it off entirely.
+  applyChoir(tau = 1.5) {
+    const L = LAYERS[this.kind] || LAYERS.idle;
+    const level = this.engine.voices ? 0.12 * this.p.choir * L.choir * (0.45 + 0.75 * this.bloom) : 0;
+    this.choirAmp.gain.setTargetAtTime(level, this.ctx.currentTime, tau);
   }
   setBloom(b, artifact) {
     const t = this.ctx.currentTime, up = b > this.bloom; this.bloom = b;
-    const p = this.p, tau = up ? 0.45 : 1.3;
-    this.shimAmp.gain.setTargetAtTime(0.5 * b, t, tau);
-    this.padFilter.frequency.setTargetAtTime(Math.max(180, lerp(p.cutoff, p.bright, b) * (artifact ? 0.55 : 1)), t, tau);
+    const p = this.p, tau = up ? 0.6 : 1.5;
+    this.shimAmp.gain.setTargetAtTime(0.2 * b, t, tau);
+    this.padFilter.frequency.setTargetAtTime(Math.max(180, lerp(p.cutoff, p.bright, b) * (artifact ? 0.6 : 1)), t, tau);
+    this.applyChoir(up ? 1.2 : 2.5);
   }
+  // Soft harmonic bell: slow attack, warm partials, low-passed, mostly reverb.
   chime(level = 1) {
     const ctx = this.ctx, p = this.p, c = p.chime, t = ctx.currentTime + 0.02;
-    const chord = p.chords[this.chordIdx]; const semi = chord[Math.floor(rand() * chord.length)] + 12 * c.oct + (rand() < 0.3 ? 12 : 0);
-    const f = N(p.root, semi);
-    const ratios = c.kind === "bell" ? [1, 2.0, 2.76, 5.4] : c.kind === "wood" ? [1, 3.93, 9.2] : [1, 2.01, 3.03, 4.2];
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.06 * level, t + (c.kind === "wood" ? 0.003 : 0.012));
+    const chord = p.chords[this.chordIdx];
+    const f = fold(N(p.root, chord[Math.floor(rand() * chord.length)] + 12), 330, 880);
+    const ratios = c.kind === "wood" ? [1, 2, 3] : c.kind === "bell" ? [1, 2, 3, 4.01] : [1, 2, 4];
+    const g = ctx.createGain(), lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 2200; lp.Q.value = 0.5;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.032 * level, t + (c.kind === "wood" ? 0.012 : 0.05));
     g.gain.exponentialRampToValueAtTime(0.0001, t + c.decay);
-    let tail = g;
-    if (ctx.createStereoPanner) { const pan = ctx.createStereoPanner(); pan.pan.value = (rand() - 0.5) * 1.4; g.connect(pan); tail = pan; }
+    g.connect(lp);
+    let tail = lp;
+    if (ctx.createStereoPanner) { const pan = ctx.createStereoPanner(); pan.pan.value = (rand() - 0.5) * 1.2; lp.connect(pan); tail = pan; }
     tail.connect(this.send);
-    const dry = ctx.createGain(); dry.gain.value = 0.35; tail.connect(dry); dry.connect(this.dry);
+    const dry = ctx.createGain(); dry.gain.value = 0.25; tail.connect(dry); dry.connect(this.dry);
     ratios.forEach((r, i) => {
       const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f * r;
-      const og = ctx.createGain(); og.gain.value = 1 / (1 + i * 1.8); o.connect(og); og.connect(g);
+      const og = ctx.createGain(); og.gain.value = 1 / (1 + i * 3); o.connect(og); og.connect(g);
       o.start(t); o.stop(t + c.decay + 0.1);
     });
   }
   fade(to, seconds) { const t = this.ctx.currentTime; this.out.gain.cancelScheduledValues(t); this.out.gain.setTargetAtTime(to, t, seconds / 3); }
-  dispose() { clearInterval(this.chordTimer); this.nodes.forEach(n => { try { n.stop(); } catch {} }); setTimeout(() => this.out.disconnect(), 200); }
+  dispose() { this.disposed = true; clearInterval(this.chordTimer); this.timers.forEach(clearTimeout); this.nodes.forEach(n => { try { n.stop(); } catch {} }); setTimeout(() => this.out.disconnect(), 200); }
+}
+
+/* The rhythm cue at the protocol's exact frequency: the target band's centre unless the phase sets one. */
+function cueFor(u) {
+  if (u.binaural) return Number(u.binaural);
+  const spec = app.session && app.session.program.protocols && app.session.program.protocols[u.protocol];
+  return spec && spec.cue_hz ? spec.cue_hz : null;
+}
+function cueHz(spec) {
+  if (spec.cue_hz) return spec.cue_hz;
+  if (spec.kind === "asymmetry") return CUE_BANDS.alpha;
+  if (spec.ratio_over && (spec.direction === "down" || spec.direction < 0)) return CUE_BANDS[spec.ratio_over];
+  return CUE_BANDS[spec.reward];
 }
 
 const audio = {
   ctx: null, scape: null, volume: 0.7, env: 0, lastReward: false, quiet: 0, chimeTimer: null, state: null,
+  voices: true, cueOn: true, cueHz: null,
   async ensure() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
-      this.ctx = new AC();
-      this.master = this.ctx.createGain(); this.master.gain.value = 0;
-      const comp = this.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3; comp.attack.value = 0.05; comp.release.value = 0.6;
-      this.bus = this.ctx.createGain(); this.bus.connect(comp); comp.connect(this.master); this.master.connect(this.ctx.destination);
-      this.noise = makeNoise(this.ctx);
-      // The binaural layer bypasses the reverb so each ear keeps its own tone.
-      this.binL = this.ctx.createOscillator(); this.binR = this.ctx.createOscillator();
-      const merge = this.ctx.createChannelMerger(2); this.binAmp = this.ctx.createGain(); this.binAmp.gain.value = 0;
-      this.binL.connect(merge, 0, 0); this.binR.connect(merge, 0, 1); merge.connect(this.binAmp); this.binAmp.connect(this.master);
-      this.binL.start(); this.binR.start();
+      const ctx = this.ctx = new AC();
+      this.master = ctx.createGain(); this.master.gain.value = 0;
+      // Master: a gentle compressor, then a high shelf and roll-off so nothing is ever bright or sharp.
+      const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -20; comp.knee.value = 14; comp.ratio.value = 2.5; comp.attack.value = 0.08; comp.release.value = 0.8;
+      const shelf = ctx.createBiquadFilter(); shelf.type = "highshelf"; shelf.frequency.value = 3200; shelf.gain.value = -7;
+      const roll = ctx.createBiquadFilter(); roll.type = "lowpass"; roll.frequency.value = 7000; roll.Q.value = 0.5;
+      // The bus feeds the compressor below its knee most of the time, and a trim undoes its make-up gain.
+      this.bus = ctx.createGain(); this.bus.gain.value = 0.65; const trim = ctx.createGain(); trim.gain.value = 0.75;
+      this.bus.connect(comp); comp.connect(shelf); shelf.connect(roll); roll.connect(trim); trim.connect(this.master); this.master.connect(ctx.destination);
+      this.noise = makeNoise(ctx); this.voiceWave = makeVoiceWave(ctx);
+      // Rhythm cue, bypassing the reverb so the rhythm stays exact: a binaural pair whose ears differ by
+      // exactly the cue frequency, and a soft low tone whose loudness pulses at that same rate.
+      this.cueOut = ctx.createGain(); this.cueOut.gain.value = 0; this.cueOut.connect(this.master);
+      this.cueL = ctx.createOscillator(); this.cueR = ctx.createOscillator();
+      const merge = ctx.createChannelMerger(2), binG = ctx.createGain(); binG.gain.value = 0.06;
+      this.cueL.connect(merge, 0, 0); this.cueR.connect(merge, 0, 1); merge.connect(binG); binG.connect(this.cueOut);
+      this.cueTone = ctx.createOscillator(); this.cueLfo = ctx.createOscillator();
+      this.cueAM = ctx.createGain(); this.cueAM.gain.value = 0.6; this.cueDepth = ctx.createGain(); this.cueDepth.gain.value = 0.4;
+      this.cueLfo.connect(this.cueDepth); this.cueDepth.connect(this.cueAM.gain);
+      const toneLP = ctx.createBiquadFilter(); toneLP.type = "lowpass"; toneLP.frequency.value = 500; const toneG = ctx.createGain(); toneG.gain.value = 0.03;
+      this.cueTone.connect(this.cueAM); this.cueAM.connect(toneLP); toneLP.connect(toneG); toneG.connect(this.cueOut);
+      [this.cueL, this.cueR, this.cueTone, this.cueLfo].forEach(o => { o.frequency.value = 100; o.start(); });
     }
     // iPad/iPhone: play as media so the silent switch doesn't mute sessions.
     try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
@@ -1473,51 +1603,65 @@ const audio = {
     this.scheduleChime();
   },
   setVolume(v) { this.volume = v; this.applyMaster(); },
+  setVoices(on) { this.voices = on; if (this.scape) this.scape.applyChoir(1); },
+  setCue(on) { this.cueOn = on; if (this.state) this.update(this.state); },
   applyMaster(tau = 1.2) { if (this.ctx) this.master.gain.setTargetAtTime(this.volume * this.env, this.ctx.currentTime, tau); },
   setEnvelope(e, tau) { this.env = e; this.applyMaster(tau); },
+  // Tune the cue to an exact frequency. The left ear sits on the soundscape's root, the right ear exactly
+  // hz above it, so the binaural beat, the beat against the pads' root and the pulse all land on hz.
+  setCueFreq(hz) {
+    const t = this.ctx.currentTime, carrier = fold(this.scape.p.root, 110, 220);
+    this.cueL.frequency.setValueAtTime(carrier, t); this.cueR.frequency.setValueAtTime(carrier + hz, t);
+    this.cueTone.frequency.setValueAtTime(carrier, t); this.cueLfo.frequency.setValueAtTime(hz, t);
+    // Faster pulses are gentler so they flutter rather than buzz.
+    this.cueDepth.gain.setTargetAtTime(hz > 12 ? 0.25 : 0.4, t, 0.3); this.cueAM.gain.setTargetAtTime(hz > 12 ? 0.75 : 0.6, t, 0.3);
+  },
   update(u) {
     if (!this.scape) return;
     this.state = u;
     const kind = u.phase;
     // Ease in over the first minute; ease out across the closing phase.
     let env = smooth(u.t / 60);
-    if (kind === "cooldown") env *= 1 - 0.88 * smooth(u.phase_elapsed / Math.max(u.phase_duration, 1));
+    const closing = kind === "cooldown" ? smooth(u.phase_elapsed / Math.max(u.phase_duration, 1)) : 0;
+    if (kind === "cooldown") env *= 1 - 0.88 * closing;
     this.setEnvelope(env);
     this.scape.setKind(kind);
     let bloom;
     if (kind === "training") bloom = u.artifact ? 0 : u.reward ? 0.45 + 0.55 * (u.intensity ?? 0.5) : 0.06 + 0.14 * (u.intensity ?? 0);
     else if (kind === "baseline") bloom = 0.22;
     else if (kind === "rest") bloom = 0.3;
-    else bloom = 0.28 * (1 - smooth(u.phase_elapsed / Math.max(u.phase_duration, 1)));
+    else bloom = 0.28 * (1 - closing);
     this.scape.setBloom(bloom, u.artifact);
     // A soft chime marks a reward arriving after a quiet stretch.
     if (u.reward && !this.lastReward && this.quiet >= 8) this.scape.chime(0.9);
     this.quiet = u.reward ? 0 : this.quiet + 1; this.lastReward = u.reward;
-    const t = this.ctx.currentTime;
-    if (u.binaural) {
-      const carrier = this.scape.p.root; this.binL.frequency.setTargetAtTime(carrier, t, 0.5); this.binR.frequency.setTargetAtTime(carrier + u.binaural, t, 0.5);
-      this.binAmp.gain.setTargetAtTime(0.05, t, 2);
-    } else this.binAmp.gain.setTargetAtTime(0, t, 2);
+    const hz = cueFor(u), t = this.ctx.currentTime;
+    if (hz && (hz !== this.cueHz || this.cueScape !== this.scape)) this.setCueFreq(hz);
+    this.cueHz = hz; this.cueScape = this.scape;
+    let level = hz && this.cueOn ? (CUE_LEVEL[kind] ?? 0) : 0;
+    if (kind === "baseline" && u.binaural) level = 0.6; // a cue the program asked for explicitly
+    if (kind === "cooldown") level *= 1 - closing;
+    this.cueOut.gain.setTargetAtTime(level, t, 2.5);
   },
   scheduleChime() {
     clearTimeout(this.chimeTimer);
     const s = this.scape; if (!s) return;
     const u = this.state; let factor = 1.2;
     if (u) {
-      if (u.phase === "training") factor = u.reward ? 0.45 : 1.7;
+      if (u.phase === "training") factor = u.reward ? 0.6 : 1.8;
       else if (u.phase === "cooldown") factor = 2.2;
       else if (u.phase === "rest") factor = 1.4;
     }
     const wait = s.p.chime.every * factor * (0.6 + rand() * 0.8);
-    this.chimeTimer = setTimeout(() => { if (this.scape && this.env > 0.05) this.scape.chime(u && u.reward ? 1 : 0.7); this.scheduleChime(); }, wait * 1000);
+    this.chimeTimer = setTimeout(() => { if (this.scape && this.env > 0.05) this.scape.chime(u && u.reward ? 0.9 : 0.6); this.scheduleChime(); }, wait * 1000);
   },
   stop(seconds = 5) {
     clearTimeout(this.chimeTimer); this.chimeTimer = null; clearTimeout(this.previewTimer);
     if (!this.ctx) return;
     this.setEnvelope(0, seconds / 3);
-    const s = this.scape; this.scape = null; this.state = null;
+    const s = this.scape; this.scape = null; this.state = null; this.cueHz = null;
     if (s) setTimeout(() => s.dispose(), seconds * 1000 + 500);
-    if (this.binAmp) this.binAmp.gain.setTargetAtTime(0, this.ctx.currentTime, 1);
+    if (this.cueOut) this.cueOut.gain.setTargetAtTime(0, this.ctx.currentTime, 1);
   },
   async preview(id, seconds = 15) {
     await this.play(id); if (!this.scape) return;
@@ -2252,7 +2396,8 @@ function onUpdate(u) {
   $("rewardPct").textContent = (u.reward_fraction * 100).toFixed(1) + "%";
   const ups = app.hist.artifact.length; $("artPct").textContent = ups ? (100 * app.hist.artifact.reduce((a, b) => a + b, 0) / ups).toFixed(1) + "%" : "--";
   $("iaf").textContent = Number.isFinite(app.iaf) ? app.iaf.toFixed(1) + " Hz" : "--";
-  $("binText").textContent = u.binaural ? `${u.binaural} Hz beat` : "off";
+  const cue = audio.cueOn ? cueFor(u) : null;
+  $("binText").textContent = cue ? `${cue} Hz` : "off"; $("cueText").textContent = cue ? `· ${cue} Hz` : "";
   $("phaseSub").textContent = `Phase ${u.phase_index + 1} of ${u.phase_count} · ${fmtTime(u.phase_duration - u.phase_elapsed)} left`;
   $("statTime").textContent = fmtTime(u.t);
   $("statReward").textContent = (u.reward_fraction * 100).toFixed(0) + "%";
@@ -2518,6 +2663,7 @@ function buildCustomLocal(b) {
   const name = `${b.reward}${b.ratio_over ? "/" + b.ratio_over : ""}-${b.direction}`;
   const label = b.ratio_over ? `${b.reward}/${b.ratio_over}` : `rel. ${b.reward}`;
   const spec = { name, reward: b.reward, ratio_over: b.ratio_over, direction: b.direction, inhibits: ["delta", "hibeta"], sites, kind: b.ratio_over ? "ratio" : "power", label };
+  spec.cue_hz = cueHz(spec);
   const blocks = Math.max(1, b.blocks), blockMin = Math.max(1, (b.minutes - 6 - (blocks - 1)) / blocks);
   const bin = b.binaural ? Number(b.binaural) : null;
   const ph = (n, kind, m, extra = {}) => ({ name: n, kind, minutes: m, protocol: null, protocol_name: null, reward_rate: 0.6, guidance: "", binaural: null, ...extra });
@@ -2719,6 +2865,12 @@ function wire() {
   $("volume").addEventListener("input", e => { $("toolMute").setAttribute("aria-pressed", "false"); audio.setVolume(Number(e.target.value)); });
   $("scapeSwitch").innerHTML = Object.entries(PRESETS).map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
   $("scapeSwitch").addEventListener("change", e => { app.scape = e.target.value; audio.play(app.scape); });
+  const pref = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v === "1"; } catch { return d; } };
+  const savePref = (k, v) => { try { localStorage.setItem(k, v ? "1" : "0"); } catch {} };
+  $("voicesToggle").checked = pref("nova.voices", true); audio.setVoices($("voicesToggle").checked);
+  $("cueToggle").checked = pref("nova.cue", true); audio.cueOn = $("cueToggle").checked;
+  $("voicesToggle").addEventListener("change", e => { audio.setVoices(e.target.checked); savePref("nova.voices", e.target.checked); });
+  $("cueToggle").addEventListener("change", e => { audio.setCue(e.target.checked); savePref("nova.cue", e.target.checked); if (app.u) $("cueText").textContent = e.target.checked && cueFor(app.u) ? `· ${cueFor(app.u)} Hz` : ""; });
   $("skipBtn").addEventListener("click", () => { if (app.runner) app.runner.skipFlag = true; else api("/api/session/skip", {}).catch(() => {}); });
   $("endBtn").addEventListener("click", () => {
     if (app.runner) { const s = app.runner.summary(true); app.runner = null; showSummary(s); }
