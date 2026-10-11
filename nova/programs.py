@@ -14,6 +14,7 @@ They are training programs, not treatments: NOVA is not a medical device.
 from __future__ import annotations
 
 import json
+import math
 import re
 from dataclasses import asdict, dataclass, field, replace
 from pathlib import Path
@@ -100,6 +101,40 @@ class Program:
     def check_channels(self, channel_names: list[str]) -> list[str]:
         return [msg for p in self.protocols().values() if (msg := p.check_channels(channel_names))]
 
+    def fitted(self, minutes: float) -> "Program":
+        """Fit the program to a session length (e.g. 15-60 min) on the same arc.
+
+        Arrival, warm-up and integration keep their length. The remaining time becomes
+        training blocks of about 5-8 minutes, cycling through the program's own blocks,
+        with a one-minute breathing interlude between each. Longer sessions get more
+        blocks rather than longer ones.
+        """
+        phases = list(self.phases)
+        head = []
+        while phases and phases[0].kind == "baseline":
+            head.append(phases.pop(0))
+        tail = []
+        while phases and phases[-1].kind == "cooldown":
+            tail.insert(0, phases.pop())
+        trains = [p for p in phases if p.kind == "training"]
+        warm = trains[0] if trains and trains[0].reward_rate > 0.7 else None
+        blocks = [p for p in trains if p is not warm] or [replace(trains[0], reward_rate=0.6)]
+        rest = next((p for p in phases if p.kind == "rest"), Phase("Breathe", "rest", 1.0, guidance=BREATHE))
+        fixed = sum(p.minutes for p in head + tail) + (warm.minutes if warm else 0)
+        avail = max(minutes - fixed, 3.0)
+        n = max(1, _round(avail + rest.minutes) // 7)
+        while n > 1 and (avail - (n - 1) * rest.minutes) / n < 4:
+            n -= 1
+        block_min = _round2((avail - (n - 1) * rest.minutes) / n)
+        body = []
+        for i in range(n):
+            if i:
+                body.append(rest)
+            src = blocks[i % len(blocks)]
+            name = src.name if i < len(blocks) else f"{src.name} ({i // len(blocks) + 1})"
+            body.append(replace(src, name=name, minutes=block_min))
+        return replace(self, phases=tuple(head + ([warm] if warm else []) + body + tail))
+
     def scaled(self, factor: float) -> "Program":
         """Lengthen or shorten training blocks; arrival and integration keep their length."""
         phases = tuple(
@@ -125,6 +160,18 @@ class Program:
         fields.setdefault("target", "")
         fields.setdefault("summary", "")
         return cls(**fields)
+
+
+def _round(x: float) -> int:
+    """Round half up, matching JavaScript's Math.round (the console fits programs too)."""
+    return int(math.floor(x + 0.5))
+
+
+def _round2(x: float) -> float:
+    return math.floor(x * 100 + 0.5) / 100
+
+
+SESSION_LENGTHS = (15, 20, 30, 45, 60)
 
 
 def simple_program(protocol: Protocol, baseline_sec: float, training_sec: float, reward_rate: float = 0.6) -> Program:
@@ -338,7 +385,100 @@ BUILTIN: tuple[Program, ...] = (
     ),
 )
 
+BUILTIN = BUILTIN + (
+    Program(
+        id="impulse-control",
+        name="Impulse Control",
+        category="condition",
+        target="ADHD: impulsivity and restlessness",
+        summary="Trains the quiet-body, steady-mind state (SMR) with strict inhibits: rewards stop the "
+        "moment slow-wave drift or muscle tension bursts in. You practise noticing an urge and letting "
+        "it pass without acting, and the sound tells you when you've held it.",
+        soundscape="rain",
+        eyes="open",
+        evidence="Most studied",
+        evidence_note="SMR training over the sensorimotor strip is one of the standard ADHD protocols, with "
+        "the strongest evidence for hyperactivity and impulsivity. The urge-surfing guidance comes from "
+        "mindfulness-based approaches; pairing it with feedback is NOVA's design choice, not a tested protocol.",
+        sites=("C4", "Cz"),
+        phases=_arc(
+            [
+                ("Notice the urge", "smr-still", 5, 0.6, "When you feel an urge to move, look away or check something, notice it. Breathe. Let it pass. Stay still."),
+                ("Steady attention", "theta-beta", 5, 0.6, "Keep your attention gently on the sound. When your mind drifts, come back without judging."),
+                ("Hold the stillness", "smr-still", 5, 0.55, "Each urge you let pass keeps the sound open. Nothing to fix, just stay."),
+            ],
+            warmup=("smr-still", 3, "Settle your hands and jaw. The sound brightens when your body and mind are still."),
+        ),
+    ),
+    Program(
+        id="willpower",
+        name="Willpower",
+        category="state",
+        target="Self-control and discipline",
+        summary="Trains frontal-midline theta, the rhythm of the brain's effort and self-monitoring system, "
+        "while you hold a chosen focus, then consolidates with calm SMR.",
+        soundscape="nebula",
+        eyes="open",
+        evidence="Emerging",
+        evidence_note="Frontal-midline theta rises when we exert cognitive control. Small trials training it "
+        "upward (e.g. Enriquez-Geppert et al., 2014) found improved cognitive control and working memory in "
+        "healthy adults. There is no single 'willpower wave'; this trains a system that supports it.",
+        sites=("Fz",),
+        phases=_arc(
+            [
+                ("Choose and hold", "fm-theta", 5, 0.6, "Pick one intention for today. Hold it in mind, plainly, the way you'd hold a weight steady."),
+                ("Settle the body", "smr-still", 4, 0.6, "Let the effort drop into stillness. Calm body, clear mind."),
+                ("Return on purpose", "fm-theta", 5, 0.55, "Each time your mind wanders, return to your intention on purpose. That return is the rep."),
+            ],
+            warmup=("fm-theta", 3, "Count your breaths from one to ten, then start again. Stay with the count."),
+        ),
+    ),
+    Program(
+        id="positive-action",
+        name="Positive Action",
+        category="state",
+        target="Motivation and follow-through",
+        summary="Shifts frontal activity toward the left hemisphere, a pattern linked to approach "
+        "motivation and goal pursuit, then builds alert left-frontal beta while you rehearse taking action.",
+        soundscape="dawn",
+        eyes="open",
+        evidence="Emerging",
+        evidence_note="Relatively greater left-frontal activity is associated with approach motivation "
+        "(Harmon-Jones and colleagues). Asymmetry training has small, encouraging studies; left-frontal beta "
+        "training for motivation is exploratory.",
+        sites=("F3", "F4"),
+        phases=_arc(
+            [
+                ("Want it", "alpha-asymmetry", 5, 0.6, "Picture something you want to do today. Feel the pull toward it."),
+                ("See yourself do it", "beta-left", 4, 0.6, "Rehearse the first concrete step: where you'll be, what your hands do."),
+                ("Commit", "alpha-asymmetry", 5, 0.55, "Say the next action to yourself in one sentence. Let the sound rise with it."),
+            ],
+            warmup=("alpha-asymmetry", 3, "Think of a recent small win. Let that feeling build."),
+        ),
+    ),
+)
+
 BUILTIN_BY_ID = {p.id: p for p in BUILTIN}
+
+# Two-track training plan: impulse control first, then willpower and positive action.
+TRACKS = (
+    {
+        "id": "attention",
+        "name": "Track 1: Attention and impulse control",
+        "goal": "Lower the slow-wave drift and restlessness typical of ADHD, and practise letting impulses pass.",
+        "programs": ["focus-adhd", "impulse-control"],
+        "sessions": 20,
+        "cadence": "3 sessions a week, 30-45 min, alternating the two programs",
+    },
+    {
+        "id": "willpower",
+        "name": "Track 2: Willpower, discipline and positive action",
+        "goal": "Strengthen the brain's effort and self-control system, and approach-oriented motivation.",
+        "programs": ["willpower", "positive-action"],
+        "sessions": 20,
+        "cadence": "3 sessions a week, 30-45 min, after Track 1 (or alongside it from week 4)",
+    },
+)
 
 
 # ----------------------------------------------------------------------------
@@ -423,7 +563,12 @@ def get_program(ref: str, directory: Path = CUSTOM_DIR) -> Program:
 
 def export_json(programs: list[Program] | None = None) -> str:
     """Built-in programs and soundscapes as JSON, embedded in the console for offline preview."""
-    data = {"programs": [p.to_dict() for p in (programs or BUILTIN)], "soundscapes": SOUNDSCAPES}
+    data = {
+        "programs": [p.to_dict() for p in (programs or BUILTIN)],
+        "soundscapes": SOUNDSCAPES,
+        "tracks": list(TRACKS),
+        "lengths": list(SESSION_LENGTHS),
+    }
     return json.dumps(data, separators=(",", ":"))
 
 

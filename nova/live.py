@@ -274,9 +274,13 @@ class SessionController:
         from .programs import SOUNDSCAPES, all_programs
 
         if path == "/api/programs":
+            from .programs import SESSION_LENGTHS, TRACKS
+
             return 200, {
                 "programs": [p.to_dict() for p in all_programs(self.programs_dir)],
                 "soundscapes": SOUNDSCAPES,
+                "tracks": list(TRACKS),
+                "lengths": list(SESSION_LENGTHS),
             }
         if path == "/api/history":
             return 200, {"sessions": load_history(self.log_dir)}
@@ -345,9 +349,13 @@ class SessionController:
             if self._thread and self._thread.is_alive():
                 raise ValueError("a session is already running")
             program = get_program(body["program"], self.programs_dir)
-            length = float(body.get("length", 1.0))
-            if length != 1.0:
-                program = program.scaled(length)
+            if body.get("minutes"):
+                minutes = float(body["minutes"])
+                if not 10 <= minutes <= 90:
+                    raise ValueError("session length must be between 10 and 90 minutes")
+                program = program.fitted(minutes)
+            elif float(body.get("length", 1.0)) != 1.0:
+                program = program.scaled(float(body["length"]))
             self._thread = threading.Thread(target=self._run, args=(program, body), daemon=True)
             self._set_state(state="connecting", program=program.id)
             self._thread.start()

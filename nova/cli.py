@@ -201,7 +201,10 @@ def write_stim_wav(stim: Stimulus, seconds: float, path: str, fade_sec: float = 
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    program = get_program(args.program).scaled(args.length) if args.program else None
+    program = None
+    if args.program:
+        program = get_program(args.program)
+        program = program.fitted(args.minutes) if args.minutes else program.scaled(args.length)
     protocol = get_protocol(args.protocol)
     spec = stim_spec(args, args.stim_schedule, args.stim_block) if args.stim else None
     # Keep the stimulation frequency inside the analysed band so its EEG response is visible.
@@ -248,10 +251,17 @@ def cmd_app(args: argparse.Namespace) -> int:
     from .live import DashboardServer, SessionController
 
     controller = SessionController(log_dir=args.log_dir)
-    server = DashboardServer(port=args.port)
+    server = DashboardServer(host=args.host, port=args.port)
     controller.attach(server)
     server.start()
-    print(f"NOVA is running at {server.url}  Ctrl-C to quit.")
+    if args.host in ("0.0.0.0", "::"):
+        ip = _lan_ip()
+        print(f"NOVA is running. On this computer: http://127.0.0.1:{server.port}/")
+        print(f"On your iPad or phone (same Wi-Fi): http://{ip}:{server.port}/")
+        print("Anyone on this network can open it and start sessions. Ctrl-C to quit.")
+        server.host = "127.0.0.1"
+    else:
+        print(f"NOVA is running at {server.url}  Ctrl-C to quit.")
     if not args.no_browser:
         import webbrowser
 
@@ -265,6 +275,17 @@ def cmd_app(args: argparse.Namespace) -> int:
     finally:
         server.stop()
     return 0
+
+
+def _lan_ip() -> str:
+    import socket
+
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+        try:
+            s.connect(("10.255.255.255", 1))  # no packets are sent; this picks the outbound interface
+            return s.getsockname()[0]
+        except OSError:
+            return "your-computer-ip"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -282,6 +303,7 @@ def build_parser() -> argparse.ArgumentParser:
     run = sub.add_parser("run", help="run a neurofeedback session")
     add_device_args(run)
     run.add_argument("--program", default=None, help="program id or .json file; overrides --protocol/--baseline/--duration")
+    run.add_argument("--minutes", type=float, default=None, help="fit the program to this many minutes (15-60)")
     run.add_argument("--length", type=float, default=1.0, help="scale training blocks, e.g. 0.5 or 1.5")
     run.add_argument("--protocol", default="alpha", choices=list(PROTOCOLS))
     run.add_argument("--channels", default=None, help="comma-separated channel names (default: all)")
@@ -315,6 +337,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     app = sub.add_parser("app", aliases=["dashboard"], help="open the NOVA session console in your browser")
     app.add_argument("--port", type=int, default=8765)
+    app.add_argument("--host", default="127.0.0.1", help="0.0.0.0 to open NOVA from an iPad or phone on your Wi-Fi")
     app.add_argument("--no-browser", action="store_true")
     app.add_argument("--log-dir", default="sessions")
     app.set_defaults(func=cmd_app)

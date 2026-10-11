@@ -191,6 +191,30 @@ PROTOCOLS: dict[str, Protocol] = {
             kind="asymmetry",
             pairs=FRONTAL_PAIRS,
         ),
+        Protocol(
+            name="smr-still",
+            description="SMR up with strict inhibits on slow waves and muscle tension: rewards a quiet, "
+            "still body and steady mind, the state used to practise letting impulses pass.",
+            reward="smr",
+            inhibits=("delta", "theta", "hibeta"),
+            sites=("C4", "Cz", "C3"),
+        ),
+        Protocol(
+            name="fm-theta",
+            description="Frontal-midline theta up during focused effort: a marker of the brain's "
+            "cognitive-control system (anterior cingulate), studied for self-control and working memory.",
+            reward="theta",
+            inhibits=("delta", "hibeta"),
+            sites=("Fz", "FCz", "AFz"),
+        ),
+        Protocol(
+            name="beta-left",
+            description="Beta up over the left prefrontal cortex, which is engaged by goal-directed, "
+            "approach-oriented action.",
+            reward="beta",
+            inhibits=("theta", "hibeta"),
+            sites=("F3", "AF3", "FC3", "AF7"),
+        ),
     )
 }
 

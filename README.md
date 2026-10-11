@@ -30,7 +30,36 @@ spoken-style guidance, your progress through the session, a live cortical map, t
 spectrum, hemispheric balance and the training trace. At the end you get a summary per
 phase, and a CSV log is saved in `sessions/`.
 
-Without a headset, choose **Demo signal** to try any program with generated EEG.
+Without a headset, choose **Demo signal** to try any program with generated EEG and the full
+soundscape. In demo sessions the trained rhythm swells and fades at the program's target sites,
+so you can see and hear the feedback respond.
+
+**Session length:** 15, 20, 30, 45 or 60 minutes. Arrival, warm-up and integration keep their
+length; the rest becomes training blocks of about 5-8 minutes with one-minute breathing
+interludes, cycling through the program's blocks (`nova run --program focus-adhd --minutes 45`).
+
+### iPad and AirPods
+
+NOVA runs in Safari on iPad. Connect AirPods to the iPad and turn off Spatial Audio. Sessions
+keep the screen awake and play even with the silent switch on. Browsers on iPad can't connect
+to EEG headsets, so to train with a headset run the engine on a computer and open it from the
+iPad over Wi-Fi:
+
+```bash
+nova app --host 0.0.0.0     # prints an address like http://192.168.1.20:8765 for the iPad
+```
+
+Anyone on that network can open it, so use it on a home network you trust.
+
+### Learn and the training plan
+
+The **Learn** section explains what's different in the ADHD brain, what EEG shows (and doesn't),
+how each protocol targets it, and how training can help impulses pass. It also covers the systems
+behind willpower and motivation. Its two-track plan counts your sessions:
+
+1. **Attention and impulse control:** Focus Builder and Impulse Control, 20 sessions.
+2. **Willpower, discipline and positive action:** Willpower (frontal-midline theta) and Positive
+   Action (left-frontal approach), 20 sessions.
 
 ### What's on screen during a session
 
@@ -64,6 +93,9 @@ and per-program progress.
 | Recharge | Fatigue and low energy | beta up, theta/beta down | Cz, Fz | Limited |
 | Deep Rest | Deep relaxation | alpha, then alpha-theta (eyes closed) | Pz, O1, O2 | Limited |
 | Peak Focus | Calm, sharp concentration | SMR, then beta | C4, Cz | Limited |
+| Impulse Control | ADHD impulsivity, restlessness | SMR with strict inhibits, theta/beta | C4, Cz | Most studied |
+| Willpower | Self-control, discipline | frontal-midline theta, SMR | Fz | Emerging |
+| Positive Action | Motivation, follow-through | frontal asymmetry, left-frontal beta | F3/F4 | Emerging |
 
 Each program shows its research basis in the app. **These are training programs, not
 treatments.** They follow protocols from published neurofeedback research, and the
