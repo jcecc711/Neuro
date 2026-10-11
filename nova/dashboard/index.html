@@ -7,24 +7,25 @@
    and a session view (phase strip with guidance, cortical map, analysis deck).
    One deliberate dark theme: instrument panels lit by a cyan-to-coral heat scale. */
 :root {
-  --void: #05080f;
-  --panel: #0a1120;
-  --panel-hi: #0f1a30;
-  --line: #1a2742;
-  --ink: #dce6f7;
-  --muted: #7b8bab;
-  --faint: #44557a;
-  --signal: #3ee6d4;
-  --flare: #ff5d8f;
+  --void: #060a0c;
+  --panel: #0b1215;
+  --panel-hi: #0f181c;
+  --line: #1c2a30;
+  --tick: #3d5964;
+  --ink: #e2f3f9;
+  --muted: #7d959f;
+  --faint: #45606a;
+  --signal: #6fe3ff;
+  --flare: #ff6a3d;
   --amber: #ffb547;
   --violet: #9d8cff;
-  --good: #59e39a;
+  --good: #3ddc84;
   --bad: #ff5d6c;
   --display: "Chakra Petch", "Eurostile", "Bank Gothic", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --voice: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
-  --radius: 10px;
+  --radius: 4px;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -33,8 +34,7 @@ html, body { min-height: 100%; }
 body {
   margin: 0;
   background:
-    radial-gradient(1200px 700px at 18% -10%, rgba(62, 230, 212, 0.10), transparent 60%),
-    radial-gradient(900px 600px at 105% 10%, rgba(255, 93, 143, 0.08), transparent 60%),
+    radial-gradient(1100px 600px at 50% -20%, rgba(111, 227, 255, 0.06), transparent 65%),
     var(--void);
   color: var(--ink);
   font: 14px/1.5 var(--body);
@@ -48,11 +48,16 @@ code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--panel-
 .brand { display: flex; align-items: baseline; gap: 12px; }
 .wordmark {
   font: 700 30px/1 var(--display); letter-spacing: 0.32em; margin: 0;
-  background: linear-gradient(92deg, var(--signal) 0%, #8fd8ff 45%, var(--flare) 100%);
+  background: linear-gradient(92deg, var(--signal) 0%, #e9fbff 55%, var(--flare) 100%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .tagline { color: var(--muted); font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; }
 .status { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.title-center { flex: 1; text-align: center; font: 500 12px/1.3 var(--display); letter-spacing: .38em; text-transform: uppercase; color: var(--ink); }
+.title-center small { display: block; font: 500 10px var(--mono); letter-spacing: .3em; color: var(--muted); }
+.setup-hero { position: relative; height: 230px; border: 1px solid var(--line); border-radius: var(--radius); background: radial-gradient(50% 60% at 50% 50%, rgba(111,227,255,.08), transparent 70%), #05090b; overflow: hidden; }
+.setup-hero canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.setup-hero span { position: absolute; left: 14px; bottom: 10px; font: 500 11px var(--mono); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
 .pill {
   display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px;
   border: 1px solid var(--line); background: var(--panel); font: 500 11px/1.2 var(--mono);
@@ -62,7 +67,7 @@ code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--panel-
 .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
 .dot.live { background: var(--good); box-shadow: 0 0 10px var(--good); }
 .dot.demo { background: var(--signal); box-shadow: 0 0 10px var(--signal); }
-.dot.reward { background: var(--signal); box-shadow: 0 0 12px var(--signal); }
+.dot.reward { background: var(--good); box-shadow: 0 0 12px var(--good); }
 .dot.artifact { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
 .dot.wait { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
 
@@ -79,8 +84,8 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .btn-primary {
   border: 0; color: #041015; font: 600 15px/1 var(--display); letter-spacing: .14em; text-transform: uppercase;
   padding: 14px 22px; border-radius: 10px;
-  background: linear-gradient(95deg, var(--signal), #8fd8ff 55%, #c9b8ff);
-  box-shadow: 0 6px 28px rgba(62,230,212,.25);
+  background: linear-gradient(95deg, var(--good), var(--signal));
+  box-shadow: 0 6px 28px rgba(111,227,255,.2);
 }
 .btn-primary:hover { filter: brightness(1.08); }
 .btn-ghost { background: transparent; }
@@ -95,7 +100,13 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 
 /* Panels */
 .panel {
-  background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+  --t: var(--tick);
+  background:
+    linear-gradient(var(--t), var(--t)) top left / 10px 1px no-repeat, linear-gradient(var(--t), var(--t)) top left / 1px 10px no-repeat,
+    linear-gradient(var(--t), var(--t)) top right / 10px 1px no-repeat, linear-gradient(var(--t), var(--t)) top right / 1px 10px no-repeat,
+    linear-gradient(var(--t), var(--t)) bottom left / 10px 1px no-repeat, linear-gradient(var(--t), var(--t)) bottom left / 1px 10px no-repeat,
+    linear-gradient(var(--t), var(--t)) bottom right / 10px 1px no-repeat, linear-gradient(var(--t), var(--t)) bottom right / 1px 10px no-repeat,
+    var(--panel);
   border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; min-width: 0;
   display: grid; gap: 12px; align-content: start;
 }
@@ -112,7 +123,7 @@ canvas { display: block; width: 100%; }
   border: 1px solid var(--line); background: rgba(5,8,15,.35); color: var(--ink); cursor: pointer; min-height: 132px;
 }
 .card:hover { border-color: #2b3d63; }
-.card[aria-pressed="true"] { border-color: var(--signal); box-shadow: inset 0 0 0 1px rgba(62,230,212,.35), 0 0 24px rgba(62,230,212,.08); }
+.card[aria-pressed="true"] { border-color: var(--signal); box-shadow: inset 3px 0 0 var(--good), 0 0 24px rgba(111,227,255,.08); }
 .card .name { font: 600 17px/1.2 var(--display); letter-spacing: .04em; }
 .card .target { color: var(--signal); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
 .card .meta { color: var(--muted); font: 500 11px var(--mono); }
@@ -142,44 +153,98 @@ details.builder[open] summary { margin-bottom: 12px; }
 .builder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
 .error { color: var(--bad); font-size: 13px; }
 
-/* Session view */
-.strip { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: start; }
-.panel .phase-name { font: 600 30px/1.1 var(--display); letter-spacing: .06em; margin: 0; text-transform: none; }
-.phase-sub { color: var(--muted); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
-.guidance { font: italic 500 clamp(19px, 2.1vw, 25px)/1.35 var(--voice); color: #e9eefb; max-width: 60ch; min-height: 2.7em; transition: opacity .9s ease; }
+/* Session view: instrument HUD */
+.hud { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr) 50px; grid-template-rows: minmax(520px, 64vh) auto; gap: 10px; }
+.hud-waves { grid-column: 1; grid-row: 1 / span 2; grid-template-rows: auto 1fr; }
+.hud-view { grid-column: 2; grid-row: 1; position: relative; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; min-height: 420px;
+  background: radial-gradient(55% 55% at 50% 52%, rgba(111,227,255,.08), transparent 70%), #04080a; }
+.hud-tools { grid-column: 3; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 6px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+.hud-console { grid-column: 2; grid-row: 2; }
+#brain3d { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+#brain3d:active { cursor: grabbing; }
+.brackets i { position: absolute; width: 28px; height: 28px; border: 0 solid var(--tick); pointer-events: none; }
+.brackets i:nth-child(1) { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
+.brackets i:nth-child(2) { top: 12px; right: 12px; border-width: 1px 1px 0 0; }
+.brackets i:nth-child(3) { bottom: 12px; left: 12px; border-width: 0 0 1px 1px; }
+.brackets i:nth-child(4) { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
+.view-caption { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); max-width: 70%; text-align: center; font: 500 12px/1.4 var(--mono); letter-spacing: .06em; color: var(--ink); pointer-events: none; }
+.view-phase { position: absolute; top: 46px; left: 30px; display: grid; gap: 4px; pointer-events: none; }
+.view-metric { position: absolute; top: 46px; right: 66px; display: grid; gap: 2px; text-align: right; pointer-events: none; }
+.view-metric .big { font: 600 30px/1 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.view-metric .lab, .view-band { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.view-band { position: absolute; left: 30px; bottom: 70px; pointer-events: none; }
+.gauge { position: absolute; right: 20px; top: 16%; bottom: 16%; width: 30px; display: grid; grid-template-rows: auto 1fr auto; justify-items: center; gap: 8px; font: 500 9px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); pointer-events: none; }
+.gauge-track { position: relative; width: 2px; background: linear-gradient(to top, var(--faint), var(--good)); }
+.gauge-track::before, .gauge-track::after { content: ""; position: absolute; left: -5px; width: 12px; height: 1px; background: var(--tick); }
+.gauge-track::before { top: 0; } .gauge-track::after { bottom: 0; }
+#gaugeThr { position: absolute; left: -7px; width: 16px; height: 1px; background: var(--amber); top: 50%; }
+#gaugePtr { position: absolute; left: 6px; width: 0; height: 0; border-style: solid; border-width: 6px 9px 6px 0; border-color: transparent var(--ink) transparent transparent; transform: translateY(50%); bottom: 50%; transition: bottom .35s ease, opacity .5s; }
+.panel .phase-name { font: 600 26px/1.1 var(--display); letter-spacing: .06em; margin: 0; text-transform: none; }
+.phase-name { font: 600 26px/1.1 var(--display); letter-spacing: .06em; margin: 0; }
+.phase-sub { color: var(--muted); font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.guidance { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(760px, calc(100% - 150px)); margin: 0; text-align: center;
+  font: italic 500 clamp(18px, 1.9vw, 23px)/1.35 var(--voice); color: #eef8fc; text-shadow: 0 2px 18px rgba(0,0,0,.8); transition: opacity .9s ease; pointer-events: none; }
 .guidance.fading { opacity: 0; }
-.session-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; justify-content: flex-end; }
-.vol { display: grid; gap: 5px; min-width: 140px; }
-#sessionArc { height: 74px; grid-column: 1 / -1; }
-.session-grid { display: grid; gap: 16px; }
-.grid-main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
-.grid-deck { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
-.brain-wrap { position: relative; }
-#brain { aspect-ratio: 1 / 1.02; max-height: 640px; }
-.bands { display: flex; flex-wrap: wrap; gap: 6px; }
-.legend { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font: 500 11px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
-.legend .ramp { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #0b1838, #1550a8, #17b9b0, #b9f070, #ffb547, #ff5d8f); }
-.brain-overlay { position: absolute; inset: 8px 8px auto auto; text-align: right; display: grid; gap: 2px; pointer-events: none; }
-.brain-overlay .big { font: 600 30px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
-.brain-overlay .lab { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
-.side-label { position: absolute; top: 50%; font: 600 11px var(--mono); letter-spacing: .3em; color: var(--faint); pointer-events: none; }
-.stack { display: grid; gap: 16px; align-content: start; min-width: 0; }
-.indices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.index { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; background: rgba(5,8,15,.35); }
+
+.wave-src { font: 500 10px var(--mono); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.wave-rows { display: grid; gap: 6px; align-content: start; }
+.wave { display: grid; grid-template-columns: 4px minmax(0, 1fr); gap: 9px; background: #070c0f; border: 1px solid var(--line); border-radius: 3px; padding: 6px 8px 6px 0; min-height: 0; }
+.wave::before { content: ""; background: var(--good); opacity: .3; border-radius: 0 2px 2px 0; }
+.wave.active { border-color: rgba(61,220,132,.35); }
+.wave.active::before { opacity: 1; box-shadow: 0 0 10px var(--good); }
+.wave-in { display: grid; gap: 3px; min-width: 0; }
+.wave-head { display: flex; justify-content: space-between; gap: 8px; font: 500 10.5px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.wave-head b { font-weight: 500; color: #b9cdd5; }
+.wave.active .wave-head b { color: var(--ink); }
+.wave canvas { height: 46px; }
+
+.tool { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; border-radius: 6px; background: transparent; border: 1px solid transparent; color: var(--muted); }
+.tool:hover { color: var(--ink); border-color: var(--line); }
+.tool[aria-pressed="true"] { color: var(--signal); border-color: rgba(111,227,255,.35); }
+.tool svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.tool-sep { width: 22px; height: 1px; background: var(--line); margin: 4px 0; }
+.tool.end { color: #ff8a8f; }
+
+.console-tabs { display: flex; flex-wrap: wrap; gap: 2px; border-bottom: 1px solid var(--line); }
+.console-tabs button { border: 0; border-radius: 3px 3px 0 0; background: transparent; color: var(--muted); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; padding: 8px 12px; }
+.console-tabs button[aria-selected="true"] { background: var(--panel-hi); color: var(--ink); box-shadow: inset 0 2px 0 var(--signal); }
+.pane { min-height: 200px; display: grid; gap: 10px; align-content: start; }
+.pane-session { grid-template-columns: minmax(200px, 250px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.session-side { display: grid; gap: 10px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat { border: 1px solid var(--line); border-radius: 3px; padding: 6px 9px; display: grid; gap: 1px; }
+.stat span { font: 500 9.5px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.stat b { font: 600 17px var(--display); font-variant-numeric: tabular-nums; }
+.phase-rows { display: grid; gap: 4px; max-height: 240px; overflow: auto; }
+.prow { display: grid; grid-template-columns: 10px minmax(0, 1.2fr) 72px minmax(70px, 1fr) 92px; gap: 10px; align-items: center; padding: 6px 10px; border: 1px solid var(--line); background: #091013; border-radius: 3px; font-size: 12.5px; }
+.prow .pdot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); }
+.prow.done .pdot { background: var(--good); }
+.prow.active { border-color: rgba(111,227,255,.45); background: #0c171b; }
+.prow.active .pdot { background: var(--signal); box-shadow: 0 0 10px var(--signal); }
+.prow .pname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prow .kind, .prow .st { font: 500 10px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.prow .st { text-align: right; font-variant-numeric: tabular-nums; }
+.prow .bar { height: 6px; background: #13202600; border: 1px solid var(--line); border-radius: 3px; overflow: hidden; }
+.prow .bar i { display: block; height: 100%; width: 0; background: var(--good); transition: width .3s linear; }
+.prow.active .bar i { background: linear-gradient(90deg, var(--good), var(--signal)); }
+#spectrum { height: 190px; }
+#traces { height: 240px; }
+#timeline { height: 180px; }
+#balance { height: 190px; }
+.pane-balance { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); align-items: center; }
+.indices { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.index { border: 1px solid var(--line); border-radius: 3px; padding: 10px 12px; display: grid; gap: 4px; background: #070c0f; }
 .index .name { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
 .index .val { font: 600 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
 .index canvas { height: 30px; }
 .index .desc { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
-#balance { height: 210px; }
 .asym { display: grid; gap: 6px; }
-.asym-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgba(79,184,255,.35), rgba(255,255,255,.06) 50%, rgba(255,93,143,.35)); }
+.asym-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgba(79,184,255,.35), rgba(255,255,255,.06) 50%, rgba(255,106,61,.35)); }
 .asym-bar i { position: absolute; top: -4px; width: 3px; height: 18px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 10px var(--ink); left: 50%; transition: left .4s ease; }
 .asym-scale { display: flex; justify-content: space-between; font: 500 10px var(--mono); color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
-#traces { height: 470px; }
-#spectrum { height: 200px; }
-#timeline { height: 150px; }
 .readouts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .readouts b { color: var(--ink); font-weight: 500; }
+.ctl { display: grid; gap: 5px; }
 
 /* Overlays */
 .overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgba(3,5,10,.72); backdrop-filter: blur(6px); }
@@ -195,16 +260,37 @@ details.builder[open] summary { margin-bottom: 12px; }
 .foot { color: var(--faint); font-size: 12px; max-width: 90ch; margin: 0; }
 
 @media (max-width: 1100px) {
-  .setup, .grid-main, .grid-deck { grid-template-columns: minmax(0, 1fr); }
+  .setup { grid-template-columns: minmax(0, 1fr); }
+  .title-center { display: none; }
+  .hud { grid-template-columns: minmax(0, 1fr) 50px; grid-template-rows: minmax(440px, 62vh) auto auto; }
+  .hud-view { grid-column: 1; grid-row: 1; }
+  .hud-tools { grid-column: 2; grid-row: 1; }
+  .hud-console { grid-column: 1 / -1; grid-row: 2; }
+  .hud-waves { grid-column: 1 / -1; grid-row: 3; }
+  .wave-rows { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+  .indices { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .wordmark { font-size: 24px; }
   .status { margin-left: 0; }
-  .strip { grid-template-columns: minmax(0, 1fr); }
-  .session-controls { justify-content: flex-start; }
+  .hud { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(400px, 70vh) auto auto auto; }
+  .hud-tools { grid-column: 1; grid-row: 2; flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .tool-sep { width: 1px; height: 22px; margin: 0 4px; }
+  .hud-console { grid-row: 3; }
+  .hud-waves { grid-row: 4; }
+  .pane-session, .pane-balance { grid-template-columns: minmax(0, 1fr); }
+  .prow { grid-template-columns: 10px minmax(0, 1fr) minmax(60px, 1fr) 80px; }
+  .prow .kind { display: none; }
   .indices { grid-template-columns: minmax(0, 1fr); }
-  #traces { height: 280px; }
-  .panel .phase-name { font-size: 24px; }
+  .gauge { display: none; }
+  .view-caption { max-width: calc(100% - 60px); font-size: 11px; }
+  .view-phase { top: 64px; left: 22px; }
+  .view-metric { top: 64px; }
+  .view-metric { right: 28px; }
+  .view-metric .big { font-size: 22px; }
+  .panel .phase-name, .phase-name { font-size: 20px; }
+  .guidance { width: calc(100% - 40px); font-size: 17px; }
+  .view-band { bottom: 96px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .asym-bar i, .guidance { transition: none; }
@@ -217,6 +303,7 @@ details.builder[open] summary { margin-bottom: 12px; }
       <h1 class="wordmark">NOVA</h1>
       <span class="tagline">Neurofeedback</span>
     </div>
+    <div class="title-center">Neurofeedback training<small>Research &amp; development</small></div>
     <div class="status" aria-live="polite">
       <span class="pill"><span class="dot" id="srcDot"></span><b id="srcText">Starting</b></span>
       <span class="pill" id="clockPill" hidden>T <b id="clock">00:00</b></span>
@@ -235,6 +322,7 @@ details.builder[open] summary { margin-bottom: 12px; }
           <button type="button" class="chip" data-cat="custom" aria-pressed="false">My programs</button>
         </div>
       </div>
+      <div class="setup-hero"><canvas id="setupBrain" aria-label="Rotating brain model"></canvas><span>Choose a program, then begin</span></div>
       <div class="cards" id="cards"></div>
       <details class="builder panel" id="builder">
         <summary>Build a custom program</summary>
@@ -301,73 +389,71 @@ details.builder[open] summary { margin-bottom: 12px; }
   </main>
 
   <!-- ============ SESSION ============ -->
-  <main id="sessionView" class="session-grid" hidden>
-    <section class="panel strip">
-      <div style="display:grid;gap:6px;min-width:0">
-        <span class="phase-sub" id="phaseSub">Phase 1</span>
-        <h2 class="phase-name" id="phaseName">Arrive</h2>
-        <div class="guidance" id="guidance"></div>
-      </div>
-      <div class="session-controls">
-        <div class="vol"><label class="eyebrow" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.7"></div>
-        <div class="field"><label for="scapeSwitch">Soundscape</label><select id="scapeSwitch"></select></div>
-        <button id="skipBtn" type="button">Next phase</button>
-        <button id="endBtn" type="button">End session</button>
-      </div>
-      <canvas id="sessionArc" aria-label="Session progress"></canvas>
+  <main id="sessionView" class="hud" hidden>
+    <aside class="panel hud-waves">
+      <div class="panel-head"><h2>Brain source activity</h2><span class="wave-src" id="waveSrc">Separated into wavelengths</span></div>
+      <div class="wave-rows" id="waveRows"></div>
+    </aside>
+
+    <section class="hud-view">
+      <canvas id="brain3d" aria-label="Rotating 3D brain coloured by live activity. Drag to turn it."></canvas>
+      <div class="brackets" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="view-caption" id="viewCaption">Analyzing live EEG…</div>
+      <div class="view-phase"><span class="phase-sub" id="phaseSub">Phase 1</span><h2 class="phase-name" id="phaseName">Arrive</h2></div>
+      <div class="view-metric"><span class="lab">Training metric</span><span class="big" id="metricBig">--</span><span class="lab" id="metricLabel">--</span></div>
+      <div class="gauge" aria-hidden="true"><span>Target</span><div class="gauge-track"><i id="gaugeThr"></i><b id="gaugePtr"></b></div><span>Search</span></div>
+      <div class="view-band" id="viewBand">Colour: alpha 8-12 Hz</div>
+      <p class="guidance" id="guidance"></p>
     </section>
 
-    <section class="grid-main">
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Cortical map</h2>
-          <span class="hint" id="mapHint">Relative alpha power, viewed from above</span>
-        </div>
-        <div class="bands" id="bandChips" role="group" aria-label="Frequency band shown on the map"></div>
-        <div class="brain-wrap">
-          <canvas id="brain" aria-label="Top-down brain map with activity heat gradient"></canvas>
-          <span class="side-label" style="left:2px">L</span>
-          <span class="side-label" style="right:2px">R</span>
-          <div class="brain-overlay">
-            <span class="lab">Training metric</span>
-            <span class="big" id="metricBig">--</span>
-            <span class="lab" id="metricLabel">--</span>
-          </div>
-        </div>
-        <div class="legend"><span id="legendLo">--</span><div class="ramp"></div><span id="legendHi">--</span></div>
-      </div>
-      <div class="stack">
-        <div class="panel">
-          <div class="panel-head"><h2>State indices</h2><span class="hint">Last 60 s</span></div>
-          <div class="indices" id="indices"></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Hemispheric balance</h2><span class="hint">Left vs right relative power</span></div>
-          <canvas id="balance" aria-label="Left versus right hemisphere power per band"></canvas>
-          <div class="asym">
-            <div class="readouts"><span>Frontal alpha asymmetry <b id="faa">--</b></span><span id="faaWhich" class="hint"></span></div>
-            <div class="asym-bar"><i id="faaMark"></i></div>
-            <div class="asym-scale"><span>Withdrawal</span><span>Balanced</span><span>Approach</span></div>
-          </div>
-        </div>
-      </div>
-    </section>
+    <nav class="hud-tools" aria-label="Session controls">
+      <button type="button" class="tool" id="toolMute" title="Mute sound" aria-label="Mute sound"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>
+      <button type="button" class="tool" id="toolBand" title="Change the rhythm shown on the brain" aria-label="Change the rhythm shown on the brain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12c2-6 4-6 6 0s4 6 6 0 4-6 6 0"/><path d="M2 19h20" opacity=".5"/></svg></button>
+      <button type="button" class="tool" id="toolRotate" title="Auto-rotate the brain" aria-label="Auto-rotate the brain"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4v5h-5"/></svg></button>
+      <span class="tool-sep" aria-hidden="true"></span>
+      <button type="button" class="tool" id="skipBtn" title="Next phase" aria-label="Next phase"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5l9 7-9 7V5z"/><path d="M18 5v14"/></svg></button>
+      <button type="button" class="tool end" id="endBtn" title="End session" aria-label="End session"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg></button>
+      <span class="tool-sep" aria-hidden="true"></span>
+      <button type="button" class="tool" id="toolFull" title="Full screen" aria-label="Full screen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+    </nav>
 
-    <section class="grid-deck">
-      <div class="panel">
-        <div class="panel-head"><h2>Signal</h2><span class="hint">Band-passed EEG, 6 s window, µV</span></div>
-        <canvas id="traces" aria-label="Scrolling EEG traces"></canvas>
+    <section class="panel hud-console">
+      <div class="console-tabs" role="tablist" id="consoleTabs">
+        <button type="button" role="tab" data-tab="session" aria-selected="true">Session</button>
+        <button type="button" role="tab" data-tab="training" aria-selected="false">Training</button>
+        <button type="button" role="tab" data-tab="spectrum" aria-selected="false">Spectrum</button>
+        <button type="button" role="tab" data-tab="channels" aria-selected="false">Channels</button>
+        <button type="button" role="tab" data-tab="indices" aria-selected="false">Indices</button>
+        <button type="button" role="tab" data-tab="balance" aria-selected="false">Balance</button>
       </div>
-      <div class="stack">
-        <div class="panel">
-          <div class="panel-head"><h2>Spectrum</h2><span class="hint">Mean power, 1-45 Hz, log scale</span></div>
-          <canvas id="spectrum" aria-label="Power spectrum"></canvas>
-          <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>Binaural <b id="binText">off</b></span></div>
+      <div class="pane pane-session" data-pane="session">
+        <div class="session-side">
+          <div class="stats">
+            <div class="stat"><span>Elapsed</span><b id="statTime">00:00</b></div>
+            <div class="stat"><span>On target</span><b id="statReward">--</b></div>
+          </div>
+          <div class="ctl"><label class="eyebrow" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.7"></div>
+          <div class="ctl"><label class="eyebrow" for="scapeSwitch">Soundscape</label><select id="scapeSwitch"></select></div>
         </div>
-        <div class="panel">
-          <div class="panel-head"><h2>Training</h2><span class="hint">Metric vs adaptive threshold</span></div>
-          <canvas id="timeline" aria-label="Training metric over time with threshold"></canvas>
-          <div class="readouts"><span>Rewarded <b id="rewardPct">--</b></span><span>Threshold <b id="thrVal">--</b></span><span>Artifacts <b id="artPct">--</b></span></div>
+        <div class="phase-rows" id="phaseRows" aria-label="Session phases"></div>
+      </div>
+      <div class="pane" data-pane="training" hidden>
+        <canvas id="timeline" aria-label="Training metric over time with threshold"></canvas>
+        <div class="readouts"><span>Rewarded <b id="rewardPct">--</b></span><span>Threshold <b id="thrVal">--</b></span><span>Artifacts <b id="artPct">--</b></span></div>
+      </div>
+      <div class="pane" data-pane="spectrum" hidden>
+        <canvas id="spectrum" aria-label="Power spectrum"></canvas>
+        <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>Binaural <b id="binText">off</b></span></div>
+      </div>
+      <div class="pane" data-pane="channels" hidden><canvas id="traces" aria-label="EEG traces per channel"></canvas></div>
+      <div class="pane" data-pane="indices" hidden><div class="indices" id="indices"></div></div>
+      <div class="pane pane-balance" data-pane="balance" hidden>
+        <canvas id="balance" aria-label="Left versus right hemisphere power per band"></canvas>
+        <div class="asym">
+          <div class="readouts"><span>Frontal alpha asymmetry <b id="faa">--</b></span></div>
+          <span id="faaWhich" class="hint"></span>
+          <div class="asym-bar"><i id="faaMark"></i></div>
+          <div class="asym-scale"><span>Withdrawal</span><span>Balanced</span><span>Approach</span></div>
         </div>
       </div>
     </section>
@@ -934,6 +1020,9 @@ function resetChannels(names, fs) {
   app.traceIdx = chosen.slice(0, 8);
   app.hist = { metric: [], thr: [], reward: [], artifact: [] }; app.idx = { calm: [], focus: [], drowsy: [], tension: [] };
   app.faa = undefined; app.spectrum = null;
+  app.waveIdx = names.map((_, i) => i);
+  resetWaves(fs);
+  if (app.cloud) app.cloud.setChannels(names);
 }
 function pushHist(arr, v) { arr.push(v); if (arr.length > HISTORY) arr.shift(); }
 
@@ -1021,123 +1110,191 @@ function drawArc(c, phases, progressT) {
   }
 }
 
-/* Brain */
-function hemiPoints(side) {
-  const pts = [];
-  for (let i = 0; i < 160; i++) {
-    const t = (i / 160) * Math.PI * 2; const u = Math.cos(t), v = Math.sin(t);
-    const su = Math.sign(u) * Math.abs(u) ** (2 / 2.5), sv = Math.sign(v) * Math.abs(v) ** (2 / 2.2);
-    const taper = 1 - 0.16 * Math.max(sv, 0) ** 2 + 0.05 * Math.max(-sv, 0);
-    pts.push([side * (0.5 + 0.465 * su * taper), sv * (sv > 0 ? 1.0 : 1.03)]);
+/* 3D point-cloud brain. Points sit on wrinkled cortical shells; each one takes its colour
+   from the nearest electrodes, so live activity glows where it is on the head. */
+const CLOUD = (() => {
+  const r = mulberry32(11);
+  const g = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const unit = () => { const a = g(), b = g(), c = g(), n = Math.hypot(a, b, c) || 1; return [a / n, b / n, c / n]; };
+  const fold = (x, y, z) => Math.sin(9 * x + 2.5 * Math.sin(6 * z)) * Math.sin(8 * z + 2 * Math.sin(7 * y + 3 * x));
+  const X = [], Y = [], Z = [], R = [];
+  function shell(c, rad, n, region, disp, keep) {
+    for (let k = 0, made = 0; made < n && k < n * 5; k++) {
+      const [u, v, w] = unit(); if (keep && !keep(u, v, w)) continue;
+      const d = 1 + disp(u, v, w);
+      X.push(c[0] + rad[0] * u * d); Y.push(c[1] + rad[1] * v * d); Z.push(c[2] + rad[2] * w * d); R.push(region); made++;
+    }
   }
-  return pts;
-}
-const HEMIS = [hemiPoints(-1), hemiPoints(1)];
-function insideHemi(x, y, side) { const u = (x - side * 0.5) / 0.465, v = y / 1.02; return Math.abs(u) ** 2.5 + Math.abs(v) ** 2.2 <= 1; }
-const SULCI = (() => {
-  const r = mulberry32(7); const lines = [];
   for (const side of [-1, 1]) {
-    for (let i = 0; i < 90; i++) {
-      let x, y; do { x = side * (0.06 + r() * 0.88); y = -0.95 + r() * 1.9; } while (!insideHemi(x, y, side));
-      let a = Math.PI / 2 + (r() - 0.5) * 1.2 + side * Math.abs(x) * 0.9; const pts = [[x, y]]; const steps = 5 + Math.floor(r() * 8);
-      let turn = (r() - 0.5) * 0.5;
-      for (let s = 0; s < steps; s++) {
-        turn = turn * 0.7 + (r() - 0.5) * 0.45; a += turn; const nx = x + Math.cos(a) * 0.032, ny = y + Math.sin(a) * 0.032;
-        if (!insideHemi(nx, ny, side) || Math.abs(nx) < 0.07) break; x = nx; y = ny; pts.push([x, y]);
-      }
-      if (pts.length > 3) lines.push({ pts, w: 1 });
-    }
-    const central = []; for (let s = 0; s <= 14; s++) { const f = s / 14; central.push([side * (0.08 + 0.8 * f), 0.12 - 0.22 * f + 0.03 * Math.sin(f * 14)]); }
-    lines.push({ pts: central, w: 1.8 });
-    const lateral = []; for (let s = 0; s <= 10; s++) { const f = s / 10; lateral.push([side * (0.92 - 0.25 * f), 0.32 - 0.62 * f + 0.02 * Math.sin(f * 9)]); }
-    lines.push({ pts: lateral, w: 1.6 });
+    shell([0, side * 0.35, 0.08], [1.0, 0.37, 0.72], 2600, 0, (u, v, w) => 0.05 * fold(u, v * side, w), (u, v, w) => w > -0.62);
+    shell([0.14, side * 0.43, -0.36], [0.56, 0.23, 0.3], 520, 0, (u, v, w) => 0.06 * fold(u * 1.3, v, w), (u, v, w) => w < 0.35 && side * v > -0.2);
+    shell([-0.7, side * 0.19, -0.5], [0.28, 0.22, 0.15], 380, 1, (u, v, w) => 0.035 * Math.sin(48 * w + 4 * u), (u, v, w) => w < 0.6);
   }
-  return lines;
+  for (let i = 0; i < 240; i++) { const t = r(), a = r() * Math.PI * 2; X.push(-0.3 + 0.08 * Math.cos(a) - 0.15 * t); Y.push(0.08 * Math.sin(a)); Z.push(-0.45 - 0.5 * t); R.push(2); }
+  for (let i = 0; i < 520; i++) { const side = r() < 0.5 ? -1 : 1, [u, v, w] = unit(), k = 0.82 * Math.cbrt(r()); X.push(u * k); Y.push(side * 0.35 + 0.37 * v * k); Z.push(0.08 + 0.72 * w * k * (w < -0.6 ? 0.5 : 1)); R.push(3); }
+  const n = X.length, xs = Float32Array.from(X), ys = Float32Array.from(Y), zs = Float32Array.from(Z), region = Uint8Array.from(R);
+  // Wireframe: link each surface point to its two nearest neighbours.
+  const cell = 0.07, grid = new Map(), key = (a, b, c) => a * 73856093 ^ b * 19349663 ^ c * 83492791;
+  for (let i = 0; i < n; i++) { if (region[i] === 3) continue; const k = key(Math.floor(xs[i] / cell), Math.floor(ys[i] / cell), Math.floor(zs[i] / cell)); let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(i); }
+  const seg = [];
+  for (let i = 0; i < n; i++) {
+    if (region[i] === 3) continue;
+    const cx = Math.floor(xs[i] / cell), cy = Math.floor(ys[i] / cell), cz = Math.floor(zs[i] / cell);
+    let b1 = -1, b2 = -1, d1 = cell * cell, d2 = cell * cell;
+    for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
+      const list = grid.get(key(cx + a, cy + b, cz + c)); if (!list) continue;
+      for (const j of list) { if (j <= i) continue; const dx = xs[i] - xs[j], dy = ys[i] - ys[j], dz = zs[i] - zs[j], d = dx * dx + dy * dy + dz * dz;
+        if (d < d1) { d2 = d1; b2 = b1; d1 = d; b1 = j; } else if (d < d2) { d2 = d; b2 = j; } }
+    }
+    if (b1 >= 0) seg.push(i, b1); if (b2 >= 0) seg.push(i, b2);
+  }
+  return { n, xs, ys, zs, region, seg: Uint32Array.from(seg) };
 })();
-const heat = document.createElement("canvas"); heat.width = 132; heat.height = 140;
-const heatCtx = heat.getContext("2d"); const heatImg = heatCtx.createImageData(heat.width, heat.height);
-let mapRange = [0, 1];
-function drawBrain(now) {
-  const c = canvases.brain; const { ctx, w, h } = c; if (!w) return;
-  ctx.clearRect(0, 0, w, h);
-  const s = Math.min(w / 2.25, h / 2.35), cx = w / 2, cy = h / 2 + s * 0.02;
-  const X = x => cx + x * s, Y = y => cy - y * s;
-  const key = app.mapBand;
-  app.names.forEach((_, i) => { app.display[i] = lerp(app.display[i], app.rel[i]?.[key] ?? 0, reduceMotion ? 1 : 0.12); });
-  const vals = app.display; const lo = Math.min(...vals), hi = Math.max(...vals);
-  const span = Math.max(hi - lo, (lo + hi) * 0.15, 1e-4);
-  mapRange = [lerp(mapRange[0], lo, 0.1), lerp(mapRange[1], lo + span, 0.1)];
-  const W = heat.width, H = heat.height, d = heatImg.data;
-  for (let py = 0; py < H; py++) {
-    const y = 1.12 - (py / (H - 1)) * 2.24;
-    for (let px = 0; px < W; px++) {
-      const x = -1.06 + (px / (W - 1)) * 2.12; let num = 0, den = 0, exact = -1;
-      for (let i = 0; i < vals.length; i++) {
-        const [ex, ey] = app.pos[i]; const dx = x - ex * 0.9, dy = y - ey * 0.94; const d2 = dx * dx + dy * dy;
-        if (d2 < 1e-6) { exact = i; break; }
-        const wgt = 1 / (d2 * Math.sqrt(d2)); num += wgt * vals[i]; den += wgt;
-      }
-      const v = exact >= 0 ? vals[exact] : num / den;
-      const t = clamp((v - mapRange[0]) / (mapRange[1] - mapRange[0] || 1), 0, 1);
-      const li = Math.round(t * 255) * 3, o = (py * W + px) * 4;
-      d[o] = LUT[li]; d[o + 1] = LUT[li + 1]; d[o + 2] = LUT[li + 2]; d[o + 3] = 255;
+// Ice blue at rest, white as activity rises, orange-red at the hottest sites.
+const CLOUD_RGB = (() => {
+  const st = [[0, "#0b2a48"], [0.32, "#1b74b8"], [0.52, "#56d6ff"], [0.68, "#dff8ff"], [0.8, "#ffc27a"], [0.9, "#ff7a3d"], [1, "#ff3b2f"]].map(([t, c]) => [t, hexRgb(c)]);
+  return Array.from({ length: 64 }, (_, i) => { const t = i / 63; let k = 0; while (k < st.length - 2 && t > st[k + 1][0]) k++;
+    const f = (t - st[k][0]) / (st[k + 1][0] - st[k][0]); return st[k][1].map((c, j) => Math.round(lerp(c, st[k + 1][1][j], f))); });
+})();
+const DEPTH_ALPHA = [1, 0.8, 0.52, 0.28];
+const CLOUD_FILL = CLOUD_RGB.flatMap(([r, g, b]) => DEPTH_ALPHA.map(a => `rgba(${r},${g},${b},${a})`));
+const HOT = (() => { const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d");
+  const gr = x.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, "rgba(255,150,70,1)"); gr.addColorStop(0.35, "rgba(255,90,45,.45)"); gr.addColorStop(1, "rgba(255,60,40,0)");
+  x.fillStyle = gr; x.fillRect(0, 0, 64, 64); return c; })();
+function electrode3d([ex, ey]) { return [ey * 0.92, ex * 0.66, 0.12 + 0.62 * Math.sqrt(Math.max(0, 1 - (ex * ex + ey * ey) * 0.85))]; }
+
+class BrainCloud {
+  constructor(canvasId) {
+    const n = CLOUD.n; this.id = canvasId;
+    this.yaw = -0.55; this.pitch = 0.3; this.auto = !reduceMotion; this.resumeAt = 0; this.drag = null;
+    this.sx = new Float32Array(n); this.sy = new Float32Array(n); this.sz = new Float32Array(n); this.ci = new Uint8Array(n); this.db = new Uint8Array(n);
+    this.buckets = Array.from({ length: 256 }, () => []); this.wires = Array.from({ length: 16 }, () => []);
+    this.k = 0; this.wi = new Int16Array(n * 4); this.ww = new Float32Array(n * 4);
+    const el = $(canvasId);
+    el.addEventListener("pointerdown", e => { this.drag = { x: e.clientX, y: e.clientY, yaw: this.yaw, pitch: this.pitch }; el.setPointerCapture(e.pointerId); });
+    el.addEventListener("pointermove", e => { if (!this.drag) return; this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.008; this.pitch = clamp(this.drag.pitch + (e.clientY - this.drag.y) * 0.006, -0.6, 1.1); });
+    const end = () => { this.drag = null; this.resumeAt = performance.now() + 5000; };
+    el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+  }
+  setChannels(names) {
+    const E = names.map((nm, i) => electrode3d(positionFor(nm, i, names.length)));
+    const C = CLOUD; this.k = Math.min(4, E.length);
+    for (let i = 0; i < C.n; i++) {
+      if (C.region[i] !== 0 || !this.k) continue;
+      const d = E.map(([x, y, z], j) => [(C.xs[i] - x) ** 2 + (C.ys[i] - y) ** 2 + (C.zs[i] - z) ** 2, j]).sort((a, b) => a[0] - b[0]).slice(0, this.k);
+      let sum = 0; d.forEach(([dd], j) => { const w = 1 / (dd + 0.012); this.ww[i * 4 + j] = w; sum += w; });
+      d.forEach(([, e], j) => { this.wi[i * 4 + j] = e; this.ww[i * 4 + j] /= sum; });
     }
   }
-  heatCtx.putImageData(heatImg, 0, 0);
-  const u = app.u;
-  c.glow = lerp(c.glow || 0, u && u.reward ? 1 : 0, reduceMotion ? 1 : 0.08);
-  if (c.glow > 0.02) {
-    const g = ctx.createRadialGradient(cx, cy, s * 0.6, cx, cy, s * 1.25);
-    g.addColorStop(0, `rgba(62,230,212,${0.22 * c.glow})`); g.addColorStop(1, "rgba(62,230,212,0)");
-    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-  }
-  // Breathing guide during interludes: a ring swelling at six breaths per minute, in time with the pad.
-  if (u && u.phase === "rest") {
-    const br = reduceMotion ? 0.5 : (1 - Math.cos(2 * Math.PI * now / 10000)) / 2;
-    ctx.beginPath(); ctx.arc(cx, cy, s * (0.95 + 0.22 * br), 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(157,140,255,${0.25 + 0.35 * br})`; ctx.lineWidth = 2 + 6 * br; ctx.stroke();
-  }
-  for (const pts of HEMIS) {
-    ctx.save();
-    ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
-    ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = 24; ctx.fillStyle = "#0b1838"; ctx.fill(); ctx.shadowBlur = 0;
-    ctx.clip();
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
-    ctx.drawImage(heat, X(-1.06), Y(1.12), 2.12 * s, 2.24 * s);
-    const left = pts === HEMIS[0];
-    const shade = ctx.createRadialGradient(X(left ? -0.45 : 0.55), Y(0.25), s * 0.1, X(left ? -0.5 : 0.5), Y(0), s * 1.05);
-    shade.addColorStop(0, "rgba(255,255,255,0.10)"); shade.addColorStop(0.55, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,0.55)");
-    ctx.fillStyle = shade; ctx.fillRect(0, 0, w, h);
-    ctx.lineCap = "round"; ctx.lineJoin = "round";
-    for (const { pts: L, w: lw } of SULCI) {
-      ctx.beginPath(); ctx.moveTo(X(L[0][0]), Y(L[0][1]));
-      for (let i = 1; i < L.length - 1; i++) { const mx = (L[i][0] + L[i + 1][0]) / 2, my = (L[i][1] + L[i + 1][1]) / 2; ctx.quadraticCurveTo(X(L[i][0]), Y(L[i][1]), X(mx), Y(my)); }
-      ctx.lineTo(X(L[L.length - 1][0]), Y(L[L.length - 1][1]));
-      ctx.strokeStyle = "rgba(3,6,14,0.30)"; ctx.lineWidth = Math.max(1.2, s * 0.011) * lw; ctx.stroke();
-      ctx.save(); ctx.translate(-0.8, -0.8); ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.lineWidth = Math.max(0.5, s * 0.0035) * lw; ctx.stroke(); ctx.restore();
+  draw(c, now, dt, tvals, boost = 0) {
+    const { ctx, w, h } = c; if (!w || !h) return;
+    if (this.auto && !this.drag && now > this.resumeAt) this.yaw += dt * 0.16;
+    ctx.clearRect(0, 0, w, h);
+    const s = Math.min(w * 0.34, h * 0.46), cx = w / 2, cy = h / 2 + s * 0.06;
+    const cyw = Math.cos(this.yaw), syw = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
+    const haze = ctx.createRadialGradient(cx, cy, s * 0.2, cx, cy, s * 1.5);
+    haze.addColorStop(0, `rgba(111,227,255,${0.07 + 0.08 * boost})`); haze.addColorStop(1, "rgba(111,227,255,0)");
+    ctx.fillStyle = haze; ctx.fillRect(0, 0, w, h);
+    const C = CLOUD, n = C.n, step = w < 520 ? 2 : 1;
+    for (const b of this.buckets) b.length = 0;
+    for (const b of this.wires) b.length = 0;
+    for (let i = 0; i < n; i++) {
+      const x = C.xs[i], y = C.ys[i], z = C.zs[i];
+      const X = x * cyw - y * syw, Yd = x * syw + y * cyw, Z = z * cp - Yd * sp, D = z * sp + Yd * cp;
+      const p = 2.8 / (2.8 + D);
+      this.sx[i] = cx + X * s * p; this.sy[i] = cy - Z * s * p; this.sz[i] = p;
+      const reg = C.region[i]; let t;
+      if (reg === 0) {
+        if (this.k && tvals) { t = 0; for (let j = 0; j < this.k; j++) t += this.ww[i * 4 + j] * tvals[this.wi[i * 4 + j]]; }
+        else t = 0.42 + 0.32 * Math.sin(2.2 * x + now * 0.0005) * Math.cos(1.8 * z - now * 0.00035) + 0.18 * Math.max(0, Math.sin(3 * y + 2 * x + now * 0.0003));
+      } else t = reg === 3 ? 0.3 : 0.4;
+      const ci = this.ci[i] = clamp(((0.2 + 0.78 * Math.pow(clamp(t, 0, 1), 2.2)) * 63) | 0, 0, 63);
+      const db = this.db[i] = D < -0.35 ? 0 : D < 0.1 ? 1 : D < 0.5 ? 2 : 3;
+      if (i % step === 0) this.buckets[ci * 4 + db].push(i);
     }
-    ctx.restore();
-    ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
-    const rim = ctx.createLinearGradient(0, Y(1), 0, Y(-1));
-    rim.addColorStop(0, `rgba(62,230,212,${0.45 + 0.4 * c.glow})`); rim.addColorStop(1, `rgba(255,93,143,${0.35 + 0.3 * c.glow})`);
-    ctx.strokeStyle = rim; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.globalCompositeOperation = "lighter";
+    const seg = C.seg;
+    for (let k = 0; k < seg.length; k += 2 * step) { const a = seg[k]; this.wires[(this.ci[a] >> 3) * 2 + (this.db[a] < 2 ? 0 : 1)].push(a, seg[k + 1]); }
+    ctx.lineWidth = 0.6;
+    this.wires.forEach((list, gidx) => {
+      if (!list.length) return;
+      const [r, g, b] = CLOUD_RGB[(gidx >> 1) * 8 + 4]; ctx.strokeStyle = `rgba(${r},${g},${b},${(gidx & 1 ? 0.1 : 0.26) * (1 + 0.6 * boost)})`;
+      ctx.beginPath(); for (let k = 0; k < list.length; k += 2) { ctx.moveTo(this.sx[list[k]], this.sy[list[k]]); ctx.lineTo(this.sx[list[k + 1]], this.sy[list[k + 1]]); } ctx.stroke();
+    });
+    for (let k = 0; k < 256; k++) {
+      const list = this.buckets[k]; if (!list.length) continue;
+      ctx.fillStyle = CLOUD_FILL[k];
+      for (const i of list) { const z = 0.9 + 1.4 * this.sz[i]; ctx.fillRect(this.sx[i] - z / 2, this.sy[i] - z / 2, z, z); }
+    }
+    for (let i = 0; i < n; i += 3) {
+      const ci = this.ci[i]; if (ci < 52 || C.region[i] !== 0) continue;
+      ctx.globalAlpha = ((ci - 51) / 12) * (this.db[i] < 2 ? 0.26 : 0.1);
+      const rr = 13 * this.sz[i] * (s / 220); ctx.drawImage(HOT, this.sx[i] - rr, this.sy[i] - rr, 2 * rr, 2 * rr);
+    }
+    ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   }
-  ctx.strokeStyle = FAINT; ctx.lineWidth = 1.2; ctx.beginPath();
-  ctx.moveTo(X(-0.07), Y(1.05)); ctx.lineTo(X(0), Y(1.13)); ctx.lineTo(X(0.07), Y(1.05)); ctx.stroke();
-  const pulse = reduceMotion ? 0 : (Math.sin(now / 420) + 1) / 2;
-  ctx.font = `500 ${Math.max(9, s * 0.045)}px "IBM Plex Mono", ui-monospace, monospace`;
-  ctx.textAlign = "center"; ctx.textBaseline = "top";
-  app.pos.forEach(([ex, ey], i) => {
-    const x = X(ex * 0.9), y = Y(ey * 0.94);
-    const t = clamp((vals[i] - mapRange[0]) / (mapRange[1] - mapRange[0] || 1), 0, 1);
-    ctx.beginPath(); ctx.arc(x, y, 3.2 + t * 2.4 + pulse * t * 1.2, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(5,8,15,0.75)"; ctx.fill();
-    ctx.lineWidth = 1.4; ctx.strokeStyle = `rgba(220,230,247,${0.55 + 0.45 * t})`; ctx.stroke();
-    ctx.fillStyle = "rgba(220,230,247,0.82)"; ctx.fillText(app.names[i], x, y + 7);
-  });
-  $("legendLo").textContent = (mapRange[0] * 100).toFixed(1) + "%";
-  $("legendHi").textContent = (mapRange[1] * 100).toFixed(1) + "%";
 }
+
+/* Brain rhythms separated into wavelengths, from the training sites. */
+const WAVE_ROWS = [
+  { key: "raw", name: "Overall wave", lo: 1, hi: 40 },
+  { key: "gamma", name: "Gamma", lo: 30, hi: 45 },
+  { key: "beta", name: "Beta", lo: 15, hi: 30 },
+  { key: "smr", name: "SMR", lo: 12, hi: 15 },
+  { key: "alpha", name: "Alpha", lo: 8, hi: 12 },
+  { key: "theta", name: "Theta", lo: 4, hi: 8 },
+  { key: "delta", name: "Delta", lo: 1, hi: 4 },
+];
+class Biquad {
+  constructor(fs, lo, hi) {
+    const f0 = Math.sqrt(lo * hi), Q = f0 / (hi - lo), w0 = 2 * Math.PI * Math.min(f0, fs * 0.45) / fs, al = Math.sin(w0) / (2 * Q), a0 = 1 + al;
+    this.b0 = al / a0; this.b2 = -al / a0; this.a1 = -2 * Math.cos(w0) / a0; this.a2 = (1 - al) / a0; this.x1 = this.x2 = this.y1 = this.y2 = 0;
+  }
+  process(x) { const y = this.b0 * x + this.b2 * this.x2 - this.a1 * this.y1 - this.a2 * this.y2; this.x2 = this.x1; this.x1 = x; this.y2 = this.y1; this.y1 = y; return y; }
+}
+function resetWaves(fs) {
+  app.waves = WAVE_ROWS.map(row => ({ ...row, f1: new Biquad(fs, row.lo, Math.min(row.hi, fs * 0.45)), f2: new Biquad(fs, row.lo, Math.min(row.hi, fs * 0.45)), ring: new Ring(Math.round(fs * 6)), scale: 10 }));
+  $("waveRows").innerHTML = app.waves.map(w => `<div class="wave" data-key="${w.key}"><div class="wave-in"><div class="wave-head"><b>${w.name} (${w.lo} – ${w.hi} Hz)</b><span id="wv-${w.key}">--</span></div><canvas id="wc-${w.key}" aria-hidden="true"></canvas></div></div>`).join("");
+  app.waves.forEach(w => bindCanvas(`wc-${w.key}`));
+}
+function setWaveSource(protoName) {
+  const spec = app.session && app.session.program.protocols[protoName];
+  let sites = spec ? (spec.kind === "asymmetry" ? (FRONTAL_PAIRS.find(([l, r]) => app.names.includes(l) && app.names.includes(r)) || []) : spec.sites || []) : [];
+  let idx = sites.map(s => app.names.indexOf(s)).filter(i => i >= 0);
+  if (!idx.length) { idx = app.names.map((_, i) => i); sites = ["all channels"]; }
+  app.waveIdx = idx;
+  $("waveSrc").textContent = `From ${idx.length < app.names.length ? sites.filter(s => app.names.includes(s)).join(" · ") : "all channels"}`;
+  const reward = spec ? spec.reward : null, ratio = spec ? spec.ratio_over : null;
+  document.querySelectorAll(".wave").forEach(el => el.classList.toggle("active", el.dataset.key === reward || el.dataset.key === ratio || (reward === "hibeta" && el.dataset.key === "beta")));
+}
+function ingest(chunk) {
+  const n = chunk[0] ? chunk[0].length : 0;
+  chunk.forEach((ch, c) => { const r = app.rings[c]; if (r) for (const v of ch) r.push(v); });
+  const idx = app.waveIdx || []; if (!idx.length || !app.waves) return;
+  for (let i = 0; i < n; i++) {
+    let s = 0; for (const c of idx) s += chunk[c][i]; s /= idx.length;
+    for (const w of app.waves) w.ring.push(w.f2.process(w.f1.process(s)));
+  }
+}
+function drawWaves() {
+  if (!app.waves) return;
+  for (const wv of app.waves) {
+    const c = canvases[`wc-${wv.key}`]; if (!c) continue; const { ctx, w, h } = c; if (!w || !h) continue;
+    const x = wv.ring.last(Math.round(app.fs * 4)); ctx.clearRect(0, 0, w, h); if (x.length < 2) continue;
+    let peak = 0, ss = 0; for (const v of x) { peak = Math.max(peak, Math.abs(v)); ss += v * v; }
+    wv.scale = lerp(wv.scale, Math.max(peak, 1), 0.05);
+    const mid = h / 2, k = (h * 0.44) / wv.scale, active = c.el.closest(".wave").classList.contains("active");
+    ctx.strokeStyle = "rgba(61,90,100,0.35)"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+    const grad = ctx.createLinearGradient(0, 0, w, 0);
+    grad.addColorStop(0, active ? "rgba(111,227,255,.25)" : "rgba(160,200,212,.15)"); grad.addColorStop(1, active ? "#dff8ff" : "rgba(190,215,224,.85)");
+    ctx.strokeStyle = grad; ctx.lineWidth = active ? 1.5 : 1.1; ctx.beginPath();
+    const N = Math.round(app.fs * 4);
+    for (let i = 0; i < x.length; i++) { const px = w * (i + N - x.length) / N, py = mid - x[i] * k; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.stroke();
+    const el = $(`wv-${wv.key}`); if (el) el.textContent = `${Math.sqrt(ss / x.length).toFixed(1)} µV`;
+  }
+}
+
 function drawTraces() {
   const c = canvases.traces; const { ctx, w, h } = c; if (!w || !app.rings.length) return;
   ctx.clearRect(0, 0, w, h);
@@ -1267,23 +1424,23 @@ function drawIndices() {
     ctx.beginPath(); arr.forEach((v, i) => (i ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v)))); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5; ctx.stroke();
   });
 }
-function redrawPanels() {
-  drawSpectrum(); drawTimeline(); drawBalance(); drawIndices();
-  if (app.session) drawArc(canvases.sessionArc, app.session.program.phases, plannedTime());
+// Per-electrode 0..1 values for the brain colouring, smoothed and normalised across the head.
+let mapRange = [0, 1];
+function brainValues() {
+  const key = app.mapBand;
+  app.names.forEach((_, i) => { app.display[i] = lerp(app.display[i], app.rel[i]?.[key] ?? 0, reduceMotion ? 1 : 0.1); });
+  const vals = app.display; if (!vals.length) return null;
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = Math.max(hi - lo, (lo + hi) * 0.15, 1e-4);
+  mapRange = [lerp(mapRange[0], lo, 0.08), lerp(mapRange[1], lo + span, 0.08)];
+  return vals.map(v => clamp((v - mapRange[0]) / (mapRange[1] - mapRange[0] || 1), 0, 1));
 }
-// Position on the planned arc: start of the current phase plus time spent in it (skips jump ahead).
-function plannedTime() {
-  const u = app.u; if (!u || !app.session) return 0;
-  const phases = app.session.program.phases;
-  let t = 0; for (let i = 0; i < Math.min(u.phase_index, phases.length); i++) t += phases[i].minutes * 60;
-  return t + Math.min(u.phase_elapsed, u.phase_duration);
-}
+function redrawPanels() { drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); }
 
 /* =====================================================================
    Session flow
    ===================================================================== */
 function onUpdate(u) {
-  if (u.samples) u.samples.forEach((ch, c) => { const r = app.rings[c]; if (r) for (const v of ch) r.push(v); });
+  if (u.samples) ingest(u.samples);
   const prev = app.u; app.u = u;
   const ok = u.samples ? analyse() : true; // demo sessions analyse before ticking
   if (!prev || prev.phase_index !== u.phase_index) showPhase(u);
@@ -1304,12 +1461,37 @@ function onUpdate(u) {
   $("iaf").textContent = Number.isFinite(app.iaf) ? app.iaf.toFixed(1) + " Hz" : "--";
   $("binText").textContent = u.binaural ? `${u.binaural} Hz beat` : "off";
   $("phaseSub").textContent = `Phase ${u.phase_index + 1} of ${u.phase_count} · ${fmtTime(u.phase_duration - u.phase_elapsed)} left`;
+  $("statTime").textContent = fmtTime(u.t);
+  $("statReward").textContent = (u.reward_fraction * 100).toFixed(0) + "%";
+  const training = u.phase === "training";
+  $("gaugePtr").style.bottom = `${clamp(u.intensity ?? 0, 0, 1) * 100}%`; $("gaugePtr").style.opacity = training ? 1 : 0.3;
+  $("viewCaption").textContent = `Analyzing ${app.runner ? "demo signal" : "live EEG"} · ` + (training
+    ? `training ${u.metric_label} ${u.direction > 0 ? "up" : "down"}`
+    : { baseline: "measuring your resting levels", rest: "breathing interlude", cooldown: "integrating" }[u.phase]);
+  updatePhaseRows(u);
+}
+const KIND_LABEL = { baseline: "Calibrate", training: "Train", rest: "Breathe", cooldown: "Integrate" };
+function buildPhaseRows(phases) {
+  $("phaseRows").innerHTML = phases.map((p, i) => `<div class="prow" data-i="${i}"><span class="pdot"></span><span class="pname">${esc(p.name)}</span>
+    <span class="kind">${KIND_LABEL[p.kind]}</span><span class="bar"><i></i></span><span class="st">${fmtTime(p.minutes * 60)}</span></div>`).join("");
+}
+function updatePhaseRows(u) {
+  document.querySelectorAll("#phaseRows .prow").forEach((row, i) => {
+    const done = i < u.phase_index, active = i === u.phase_index;
+    row.className = `prow${done ? " done" : active ? " active" : ""}`;
+    row.querySelector(".bar i").style.width = done ? "100%" : active ? `${clamp(u.phase_elapsed / u.phase_duration, 0, 1) * 100}%` : "0%";
+    if (done) row.querySelector(".st").textContent = "Complete";
+    else if (active) row.querySelector(".st").textContent = `${fmtTime(u.phase_duration - u.phase_elapsed)} left`;
+  });
+  const act = document.querySelector("#phaseRows .prow.active");
+  if (act && u.phase_elapsed < 1) act.scrollIntoView({ block: "nearest", behavior: reduceMotion ? "auto" : "smooth" });
 }
 function showPhase(u) {
   $("phaseName").textContent = u.phase_name;
   const g = $("guidance");
   if (reduceMotion) { g.textContent = u.guidance || ""; }
   else { g.classList.add("fading"); setTimeout(() => { g.textContent = u.guidance || ""; g.classList.remove("fading"); }, 700); }
+  setWaveSource(u.protocol);
   // Break the training line where the protocol may change.
   pushHist(app.hist.metric, NaN); pushHist(app.hist.thr, NaN); pushHist(app.hist.reward, 0); pushHist(app.hist.artifact, 0);
 }
@@ -1318,6 +1500,8 @@ function enterSession(program, deviceLabel, dotClass) {
   $("setupView").hidden = true; $("sessionView").hidden = false; $("clockPill").hidden = false; $("rewardPill").hidden = false;
   $("summaryOverlay").hidden = true; $("connectOverlay").hidden = true;
   $("phaseName").textContent = program.phases[0].name; $("guidance").textContent = program.phases[0].guidance || "";
+  buildPhaseRows(program.phases);
+  const firstTrain = program.phases.find(p => p.protocol_name); if (firstTrain) setWaveSource(firstTrain.protocol_name);
   $("srcText").textContent = deviceLabel; $("srcDot").className = `dot ${dotClass}`;
   $("scapeSwitch").value = app.scape || program.soundscape;
   $("skipBtn").hidden = app.mode === "monitor"; $("endBtn").hidden = app.mode === "monitor";
@@ -1353,14 +1537,14 @@ function startDemo(program) {
   resetChannels(DEMO_CHANNELS, 128);
   app.demo = new DemoSignal(DEMO_CHANNELS, 128);
   app.runner = new DemoRunner(program);
-  for (let i = 0; i < 8; i++) { const chunk = app.demo.generate(32); chunk.forEach((ch, c) => ch.forEach(v => app.rings[c].push(v))); }
+  for (let i = 0; i < 8; i++) ingest(app.demo.generate(32));
   app.demoT = 0; app.demoAcc = 0; app.demoSince = 0;
   enterSession(program, "Demo signal", "demo");
 }
 function demoFrame(dt) {
   if (!app.runner) return;
   app.demoAcc += dt * app.fs; const n = Math.floor(app.demoAcc); app.demoAcc -= n;
-  if (n > 0) { const chunk = app.demo.generate(n); chunk.forEach((ch, c) => { for (const v of ch) app.rings[c].push(v); }); }
+  if (n > 0) ingest(app.demo.generate(n));
   app.demoT += dt; app.demoSince += dt * 1000;
   if (app.demoSince >= UPDATE_MS) {
     app.demoSince = 0;
@@ -1516,7 +1700,7 @@ function wire() {
   $("listenBtn").addEventListener("click", () => audio.preview(app.scape || app.selected.soundscape));
   $("device").addEventListener("change", onDeviceChange);
   $("startBtn").addEventListener("click", startSession);
-  $("volume").addEventListener("input", e => audio.setVolume(Number(e.target.value)));
+  $("volume").addEventListener("input", e => { $("toolMute").setAttribute("aria-pressed", "false"); audio.setVolume(Number(e.target.value)); });
   $("scapeSwitch").innerHTML = Object.entries(PRESETS).map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
   $("scapeSwitch").addEventListener("change", e => { app.scape = e.target.value; audio.play(app.scape); });
   $("skipBtn").addEventListener("click", () => { if (app.runner) app.runner.skipFlag = true; else api("/api/session/skip", {}).catch(() => {}); });
@@ -1541,17 +1725,30 @@ function wire() {
       $("builderNote").textContent = app.mode === "app" ? `Saved "${program.name}" to My programs.` : `Saved "${program.name}" to My programs in this browser.`;
     } catch (err) { $("builderNote").textContent = err.message; }
   });
-  $("bandChips").innerHTML = BANDS.map(b => `<button type="button" class="chip" style="--c:${b.color}" data-band="${b.key}" aria-pressed="${b.key === app.mapBand}">${b.name}<span>${b.lo}-${b.hi}</span></button>`).join("");
-  $("bandChips").addEventListener("click", e => { const btn = e.target.closest("[data-band]"); if (!btn) return; app.mapBand = btn.dataset.band;
-    document.querySelectorAll("#bandChips .chip").forEach(c => c.setAttribute("aria-pressed", String(c === btn)));
-    $("mapHint").textContent = `Relative ${BAND[app.mapBand].name.toLowerCase()} power, viewed from above`; });
+  const bandOrder = ["alpha", "theta", "smr", "beta", "delta", "gamma"];
+  const setBand = key => { app.mapBand = key; const b = BAND[key]; $("viewBand").textContent = `Colour: ${b.name.toLowerCase()} ${b.lo}-${b.hi} Hz, relative power`; };
+  setBand(app.mapBand);
+  $("toolBand").addEventListener("click", () => setBand(bandOrder[(bandOrder.indexOf(app.mapBand) + 1) % bandOrder.length]));
+  $("toolRotate").setAttribute("aria-pressed", String(!reduceMotion));
+  $("toolRotate").addEventListener("click", e => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(on));
+    for (const cl of [app.cloud, app.heroCloud]) if (cl) cl.auto = on; });
+  $("toolMute").addEventListener("click", e => { const muted = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(muted));
+    audio.setVolume(muted ? 0 : Number($("volume").value)); });
+  $("toolFull").addEventListener("click", () => { const el = document.documentElement;
+    (document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {}); });
+  $("consoleTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return;
+    document.querySelectorAll("#consoleTabs [data-tab]").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+    document.querySelectorAll(".hud-console [data-pane]").forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
+    Object.values(canvases).forEach(c => (c.dirty = true)); });
 }
 
 /* =====================================================================
    Boot
    ===================================================================== */
 async function boot() {
-  ["brain", "traces", "spectrum", "timeline", "balance", "arc", "sessionArc"].forEach(bindCanvas);
+  ["brain3d", "setupBrain", "traces", "spectrum", "timeline", "balance", "arc"].forEach(bindCanvas);
+  app.cloud = new BrainCloud("brain3d"); app.heroCloud = new BrainCloud("setupBrain");
+  resetChannels(DEMO_CHANNELS, 128);
   buildIndices(); wire();
   let embedded = {}; try { embedded = JSON.parse($("nova-programs").textContent || "{}"); } catch {}
   app.programs = embedded.programs || []; app.soundscapes = embedded.soundscapes || {};
@@ -1582,7 +1779,8 @@ async function boot() {
     if (app.runner) demoFrame(dt);
     let dirty = false; for (const c of Object.values(canvases)) if (c.dirty) { c.dirty = false; dirty = true; }
     if (dirty) { if (app.session) redrawPanels(); else if (app.selected) drawArc(canvases.arc, scaledPhases(app.selected), null); }
-    if (app.session) { drawBrain(now); drawTraces(); }
+    if (app.session) { app.cloud.draw(canvases.brain3d, now, dt, brainValues(), app.u && app.u.reward ? 1 : 0); drawWaves(); drawTraces(); }
+    else if (!$("setupView").hidden) app.heroCloud.draw(canvases.setupBrain, now, dt, null);
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
