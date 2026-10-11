@@ -1,12 +1,12 @@
 import numpy as np
 import pytest
 
-from neuro.audio import AudioEngine, BinauralVoice, NoiseVoice, PulsedToneVoice, ToneVoice
-from neuro.devices import SimulatedDevice
-from neuro.feedback import FeedbackState, SonifyFeedback, make_sinks
-from neuro.protocols import get_protocol
-from neuro.session import Session, SessionConfig
-from neuro.stimulation import Stimulus, StimulusSpec
+from nova.audio import AudioEngine, BinauralVoice, NoiseVoice, PulsedToneVoice, ToneVoice
+from nova.devices import SimulatedDevice
+from nova.feedback import FeedbackState, SonifyFeedback, make_sinks
+from nova.protocols import get_protocol
+from nova.session import Session, SessionConfig
+from nova.stimulation import Stimulus, StimulusSpec
 
 SR = 8000
 
@@ -152,7 +152,7 @@ def test_session_measures_stimulus_response(tmp_path):
 def test_cli_stim_writes_wav(tmp_path):
     from scipy.io import wavfile
 
-    from neuro.cli import main
+    from nova.cli import main
 
     out = tmp_path / "beat.wav"
     assert main(["stim", "--stim", "binaural", "--seconds", "5", "--out", str(out)]) == 0
@@ -162,7 +162,7 @@ def test_cli_stim_writes_wav(tmp_path):
 
 
 def test_cli_run_with_stimulus(capsys):
-    from neuro.cli import main
+    from nova.cli import main
 
     args = ["run", "--baseline", "3", "--duration", "4", "--stim", "pulsed", "--stim-block", "2", "--no-log"]
     # Real audio output may be unavailable (CI); the run must then fail cleanly, not crash.

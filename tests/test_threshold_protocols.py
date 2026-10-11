@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from neuro.dsp import power_spectrum
-from neuro.protocols import PROTOCOLS, get_protocol
-from neuro.threshold import AdaptiveThreshold, InhibitThreshold
+from nova.dsp import power_spectrum
+from nova.protocols import PROTOCOLS, get_protocol
+from nova.threshold import AdaptiveThreshold, InhibitThreshold
 
 FS = 250.0
 

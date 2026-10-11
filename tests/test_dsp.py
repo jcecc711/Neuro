@@ -1,6 +1,6 @@
 import numpy as np
 
-from neuro.dsp import RingBuffer, StreamingFilter, band_power, power_spectrum
+from nova.dsp import RingBuffer, StreamingFilter, band_power, power_spectrum
 
 FS = 250.0
 

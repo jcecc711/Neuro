@@ -4,11 +4,11 @@ import io
 import numpy as np
 import pytest
 
-from neuro.cli import main
-from neuro.devices import BrainFlowDevice, SimulatedDevice
-from neuro.feedback import ConsoleFeedback, FeedbackSink
-from neuro.protocols import get_protocol
-from neuro.session import Session, SessionConfig
+from nova.cli import main
+from nova.devices import BrainFlowDevice, SimulatedDevice
+from nova.feedback import ConsoleFeedback, FeedbackSink
+from nova.protocols import get_protocol
+from nova.session import Session, SessionConfig
 
 
 class Recorder(FeedbackSink):

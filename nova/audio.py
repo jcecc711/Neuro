@@ -150,7 +150,7 @@ class AudioEngine:
             import sounddevice
         except ImportError as e:
             self._users -= 1
-            raise RuntimeError("audio needs sounddevice: pip install 'neuro[audio]'") from e
+            raise RuntimeError("audio needs sounddevice: pip install 'nova[audio]'") from e
         except OSError as e:  # sounddevice installed but the PortAudio system library is missing
             self._users -= 1
             raise RuntimeError(f"audio unavailable ({e}); on Linux: sudo apt install libportaudio2") from e

@@ -1,0 +1,932 @@
+<title>NOVA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an instrument console. Header strip of status + controls; a large
+   topographic brain on the left with analysis readouts stacked beside it;
+   signal, spectrum and training timeline as a lower deck. One deliberate dark theme. */
+:root {
+  --void: #05080f;
+  --panel: #0a1120;
+  --panel-hi: #0f1a30;
+  --line: #1a2742;
+  --ink: #dce6f7;
+  --muted: #7b8bab;
+  --faint: #44557a;
+  --signal: #3ee6d4;   /* primary accent, NOVA cyan */
+  --flare: #ff5d8f;    /* hot end of the heat scale */
+  --amber: #ffb547;
+  --good: #59e39a;
+  --warn: #ffb547;
+  --bad: #ff5d6c;
+  --b-delta: #6b74ff;
+  --b-theta: #4fb8ff;
+  --b-alpha: #3ee6d4;
+  --b-smr: #9bf26b;
+  --b-beta: #ffd05a;
+  --b-hibeta: #ff9248;
+  --b-gamma: #ff5d8f;
+  --display: "Chakra Petch", "Eurostile", "Bank Gothic", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background:
+    radial-gradient(1200px 700px at 18% -10%, rgba(62, 230, 212, 0.10), transparent 60%),
+    radial-gradient(900px 600px at 105% 10%, rgba(255, 93, 143, 0.08), transparent 60%),
+    var(--void);
+  color: var(--ink);
+  font: 14px/1.5 var(--body);
+  -webkit-font-smoothing: antialiased;
+}
+.shell { padding-inline: clamp(16px, 2.4vw, 32px); padding-block: 18px 32px; display: grid; gap: 16px; max-width: 1560px; margin: 0 auto; }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+.brand { display: flex; align-items: baseline; gap: 12px; }
+.wordmark {
+  font: 700 30px/1 var(--display); letter-spacing: 0.32em; margin: 0;
+  background: linear-gradient(92deg, var(--signal) 0%, #8fd8ff 45%, var(--flare) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.tagline { color: var(--muted); font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; }
+.status { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.pill {
+  display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--panel); font: 500 11px/1.2 var(--mono);
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.pill b { color: var(--ink); font-weight: 500; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.dot.live { background: var(--good); box-shadow: 0 0 10px var(--good); }
+.dot.sim { background: var(--signal); box-shadow: 0 0 10px var(--signal); }
+.dot.reward { background: var(--signal); box-shadow: 0 0 12px var(--signal); }
+.dot.artifact { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; }
+.field { display: grid; gap: 4px; }
+.field label, .eyebrow {
+  font: 600 10px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint);
+}
+select, button {
+  font: 500 13px/1 var(--body); color: var(--ink); background: var(--panel-hi);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer;
+}
+select:focus-visible, button:focus-visible, .chip:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+button:hover, select:hover { border-color: #2b3d63; }
+.toggle[aria-pressed="true"] { border-color: var(--signal); color: var(--signal); box-shadow: inset 0 0 0 1px rgba(62,230,212,.25); }
+.live-only[hidden], .sim-only[hidden] { display: none !important; }
+
+/* Panels */
+.grid-main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+.grid-deck { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.panel {
+  background: linear-gradient(180deg, var(--panel-hi), var(--panel));
+  border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; min-width: 0;
+  display: grid; gap: 10px; align-content: start;
+}
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.panel h2 { margin: 0; font: 600 13px/1.2 var(--display); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
+.hint { color: var(--muted); font-size: 12px; }
+canvas { display: block; width: 100%; }
+
+/* Brain */
+.brain-wrap { position: relative; }
+#brain { aspect-ratio: 1 / 1.02; max-height: 640px; }
+.bands { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font: 600 11px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted);
+}
+.chip[aria-pressed="true"] { color: var(--void); background: var(--c); border-color: var(--c); }
+.chip span { opacity: .7; font-weight: 500; margin-left: 4px; }
+.legend { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font: 500 11px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend .ramp { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #0b1838, #1550a8, #17b9b0, #b9f070, #ffb547, #ff5d8f); }
+.brain-overlay { position: absolute; inset: 8px 8px auto auto; text-align: right; display: grid; gap: 2px; pointer-events: none; }
+.brain-overlay .big { font: 600 30px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
+.brain-overlay .lab { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.side-label { position: absolute; top: 50%; font: 600 11px var(--mono); letter-spacing: .3em; color: var(--faint); pointer-events: none; }
+
+/* Analysis column */
+.stack { display: grid; gap: 16px; align-content: start; min-width: 0; }
+.indices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.index { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; background: rgba(5,8,15,.35); }
+.index .name { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+.index .val { font: 600 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
+.index .val small { font: 500 11px var(--mono); color: var(--muted); margin-left: 4px; }
+.index canvas { height: 30px; }
+.index .desc { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+#balance { height: 210px; }
+.asym { display: grid; gap: 6px; }
+.asym-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgba(79,184,255,.35), rgba(255,255,255,.06) 50%, rgba(255,93,143,.35)); }
+.asym-bar i { position: absolute; top: -4px; width: 3px; height: 18px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 10px var(--ink); left: 50%; transition: left .4s ease; }
+.asym-scale { display: flex; justify-content: space-between; font: 500 10px var(--mono); color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
+
+#traces { height: 470px; }
+#spectrum { height: 200px; }
+#timeline { height: 150px; }
+.readouts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
+.readouts b { color: var(--ink); font-weight: 500; }
+.foot { color: var(--faint); font-size: 12px; max-width: 80ch; }
+
+@media (max-width: 1100px) {
+  .grid-main, .grid-deck { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 520px) {
+  .wordmark { font-size: 24px; }
+  .status { margin-left: 0; }
+  .indices { grid-template-columns: minmax(0, 1fr); }
+  #traces { height: 260px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .asym-bar i { transition: none; }
+}
+</style>
+
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <h1 class="wordmark">NOVA</h1>
+      <span class="tagline">Neurofeedback analysis</span>
+    </div>
+    <div class="status" aria-live="polite">
+      <span class="pill"><span class="dot sim" id="srcDot"></span><b id="srcText">Simulation</b></span>
+      <span class="pill">Phase <b id="phaseText">Training</b></span>
+      <span class="pill">T <b id="clock">00:00</b></span>
+      <span class="pill"><span class="dot" id="rewardDot"></span><b id="rewardText">Waiting</b></span>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="field sim-only">
+      <label for="scenario">Simulated state</label>
+      <select id="scenario">
+        <option value="tour">Auto tour</option>
+        <option value="rest">Eyes-closed rest</option>
+        <option value="focus">Focused work</option>
+        <option value="meditate">Meditation</option>
+        <option value="drowsy">Drowsy</option>
+        <option value="stress">Stressed, tense jaw</option>
+      </select>
+    </div>
+    <div class="field sim-only">
+      <label for="protocol">Training protocol</label>
+      <select id="protocol">
+        <option value="alpha">Alpha up (Pz, O1, O2)</option>
+        <option value="smr">SMR up (C3, Cz, C4)</option>
+        <option value="theta-beta">Theta/beta down (Fz, Cz)</option>
+      </select>
+    </div>
+    <div class="field sim-only">
+      <label for="stimBtn">Audio stimulation</label>
+      <button id="stimBtn" class="toggle" aria-pressed="false" type="button">40 Hz pulsed tone</button>
+    </div>
+    <div class="field sim-only">
+      <label for="blinkBtn">Artifacts</label>
+      <button id="blinkBtn" class="toggle" aria-pressed="true" type="button">Eye blinks</button>
+    </div>
+    <div class="field">
+      <label for="pauseBtn">Stream</label>
+      <button id="pauseBtn" type="button">Pause</button>
+    </div>
+  </div>
+
+  <section class="grid-main">
+    <div class="panel">
+      <div class="panel-head">
+        <h2>Cortical map</h2>
+        <span class="hint" id="mapHint">Relative alpha power, 10-20 montage, viewed from above</span>
+      </div>
+      <div class="bands" id="bandChips" role="group" aria-label="Frequency band shown on the map"></div>
+      <div class="brain-wrap">
+        <canvas id="brain" aria-label="Top-down brain map with activity heat gradient"></canvas>
+        <span class="side-label" style="left:2px">L</span>
+        <span class="side-label" style="right:2px">R</span>
+        <div class="brain-overlay">
+          <span class="lab">Protocol metric</span>
+          <span class="big" id="metricBig">--</span>
+          <span class="lab" id="metricLabel">rel. alpha</span>
+        </div>
+      </div>
+      <div class="legend"><span id="legendLo">--</span><div class="ramp"></div><span id="legendHi">--</span></div>
+    </div>
+
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-head"><h2>State indices</h2><span class="hint">Last 60 s</span></div>
+        <div class="indices" id="indices"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Hemispheric balance</h2><span class="hint">Left vs right relative power</span></div>
+        <canvas id="balance" aria-label="Left versus right hemisphere power per band"></canvas>
+        <div class="asym">
+          <div class="readouts"><span>Frontal alpha asymmetry <b id="faa">--</b></span><span id="faaWhich" class="hint"></span></div>
+          <div class="asym-bar"><i id="faaMark"></i></div>
+          <div class="asym-scale"><span>Withdrawal</span><span>Balanced</span><span>Approach</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid-deck">
+    <div class="panel">
+      <div class="panel-head"><h2>Signal</h2><span class="hint">Band-passed EEG, 6 s window, µV</span></div>
+      <canvas id="traces" aria-label="Scrolling EEG traces"></canvas>
+    </div>
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-head"><h2>Spectrum</h2><span class="hint">Mean power, 1-45 Hz, log scale</span></div>
+        <canvas id="spectrum" aria-label="Power spectrum"></canvas>
+        <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>40 Hz response <b id="assr">--</b></span></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Training</h2><span class="hint">Metric vs adaptive threshold</span></div>
+        <canvas id="timeline" aria-label="Protocol metric over time with threshold"></canvas>
+        <div class="readouts"><span>Rewarded <b id="rewardPct">--</b></span><span>Threshold <b id="thrVal">--</b></span><span>Artifacts <b id="artPct">--</b></span></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="foot">NOVA runs a built-in EEG simulation when no headset is connected. Run <code>nova run --feedback dashboard</code> with your device to stream live data into this view. For research and personal use; not a medical device.</p>
+</div>
+
+<script>
+"use strict";
+(() => {
+/* ---------- Constants ---------- */
+const BANDS = [
+  { key: "delta", name: "Delta", lo: 1, hi: 4, color: "#6b74ff" },
+  { key: "theta", name: "Theta", lo: 4, hi: 8, color: "#4fb8ff" },
+  { key: "alpha", name: "Alpha", lo: 8, hi: 12, color: "#3ee6d4" },
+  { key: "smr", name: "SMR", lo: 12, hi: 15, color: "#9bf26b" },
+  { key: "beta", name: "Beta", lo: 15, hi: 22, color: "#ffd05a" },
+  { key: "hibeta", name: "Hi-beta", lo: 22, hi: 30, color: "#ff9248" },
+  { key: "gamma", name: "Gamma", lo: 30, hi: 45, color: "#ff5d8f" },
+];
+const BAND = Object.fromEntries(BANDS.map(b => [b.key, b]));
+// 10-20 positions on a unit head, x to the right, y toward the nose.
+const POS = {
+  Fp1: [-0.31, 0.95], Fp2: [0.31, 0.95], AF7: [-0.55, 0.8], AF8: [0.55, 0.8], AF3: [-0.3, 0.78], AF4: [0.3, 0.78],
+  F7: [-0.78, 0.58], F3: [-0.4, 0.52], Fz: [0, 0.48], F4: [0.4, 0.52], F8: [0.78, 0.58],
+  FC5: [-0.62, 0.27], FC1: [-0.2, 0.25], FC2: [0.2, 0.25], FC6: [0.62, 0.27],
+  T7: [-0.93, 0], C3: [-0.46, 0], Cz: [0, 0], C4: [0.46, 0], T8: [0.93, 0],
+  TP9: [-0.9, -0.36], TP10: [0.9, -0.36], CP5: [-0.62, -0.27], CP1: [-0.2, -0.25], CP2: [0.2, -0.25], CP6: [0.62, -0.27],
+  P7: [-0.78, -0.58], P3: [-0.4, -0.52], Pz: [0, -0.48], P4: [0.4, -0.52], P8: [0.78, -0.58],
+  O1: [-0.31, -0.95], Oz: [0, -0.98], O2: [0.31, -0.95],
+  T3: [-0.93, 0], T4: [0.93, 0], T5: [-0.78, -0.58], T6: [0.78, -0.58],
+  AFz: [0, 0.75], F1: [-0.2, 0.49], F2: [0.2, 0.49], F5: [-0.6, 0.54], F6: [0.6, 0.54],
+  FC3: [-0.42, 0.26], FCz: [0, 0.24], FC4: [0.42, 0.26], FT7: [-0.85, 0.3], FT8: [0.85, 0.3],
+  C1: [-0.23, 0], C2: [0.23, 0], C5: [-0.7, 0], C6: [0.7, 0],
+  CP3: [-0.42, -0.26], CPz: [0, -0.24], CP4: [0.42, -0.26], TP7: [-0.85, -0.3], TP8: [0.85, -0.3],
+  P1: [-0.2, -0.49], P2: [0.2, -0.49], P5: [-0.6, -0.54], P6: [0.6, -0.54],
+  PO3: [-0.3, -0.76], POz: [0, -0.74], PO4: [0.3, -0.76], PO7: [-0.55, -0.8], PO8: [0.55, -0.8],
+};
+const SIM_CHANNELS = ["Fp1","Fp2","F7","F3","Fz","F4","F8","T7","C3","Cz","C4","T8","P7","P3","Pz","P4","P8","O1","O2"];
+const TRACE_PREF = ["Fp1","Fz","F4","C3","Cz","C4","Pz","O1","O2","AF7","AF8","TP9","TP10"];
+const UPDATE_MS = 250;
+const HISTORY = 240; // 60 s of updates
+const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- Small utilities ---------- */
+const $ = id => document.getElementById(id);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+function mulberry32(seed) {
+  return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+const rand = mulberry32(20261011);
+function gauss() { let u = 0, v = 0; while (!u) u = rand(); while (!v) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function fmtTime(s) { s = Math.max(0, Math.floor(s)); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+function positionFor(name, i, n) {
+  if (POS[name]) return POS[name];
+  const a = Math.PI / 2 - (2 * Math.PI * i) / n; // unknown labels: ring around the head
+  return [0.75 * Math.cos(a), 0.75 * Math.sin(a)];
+}
+
+/* Heat colour map: deep navy -> cobalt -> teal -> lime -> amber -> coral. */
+const STOPS = [[0, "#0b1838"], [0.2, "#1550a8"], [0.42, "#17b9b0"], [0.62, "#b9f070"], [0.8, "#ffb547"], [1, "#ff5d8f"]].map(([t, c]) => [t, hexRgb(c)]);
+const LUT = new Uint8ClampedArray(256 * 3);
+for (let i = 0; i < 256; i++) {
+  const t = i / 255; let k = 0; while (k < STOPS.length - 2 && t > STOPS[k + 1][0]) k++;
+  const [t0, c0] = STOPS[k], [t1, c1] = STOPS[k + 1]; const f = (t - t0) / (t1 - t0);
+  for (let j = 0; j < 3; j++) LUT[i * 3 + j] = Math.round(lerp(c0[j], c1[j], f));
+}
+
+/* ---------- FFT + spectral analysis ---------- */
+function fft(re, im) {
+  const n = re.length;
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1; for (; j & bit; bit >>= 1) j ^= bit; j ^= bit;
+    if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1, ci = 0;
+      for (let k = 0; k < len / 2; k++) {
+        const a = i + k, b = a + len / 2;
+        const xr = re[b] * cr - im[b] * ci, xi = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - xr; im[b] = im[a] - xi; re[a] += xr; im[a] += xi;
+        const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr;
+      }
+    }
+  }
+}
+// Welch PSD with Hann windows and 50% overlap; returns µV²/Hz per bin.
+function welch(x, fs, nseg) {
+  const win = new Float64Array(nseg); let wss = 0;
+  for (let i = 0; i < nseg; i++) { win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nseg - 1)); wss += win[i] * win[i]; }
+  const psd = new Float64Array(nseg / 2 + 1); let count = 0;
+  const re = new Float64Array(nseg), im = new Float64Array(nseg);
+  for (let start = 0; start + nseg <= x.length; start += nseg / 2) {
+    let mean = 0; for (let i = 0; i < nseg; i++) mean += x[start + i]; mean /= nseg;
+    for (let i = 0; i < nseg; i++) { re[i] = (x[start + i] - mean) * win[i]; im[i] = 0; }
+    fft(re, im);
+    for (let k = 0; k <= nseg / 2; k++) psd[k] += (re[k] * re[k] + im[k] * im[k]);
+    count++;
+  }
+  const scale = 1 / (fs * wss * Math.max(count, 1));
+  for (let k = 0; k <= nseg / 2; k++) psd[k] *= scale * (k === 0 || k === nseg / 2 ? 1 : 2);
+  return psd;
+}
+function bandSum(psd, df, lo, hi) { let s = 0; for (let k = Math.ceil(lo / df); k * df < hi && k < psd.length; k++) s += psd[k] * df; return s; }
+
+/* ---------- Ring buffer of samples per channel ---------- */
+class Ring {
+  constructor(len) { this.buf = new Float32Array(len); this.pos = 0; this.count = 0; }
+  push(v) { this.buf[this.pos] = v; this.pos = (this.pos + 1) % this.buf.length; this.count = Math.min(this.count + 1, this.buf.length); }
+  last(n) { n = Math.min(n, this.count); const out = new Float64Array(n); const L = this.buf.length;
+    for (let i = 0; i < n; i++) out[i] = this.buf[(this.pos - n + i + L) % L]; return out; }
+}
+
+/* ---------- EEG simulator ---------- */
+// Amplitudes (µV) per band for each mental state, plus frontal alpha asymmetry (+ = more right alpha).
+const STATES = {
+  rest:     { label: "Eyes-closed rest", amp: { delta: 7, theta: 5, alpha: 17, smr: 4, beta: 3.5, hibeta: 1.8, gamma: 0.9 }, asym: 0.08 },
+  focus:    { label: "Focused work",     amp: { delta: 6, theta: 4.5, alpha: 6, smr: 6, beta: 8, hibeta: 3, gamma: 1.4 }, asym: 0.12 },
+  meditate: { label: "Meditation",       amp: { delta: 6, theta: 9.5, alpha: 13, smr: 4, beta: 3.5, hibeta: 1.5, gamma: 1.1 }, asym: 0.1 },
+  drowsy:   { label: "Drowsy",           amp: { delta: 12, theta: 11, alpha: 6, smr: 3, beta: 2.6, hibeta: 1.3, gamma: 0.7 }, asym: 0 },
+  stress:   { label: "Stressed",         amp: { delta: 6.5, theta: 5, alpha: 4.5, smr: 3, beta: 7, hibeta: 7, gamma: 4 }, asym: -0.22 },
+};
+const TOUR = ["rest", "focus", "meditate", "drowsy", "stress"];
+const CENTER = { delta: 2.2, theta: 6, alpha: 10.2, smr: 13.5, beta: 18, hibeta: 25, gamma: 36 };
+function spatial(band, x, y) {
+  switch (band) {
+    case "delta": return 0.7 + 0.6 * Math.max(y, 0);
+    case "theta": return 0.55 + 0.9 * Math.exp(-(x * x) / 0.25 - ((y - 0.35) ** 2) / 0.35);
+    case "alpha": return 0.3 + 1.2 / (1 + Math.exp(4 * (y + 0.1)));
+    case "smr":   return 0.45 + 1.0 * Math.exp(-(((Math.abs(x) - 0.45) ** 2) + y * y) / 0.09);
+    case "beta":  return 0.6 + 0.5 * Math.max(y, 0) + 0.3 * Math.exp(-(x * x + y * y) / 0.3);
+    case "hibeta":
+    case "gamma": return 0.35 + 1.4 * Math.abs(x) ** 3;
+  }
+  return 1;
+}
+class Simulator {
+  constructor(names, fs) {
+    this.fs = fs; this.names = names; this.t = 0;
+    this.pos = names.map((n, i) => positionFor(n, i, names.length));
+    this.amp = { ...STATES.rest.amp }; this.asym = 0;
+    this.state = "rest"; this.tourStart = 0;
+    this.stim = false; this.blinks = true; this.blinkLeft = 0; this.nextBlink = 3;
+    this.osc = names.map(() => BANDS.map(b => ({ phase: rand() * 6.283, f: CENTER[b.key] + (rand() - 0.5) * (b.hi - b.lo) * 0.4, env: 1 })));
+    this.pink = names.map(() => new Float64Array(3));
+  }
+  target(scenario) {
+    if (scenario !== "tour") return scenario;
+    return TOUR[Math.floor(this.t / 20) % TOUR.length];
+  }
+  generate(n, scenario) {
+    const out = this.names.map(() => new Float64Array(n));
+    const dt = 1 / this.fs;
+    for (let s = 0; s < n; s++) {
+      this.t += dt;
+      const st = STATES[this.state = this.target(scenario)];
+      const k = 1 - Math.exp(-dt / 2.5); // ~2.5 s state transitions
+      for (const b of BANDS) this.amp[b.key] = lerp(this.amp[b.key], st.amp[b.key], k);
+      this.asym = lerp(this.asym, st.asym, k);
+      let blink = 0;
+      if (this.blinks) {
+        this.nextBlink -= dt;
+        if (this.nextBlink <= 0) { this.blinkLeft = 0.35; this.nextBlink = 4 + rand() * 7; }
+        if (this.blinkLeft > 0) { this.blinkLeft -= dt; blink = 140 * Math.sin(Math.PI * (0.35 - this.blinkLeft) / 0.35); }
+      }
+      for (let c = 0; c < this.names.length; c++) {
+        const [x, y] = this.pos[c];
+        let v = 0;
+        for (let bi = 0; bi < BANDS.length; bi++) {
+          const b = BANDS[bi], o = this.osc[c][bi];
+          o.f = clamp(o.f + gauss() * 0.02, b.lo + 0.3, b.hi - 0.3);
+          o.f = lerp(o.f, CENTER[b.key], 0.0005);
+          o.env = clamp(o.env + gauss() * 0.035 + (1 - o.env) * 0.01, 0.15, 2.2);
+          o.phase += 2 * Math.PI * o.f * dt;
+          let a = this.amp[b.key] * spatial(b.key, x, y) * o.env;
+          if (b.key === "alpha" && y > 0.2) a *= 1 + Math.sign(x) * this.asym;
+          v += a * Math.sin(o.phase);
+        }
+        // Pink background noise, Paul Kellet's economy filter.
+        const p = this.pink[c], w = gauss();
+        p[0] = 0.99765 * p[0] + w * 0.099046; p[1] = 0.963 * p[1] + w * 0.2965164; p[2] = 0.57 * p[2] + w * 1.0526913;
+        v += 2.2 * (p[0] + p[1] + p[2] + w * 0.1848);
+        if (this.stim) v += 1.6 * Math.max(0, Math.abs(x) - 0.3) * Math.sin(2 * Math.PI * 40 * this.t + c * 0.2) + 0.5 * Math.sin(2 * Math.PI * 40 * this.t);
+        if (blink && y > 0.6) v += blink * (y - 0.4);
+        out[c][s] = v;
+      }
+    }
+    return out;
+  }
+}
+
+/* ---------- Analysis state ---------- */
+const app = {
+  mode: "sim", fs: 128, names: SIM_CHANNELS.slice(), pos: [], rings: [],
+  paused: false, sim: null, scenario: "tour", protocol: "alpha", mapBand: "alpha",
+  rel: [], display: [], spectrum: null, df: 1, iaf: NaN,
+  hist: { metric: [], thr: [], reward: [], artifact: [] },
+  idx: { calm: [], focus: [], drowsy: [], tension: [] },
+  t: 0, phase: "training", reward: false, artifact: false, rewardFrac: 0, threshold: NaN, metric: NaN,
+  counts: { updates: 0, rewarded: 0, artifacts: 0 }, streak: 0, device: "",
+  metricLabel: "rel. alpha", liveDirection: 1, stimOn: false,
+};
+function resetChannels(names, fs) {
+  app.names = names; app.fs = fs;
+  app.pos = names.map((n, i) => positionFor(n, i, names.length));
+  app.rings = names.map(() => new Ring(Math.round(fs * 8)));
+  app.rel = names.map(() => Object.fromEntries(BANDS.map(b => [b.key, 0])));
+  app.display = names.map(() => 0);
+  app.traceIdx = pickTraces(names);
+}
+function pickTraces(names) {
+  const chosen = TRACE_PREF.map(n => names.indexOf(n)).filter(i => i >= 0);
+  for (let i = 0; chosen.length < Math.min(8, names.length) && i < names.length; i++) if (!chosen.includes(i)) chosen.push(i);
+  return chosen.slice(0, 8);
+}
+
+const PROTOCOLS = {
+  alpha: { label: "rel. alpha", sites: ["Pz", "O1", "O2", "P3", "P4"], dir: 1, metric: r => r.alpha },
+  smr: { label: "rel. SMR", sites: ["C3", "Cz", "C4"], dir: 1, metric: r => r.smr },
+  "theta-beta": { label: "theta/beta", sites: ["Fz", "Cz"], dir: -1, metric: r => r.theta / Math.max(r.beta, 1e-6) },
+};
+function siteMean(sites, fn) {
+  const idx = sites.map(s => app.names.indexOf(s)).filter(i => i >= 0);
+  const use = idx.length ? idx : app.names.map((_, i) => i);
+  return use.reduce((s, i) => s + fn(app.rel[i]), 0) / use.length;
+}
+function quantile(arr, q) { const a = arr.slice().sort((x, y) => x - y); const p = (a.length - 1) * q; const lo = Math.floor(p); return a[lo] + (a[Math.min(lo + 1, a.length - 1)] - a[lo]) * (p - lo); }
+
+function analyse() {
+  const fs = app.fs; const nseg = fs >= 200 ? 256 : 128; const need = Math.round(fs * 2);
+  if (!app.rings.length || app.rings[0].count < Math.max(nseg, need * 0.75)) return false;
+  app.df = fs / nseg;
+  const mean = new Float64Array(nseg / 2 + 1);
+  let maxPtp = 0;
+  app.names.forEach((_, c) => {
+    const x = app.rings[c].last(need);
+    let mn = Infinity, mx = -Infinity; for (const v of x) { if (v < mn) mn = v; if (v > mx) mx = v; }
+    maxPtp = Math.max(maxPtp, mx - mn);
+    const psd = welch(x, fs, nseg);
+    for (let k = 0; k < mean.length; k++) mean[k] += psd[k] / app.names.length;
+    const total = bandSum(psd, app.df, 1, 45) || 1;
+    for (const b of BANDS) app.rel[c][b.key] = bandSum(psd, app.df, b.lo, b.hi) / total;
+  });
+  app.spectrum = mean;
+  // Individual alpha peak from the mean spectrum, 7-13 Hz.
+  let best = -1, bestK = 0; for (let k = Math.ceil(7 / app.df); k * app.df <= 13; k++) if (mean[k] > best) { best = mean[k]; bestK = k; }
+  app.iaf = bestK * app.df;
+  const near40 = bandSum(mean, app.df, 39, 41.5), around = (bandSum(mean, app.df, 35, 38.5) + bandSum(mean, app.df, 42, 45)) / 2;
+  app.assr = around > 0 ? near40 / around : NaN;
+
+  if (app.mode === "sim") {
+    const p = PROTOCOLS[app.protocol];
+    app.metricLabel = p.label;
+    app.artifact = maxPtp > 200;
+    const m = siteMean(p.sites, p.metric);
+    app.metric = m;
+    if (!app.artifact) app.hist._raw = (app.hist._raw || []).concat(m).slice(-120);
+    const raw = app.hist._raw || [];
+    app.threshold = raw.length > 8 ? quantile(raw, p.dir > 0 ? 0.4 : 0.6) : NaN;
+    const pass = !app.artifact && Number.isFinite(app.threshold) && (p.dir > 0 ? m > app.threshold : m < app.threshold);
+    app.streak = pass ? app.streak + 1 : 0;
+    app.reward = app.streak >= 2;
+    app.counts.updates++; app.counts.rewarded += app.reward; app.counts.artifacts += app.artifact;
+    app.rewardFrac = app.counts.rewarded / app.counts.updates;
+    app.t = app.sim.t; app.phase = "training"; app.liveDirection = p.dir;
+  }
+  pushHist(app.hist.metric, app.metric); pushHist(app.hist.thr, app.threshold);
+  pushHist(app.hist.reward, app.reward ? 1 : 0); pushHist(app.hist.artifact, app.artifact ? 1 : 0);
+
+  const avg = key => app.rel.reduce((s, r) => s + r[key], 0) / app.rel.length;
+  pushHist(app.idx.calm, siteMean(["Pz", "O1", "O2", "P3", "P4", "TP9", "TP10"], r => r.alpha) * 100);
+  pushHist(app.idx.focus, avg("beta") / Math.max(avg("alpha") + avg("theta"), 1e-6));
+  pushHist(app.idx.drowsy, avg("theta") / Math.max(avg("beta"), 1e-6));
+  pushHist(app.idx.tension, (avg("hibeta") + avg("gamma")) * 100);
+  return true;
+}
+function pushHist(arr, v) { arr.push(v); if (arr.length > HISTORY) arr.shift(); }
+
+/* ---------- Canvas plumbing ---------- */
+const canvases = {};
+function bindCanvas(id) {
+  const el = $(id); const ctx = el.getContext("2d"); const c = { el, ctx, w: 0, h: 0 };
+  const fit = () => { const r = el.getBoundingClientRect(); const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    c.w = r.width; c.h = r.height; el.width = Math.max(1, Math.round(r.width * dpr)); el.height = Math.max(1, Math.round(r.height * dpr));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); c.dirty = true; };
+  new ResizeObserver(fit).observe(el); fit(); canvases[id] = c; return c;
+}
+const INK = "#dce6f7", MUTED = "#7b8bab", FAINT = "#44557a", LINE = "rgba(68,85,122,0.35)";
+
+/* ---------- Brain rendering ---------- */
+// Each hemisphere is a squared-off ellipse; posterior a touch wider, frontal pole tapered.
+function hemiPoints(side) {
+  const pts = [];
+  for (let i = 0; i < 160; i++) {
+    const t = (i / 160) * Math.PI * 2; const u = Math.cos(t), v = Math.sin(t);
+    const n = 2.5; const su = Math.sign(u) * Math.abs(u) ** (2 / n), sv = Math.sign(v) * Math.abs(v) ** (2 / 2.2);
+    const taper = 1 - 0.16 * Math.max(sv, 0) ** 2 + 0.05 * Math.max(-sv, 0);
+    pts.push([side * (0.5 + 0.465 * su * taper), sv * (sv > 0 ? 1.0 : 1.03)]);
+  }
+  return pts;
+}
+const HEMIS = [hemiPoints(-1), hemiPoints(1)];
+function insideHemi(x, y, side) {
+  const cx = side * 0.5; const u = (x - cx) / 0.465, v = y / 1.02;
+  return Math.abs(u) ** 2.5 + Math.abs(v) ** 2.2 <= 1;
+}
+// Procedural gyri: smooth random walks confined to each hemisphere, plus central and lateral sulci.
+const SULCI = (() => {
+  const r = mulberry32(7); const lines = [];
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < 90; i++) {
+      let x, y; do { x = side * (0.06 + r() * 0.88); y = -0.95 + r() * 1.9; } while (!insideHemi(x, y, side));
+      // Gyri run mostly front-to-back near the midline and sweep laterally toward the sides.
+      let a = Math.PI / 2 + (r() - 0.5) * 1.2 + side * Math.abs(x) * 0.9; const pts = [[x, y]]; const steps = 5 + Math.floor(r() * 8);
+      let turn = (r() - 0.5) * 0.5;
+      for (let s = 0; s < steps; s++) {
+        turn = turn * 0.7 + (r() - 0.5) * 0.45; a += turn; const nx = x + Math.cos(a) * 0.032, ny = y + Math.sin(a) * 0.032;
+        if (!insideHemi(nx, ny, side) || Math.abs(nx) < 0.07) break; x = nx; y = ny; pts.push([x, y]);
+      }
+      if (pts.length > 3) lines.push({ pts, w: 1 });
+    }
+    const central = []; for (let s = 0; s <= 14; s++) { const f = s / 14; central.push([side * (0.08 + 0.8 * f), 0.12 - 0.22 * f + 0.03 * Math.sin(f * 14)]); }
+    lines.push({ pts: central, w: 1.8 });
+    const lateral = []; for (let s = 0; s <= 10; s++) { const f = s / 10; lateral.push([side * (0.92 - 0.25 * f), 0.32 - 0.62 * f + 0.02 * Math.sin(f * 9)]); }
+    lines.push({ pts: lateral, w: 1.6 });
+  }
+  return lines;
+})();
+const heat = document.createElement("canvas"); heat.width = 132; heat.height = 140;
+const heatCtx = heat.getContext("2d"); const heatImg = heatCtx.createImageData(heat.width, heat.height);
+let mapRange = [0, 1];
+
+function drawBrain(now) {
+  const c = canvases.brain; const { ctx, w, h } = c; if (!w) return;
+  ctx.clearRect(0, 0, w, h);
+  const s = Math.min(w / 2.25, h / 2.35), cx = w / 2, cy = h / 2 + s * 0.02;
+  const X = x => cx + x * s, Y = y => cy - y * s;
+
+  // Values for the selected band, smoothed per frame toward the latest analysis.
+  const key = app.mapBand;
+  app.names.forEach((_, i) => { app.display[i] = lerp(app.display[i], app.rel[i]?.[key] ?? 0, reduceMotion ? 1 : 0.12); });
+  const vals = app.display; const lo = Math.min(...vals), hi = Math.max(...vals);
+  const span = Math.max(hi - lo, (lo + hi) * 0.15, 1e-4);
+  mapRange = [lerp(mapRange[0], lo, 0.1), lerp(mapRange[1], lo + span, 0.1)];
+
+  // Inverse-distance interpolation into a small offscreen bitmap.
+  const W = heat.width, H = heat.height, d = heatImg.data;
+  for (let py = 0; py < H; py++) {
+    const y = 1.12 - (py / (H - 1)) * 2.24;
+    for (let px = 0; px < W; px++) {
+      const x = -1.06 + (px / (W - 1)) * 2.12;
+      let num = 0, den = 0, exact = -1;
+      for (let i = 0; i < vals.length; i++) {
+        const [ex, ey] = app.pos[i]; const dx = x - ex * 0.9, dy = y - ey * 0.94; const d2 = dx * dx + dy * dy;
+        if (d2 < 1e-6) { exact = i; break; }
+        const wgt = 1 / (d2 * Math.sqrt(d2)); num += wgt * vals[i]; den += wgt;
+      }
+      const v = exact >= 0 ? vals[exact] : num / den;
+      const t = clamp((v - mapRange[0]) / (mapRange[1] - mapRange[0] || 1), 0, 1);
+      const li = Math.round(t * 255) * 3, o = (py * W + px) * 4;
+      d[o] = LUT[li]; d[o + 1] = LUT[li + 1]; d[o + 2] = LUT[li + 2]; d[o + 3] = 255;
+    }
+  }
+  heatCtx.putImageData(heatImg, 0, 0);
+
+  // Reward halo.
+  const glow = app.reward ? 1 : 0; c.glow = lerp(c.glow || 0, glow, reduceMotion ? 1 : 0.08);
+  if (c.glow > 0.02) {
+    const g = ctx.createRadialGradient(cx, cy, s * 0.6, cx, cy, s * 1.25);
+    g.addColorStop(0, `rgba(62,230,212,${0.22 * c.glow})`); g.addColorStop(1, "rgba(62,230,212,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+  }
+
+  for (const pts of HEMIS) {
+    ctx.save();
+    ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
+    ctx.shadowColor = "rgba(0,0,0,0.6)"; ctx.shadowBlur = 24; ctx.fillStyle = "#0b1838"; ctx.fill(); ctx.shadowBlur = 0;
+    ctx.clip();
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(heat, X(-1.06), Y(1.12), 2.12 * s, 2.24 * s);
+    // Depth shading: darker toward the rim, a soft specular from the front-left.
+    const shade = ctx.createRadialGradient(X(pts === HEMIS[0] ? -0.45 : 0.55), Y(0.25), s * 0.1, X(pts === HEMIS[0] ? -0.5 : 0.5), Y(0), s * 1.05);
+    shade.addColorStop(0, "rgba(255,255,255,0.10)"); shade.addColorStop(0.55, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = shade; ctx.fillRect(0, 0, w, h);
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for (const { pts: L, w: lw } of SULCI) {
+      // Smooth through segment midpoints so folds read as curves, not zigzags.
+      ctx.beginPath(); ctx.moveTo(X(L[0][0]), Y(L[0][1]));
+      for (let i = 1; i < L.length - 1; i++) {
+        const mx = (L[i][0] + L[i + 1][0]) / 2, my = (L[i][1] + L[i + 1][1]) / 2;
+        ctx.quadraticCurveTo(X(L[i][0]), Y(L[i][1]), X(mx), Y(my));
+      }
+      ctx.lineTo(X(L[L.length - 1][0]), Y(L[L.length - 1][1]));
+      ctx.strokeStyle = "rgba(3,6,14,0.30)"; ctx.lineWidth = Math.max(1.2, s * 0.011) * lw; ctx.stroke();
+      ctx.save(); ctx.translate(-0.8, -0.8);
+      ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.lineWidth = Math.max(0.5, s * 0.0035) * lw; ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+    ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
+    const rim = ctx.createLinearGradient(0, Y(1), 0, Y(-1));
+    rim.addColorStop(0, `rgba(62,230,212,${0.45 + 0.4 * c.glow})`); rim.addColorStop(1, `rgba(255,93,143,${0.35 + 0.3 * c.glow})`);
+    ctx.strokeStyle = rim; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  // Nose marker and electrodes.
+  ctx.strokeStyle = FAINT; ctx.lineWidth = 1.2; ctx.beginPath();
+  ctx.moveTo(X(-0.07), Y(1.05)); ctx.lineTo(X(0), Y(1.13)); ctx.lineTo(X(0.07), Y(1.05)); ctx.stroke();
+  const pulse = reduceMotion ? 0 : (Math.sin(now / 420) + 1) / 2;
+  ctx.font = `500 ${Math.max(9, s * 0.045)}px "IBM Plex Mono", ui-monospace, monospace`;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  app.pos.forEach(([ex, ey], i) => {
+    const x = X(ex * 0.9), y = Y(ey * 0.94);
+    const t = clamp((vals[i] - mapRange[0]) / (mapRange[1] - mapRange[0] || 1), 0, 1);
+    ctx.beginPath(); ctx.arc(x, y, 3.2 + t * 2.4 + pulse * t * 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(5,8,15,0.75)"; ctx.fill();
+    ctx.lineWidth = 1.4; ctx.strokeStyle = `rgba(220,230,247,${0.55 + 0.45 * t})`; ctx.stroke();
+    ctx.fillStyle = "rgba(220,230,247,0.82)"; ctx.fillText(app.names[i], x, y + 7);
+  });
+
+  $("legendLo").textContent = (mapRange[0] * 100).toFixed(1) + "%";
+  $("legendHi").textContent = (mapRange[1] * 100).toFixed(1) + "%";
+}
+
+/* ---------- Traces ---------- */
+function drawTraces() {
+  const c = canvases.traces; const { ctx, w, h } = c; if (!w || !app.rings.length) return;
+  ctx.clearRect(0, 0, w, h);
+  const idx = app.traceIdx; const n = Math.round(app.fs * 6); const lane = h / idx.length; const left = 44;
+  ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  ctx.strokeStyle = LINE; ctx.lineWidth = 1;
+  for (let s = 0; s <= 6; s++) { const x = left + (w - left) * s / 6; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+  const grad = ctx.createLinearGradient(left, 0, w, 0);
+  grad.addColorStop(0, "rgba(62,230,212,0.15)"); grad.addColorStop(0.7, "rgba(62,230,212,0.85)"); grad.addColorStop(1, "#9ff7ee");
+  idx.forEach((ci, k) => {
+    const y0 = lane * (k + 0.5); const x = app.rings[ci].last(n);
+    ctx.fillStyle = MUTED; ctx.fillText(app.names[ci], 0, y0);
+    const scale = (lane * 0.45) / 60; // ±60 µV fills the lane
+    ctx.beginPath();
+    for (let i = 0; i < x.length; i++) {
+      const px = left + (w - left) * (i + n - x.length) / n; const py = y0 - clamp(x[i], -130, 130) * scale;
+      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+    }
+    ctx.strokeStyle = grad; ctx.lineWidth = 1.2; ctx.stroke();
+  });
+  if (app.artifact) { ctx.fillStyle = "rgba(255,93,108,0.08)"; ctx.fillRect(w - (w - left) / 3, 0, (w - left) / 3, h); }
+}
+
+/* ---------- Spectrum ---------- */
+function drawSpectrum() {
+  const c = canvases.spectrum; const { ctx, w, h } = c; if (!w || !app.spectrum) return;
+  ctx.clearRect(0, 0, w, h);
+  const pad = { l: 34, r: 8, t: 8, b: 20 }; const fx = f => pad.l + (w - pad.l - pad.r) * (f - 1) / 44;
+  const psd = app.spectrum; const df = app.df;
+  const logs = []; for (let k = Math.ceil(1 / df); k * df <= 45; k++) logs.push([k * df, Math.log10(psd[k] + 1e-6)]);
+  const lo = Math.min(...logs.map(p => p[1])) - 0.2, hi = Math.max(...logs.map(p => p[1])) + 0.2;
+  const fy = v => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+  for (const b of BANDS) { ctx.fillStyle = b.color + "12"; ctx.fillRect(fx(b.lo), pad.t, fx(b.hi) - fx(b.lo), h - pad.t - pad.b); }
+  ctx.font = '500 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillStyle = FAINT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  for (const f of [1, 4, 8, 12, 15, 22, 30, 40, 45]) ctx.fillText(String(f), fx(f), h - pad.b + 5);
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let v = Math.ceil(lo); v <= hi; v++) { ctx.fillStyle = FAINT; ctx.fillText(`1e${v}`, pad.l - 4, fy(v)); ctx.strokeStyle = LINE; ctx.beginPath(); ctx.moveTo(pad.l, fy(v)); ctx.lineTo(w - pad.r, fy(v)); ctx.stroke(); }
+  const grad = ctx.createLinearGradient(fx(1), 0, fx(45), 0);
+  for (const b of BANDS) grad.addColorStop(clamp(((b.lo + b.hi) / 2 - 1) / 44, 0, 1), b.color);
+  ctx.beginPath(); logs.forEach(([f, v], i) => (i ? ctx.lineTo(fx(f), fy(v)) : ctx.moveTo(fx(f), fy(v))));
+  ctx.lineTo(fx(45), h - pad.b); ctx.lineTo(fx(1), h - pad.b); ctx.closePath();
+  const fill = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); fill.addColorStop(0, "rgba(255,255,255,0.22)"); fill.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.save(); ctx.clip(); ctx.fillStyle = grad; ctx.globalAlpha = 0.35; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; ctx.fillStyle = fill; ctx.fillRect(0, 0, w, h); ctx.restore();
+  ctx.beginPath(); logs.forEach(([f, v], i) => (i ? ctx.lineTo(fx(f), fy(v)) : ctx.moveTo(fx(f), fy(v))));
+  ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
+  if (Number.isFinite(app.iaf)) {
+    const k = Math.round(app.iaf / df); const x = fx(app.iaf), y = fy(Math.log10(psd[k] + 1e-6));
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillStyle = INK; ctx.fillText(`IAF ${app.iaf.toFixed(1)} Hz`, x + 6, y - 2);
+  }
+}
+
+/* ---------- Training timeline ---------- */
+function drawTimeline() {
+  const c = canvases.timeline; const { ctx, w, h } = c; if (!w) return;
+  ctx.clearRect(0, 0, w, h);
+  const m = app.hist.metric, th = app.hist.thr; if (m.length < 2) return;
+  const pad = { l: 40, r: 6, t: 8, b: 16 };
+  const vals = m.concat(th).filter(Number.isFinite); if (!vals.length) return;
+  let lo = Math.min(...vals), hi = Math.max(...vals); const sp = (hi - lo) || 0.01; lo -= sp * 0.1; hi += sp * 0.1;
+  const fx = i => pad.l + (w - pad.l - pad.r) * i / (HISTORY - 1); const off = HISTORY - m.length;
+  const fy = v => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
+  app.hist.reward.forEach((r, i) => { if (r) { ctx.fillStyle = "rgba(62,230,212,0.10)"; ctx.fillRect(fx(i + off), pad.t, fx(1) - fx(0) + 0.5, h - pad.t - pad.b); } });
+  app.hist.artifact.forEach((a, i) => { if (a) { ctx.fillStyle = "rgba(255,93,108,0.16)"; ctx.fillRect(fx(i + off), pad.t, fx(1) - fx(0) + 0.5, h - pad.t - pad.b); } });
+  ctx.font = '500 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillStyle = FAINT; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  [lo + sp * 0.1, hi - sp * 0.1].forEach(v => ctx.fillText(v.toFixed(3), pad.l - 4, fy(v)));
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  [["-60 s", 0], ["-30 s", HISTORY / 2], ["now", HISTORY - 1]].forEach(([t, i]) => ctx.fillText(t, clamp(fx(i), pad.l + 14, w - 16), h - pad.b + 3));
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = "rgba(255,181,71,0.85)"; ctx.lineWidth = 1.2; ctx.beginPath();
+  let started = false; th.forEach((v, i) => { if (!Number.isFinite(v)) return; const X = fx(i + off), Y = fy(v); started ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); started = true; }); ctx.stroke(); ctx.setLineDash([]);
+  const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); grad.addColorStop(0, "#3ee6d4"); grad.addColorStop(1, "#6b74ff");
+  ctx.beginPath(); m.forEach((v, i) => (i ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v)))); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
+  const lx = fx(HISTORY - 1), ly = fy(m[m.length - 1]); ctx.fillStyle = "#3ee6d4"; ctx.beginPath(); ctx.arc(lx - 2, ly, 3.5, 0, Math.PI * 2); ctx.fill();
+}
+
+/* ---------- Hemispheric balance ---------- */
+function drawBalance() {
+  const c = canvases.balance; const { ctx, w, h } = c; if (!w || !app.rel.length) return;
+  ctx.clearRect(0, 0, w, h);
+  const left = [], right = []; app.pos.forEach(([x], i) => { if (x < -0.05) left.push(i); else if (x > 0.05) right.push(i); });
+  if (!left.length || !right.length) { ctx.fillStyle = MUTED; ctx.font = "13px system-ui"; ctx.fillText("Needs channels on both sides of the head", 8, 20); return; }
+  const mean = (idx, k) => idx.reduce((s, i) => s + app.rel[i][k], 0) / idx.length;
+  const rows = BANDS.map(b => ({ b, L: mean(left, b.key), R: mean(right, b.key) }));
+  const max = Math.max(...rows.map(r => Math.max(r.L, r.R)), 0.05);
+  const mid = w / 2, rowH = h / rows.length, half = mid - 52;
+  ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = "middle";
+  rows.forEach(({ b, L, R }, i) => {
+    const y = rowH * (i + 0.5), bh = Math.min(12, rowH * 0.45);
+    const gl = ctx.createLinearGradient(mid, 0, mid - half, 0); gl.addColorStop(0, b.color + "33"); gl.addColorStop(1, b.color);
+    const gr = ctx.createLinearGradient(mid, 0, mid + half, 0); gr.addColorStop(0, b.color + "33"); gr.addColorStop(1, b.color);
+    const lw = half * L / max, rw = half * R / max;
+    ctx.fillStyle = gl; ctx.fillRect(mid - 26 - lw, y - bh / 2, lw, bh);
+    ctx.fillStyle = gr; ctx.fillRect(mid + 26, y - bh / 2, rw, bh);
+    ctx.fillStyle = MUTED; ctx.textAlign = "center"; ctx.fillText(b.name, mid, y);
+    ctx.fillStyle = INK; ctx.textAlign = "right"; ctx.fillText((L * 100).toFixed(0) + "%", Math.max(28, mid - 30 - lw), y);
+    ctx.textAlign = "left"; ctx.fillText((R * 100).toFixed(0) + "%", Math.min(w - 28, mid + 30 + rw), y);
+  });
+  // Frontal alpha asymmetry: ln(right alpha) - ln(left alpha) at the best available frontal pair.
+  const pairs = [["F3", "F4"], ["AF7", "AF8"], ["Fp1", "Fp2"], ["F7", "F8"]];
+  const pair = pairs.find(([a, b]) => app.names.includes(a) && app.names.includes(b));
+  if (pair) {
+    const L = app.rel[app.names.indexOf(pair[0])].alpha, R = app.rel[app.names.indexOf(pair[1])].alpha;
+    const faa = Math.log(R + 1e-9) - Math.log(L + 1e-9);
+    app.faa = lerp(app.faa ?? faa, faa, 0.25);
+    $("faa").textContent = (app.faa >= 0 ? "+" : "") + app.faa.toFixed(3);
+    $("faaWhich").textContent = `ln α ${pair[1]} − ln α ${pair[0]}`;
+    $("faaMark").style.left = `${clamp(50 + app.faa * 120, 2, 98)}%`;
+  } else {
+    $("faa").textContent = "--";
+    $("faaWhich").textContent = "Needs a left/right frontal pair such as F3/F4 or AF7/AF8";
+    $("faaMark").style.left = "50%";
+  }
+}
+
+/* ---------- Index cards ---------- */
+const INDEX_DEFS = [
+  { key: "calm", name: "Calm", unit: "% α", fmt: v => v.toFixed(1), color: "#3ee6d4", desc: "Posterior relative alpha. Rises with relaxed, eyes-closed wakefulness." },
+  { key: "focus", name: "Engagement", unit: "β/(α+θ)", fmt: v => v.toFixed(2), color: "#ffd05a", desc: "Beta over alpha plus theta, a common attention index." },
+  { key: "drowsy", name: "Drowsiness", unit: "θ/β", fmt: v => v.toFixed(2), color: "#4fb8ff", desc: "Theta to beta ratio. Climbs as vigilance drops." },
+  { key: "tension", name: "Muscle tension", unit: "% >22 Hz", fmt: v => v.toFixed(1), color: "#ff5d8f", desc: "High-frequency power, mostly scalp and jaw muscle." },
+];
+function buildIndices() {
+  $("indices").innerHTML = INDEX_DEFS.map(d => `
+    <div class="index"><div class="name"><span>${d.name}</span><span>${d.unit}</span></div>
+    <div class="val" id="v-${d.key}" style="color:${d.color}">--</div>
+    <canvas id="s-${d.key}" aria-hidden="true"></canvas><div class="desc">${d.desc}</div></div>`).join("");
+  INDEX_DEFS.forEach(d => bindCanvas(`s-${d.key}`));
+}
+function drawIndices() {
+  INDEX_DEFS.forEach(d => {
+    const arr = app.idx[d.key]; if (!arr.length) return;
+    const recent = arr.slice(-8); const v = recent.reduce((a, b) => a + b, 0) / recent.length;
+    $(`v-${d.key}`).textContent = d.fmt(v);
+    const c = canvases[`s-${d.key}`]; const { ctx, w, h } = c; if (!w) return;
+    ctx.clearRect(0, 0, w, h); if (arr.length < 2) return;
+    const lo = Math.min(...arr), hi = Math.max(...arr), sp = (hi - lo) || 1;
+    const fx = i => (w - 4) * i / (HISTORY - 1), off = HISTORY - arr.length, fy = v => h - 3 - (h - 6) * (v - lo) / sp;
+    ctx.beginPath(); arr.forEach((v, i) => (i ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v))));
+    ctx.lineTo(fx(HISTORY - 1), h); ctx.lineTo(fx(off), h); ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, d.color + "55"); g.addColorStop(1, d.color + "00"); ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath(); arr.forEach((v, i) => (i ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v)))); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5; ctx.stroke();
+    ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(fx(HISTORY - 1), fy(arr[arr.length - 1]), 2.5, 0, Math.PI * 2); ctx.fill();
+  });
+}
+
+/* ---------- Status text ---------- */
+function updateStatus() {
+  $("clock").textContent = fmtTime(app.t);
+  $("phaseText").textContent = app.phase === "baseline" ? "Calibrating" : "Training";
+  const rd = $("rewardDot"), rt = $("rewardText");
+  if (app.artifact) { rd.className = "dot artifact"; rt.textContent = "Artifact"; }
+  else if (app.reward) { rd.className = "dot reward"; rt.textContent = "Reward"; }
+  else { rd.className = "dot"; rt.textContent = app.phase === "baseline" ? "Calibrating" : "Below target"; }
+  $("metricBig").textContent = Number.isFinite(app.metric) ? app.metric.toFixed(3) : "--";
+  $("metricLabel").textContent = app.metricLabel;
+  $("thrVal").textContent = Number.isFinite(app.threshold) ? app.threshold.toFixed(3) : "--";
+  $("rewardPct").textContent = (app.rewardFrac * 100).toFixed(1) + "%";
+  const ups = app.hist.artifact.length; $("artPct").textContent = ups ? (100 * app.hist.artifact.reduce((a, b) => a + b, 0) / ups).toFixed(1) + "%" : "--";
+  $("iaf").textContent = Number.isFinite(app.iaf) ? app.iaf.toFixed(1) + " Hz" : "--";
+  $("assr").textContent = Number.isFinite(app.assr) ? `${app.assr.toFixed(1)}× neighbours` : "--";
+  if (app.mode === "sim") $("srcText").textContent = `Simulation · ${STATES[app.sim.state].label}`;
+}
+
+/* ---------- Controls ---------- */
+function buildBandChips() {
+  $("bandChips").innerHTML = BANDS.map(b => `<button type="button" class="chip" style="--c:${b.color}" data-band="${b.key}" aria-pressed="${b.key === app.mapBand}">${b.name}<span>${b.lo}-${b.hi}</span></button>`).join("");
+  $("bandChips").addEventListener("click", e => {
+    const btn = e.target.closest("[data-band]"); if (!btn) return;
+    app.mapBand = btn.dataset.band;
+    document.querySelectorAll("#bandChips .chip").forEach(c => c.setAttribute("aria-pressed", String(c === btn)));
+    $("mapHint").textContent = `Relative ${BAND[app.mapBand].name.toLowerCase()} power, viewed from above`;
+    try { localStorage.setItem("nova.band", app.mapBand); } catch {}
+  });
+}
+function wireControls() {
+  $("scenario").addEventListener("change", e => { app.scenario = e.target.value; });
+  $("protocol").addEventListener("change", e => {
+    app.protocol = e.target.value; app.hist._raw = []; app.counts = { updates: 0, rewarded: 0, artifacts: 0 };
+    app.hist.metric.length = app.hist.thr.length = app.hist.reward.length = app.hist.artifact.length = 0;
+  });
+  const toggle = (id, fn) => $(id).addEventListener("click", e => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(on)); fn(on); });
+  toggle("stimBtn", on => { app.sim.stim = on; });
+  toggle("blinkBtn", on => { app.sim.blinks = on; });
+  $("pauseBtn").addEventListener("click", () => { app.paused = !app.paused; $("pauseBtn").textContent = app.paused ? "Resume" : "Pause"; });
+}
+function setMode(mode) {
+  app.mode = mode;
+  document.querySelectorAll(".sim-only").forEach(el => { el.hidden = mode !== "sim"; });
+  $("srcDot").className = `dot ${mode === "live" ? "live" : "sim"}`;
+}
+
+/* ---------- Live data from `nova run --feedback dashboard` ---------- */
+function connectLive() {
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if (!local || !window.EventSource) return;
+  const es = new EventSource("/stream");
+  es.addEventListener("meta", e => {
+    const m = JSON.parse(e.data);
+    setMode("live"); resetChannels(m.channels, m.sampling_rate);
+    app.device = m.device; app.metricLabel = m.metric_label; app.liveDirection = m.direction;
+    app.hist = { metric: [], thr: [], reward: [], artifact: [] }; app.faa = undefined;
+    app.idx = { calm: [], focus: [], drowsy: [], tension: [] };
+    $("srcText").textContent = `Live · ${m.device}`;
+  });
+  es.addEventListener("update", e => {
+    if (app.mode !== "live" || app.paused) return;
+    const u = JSON.parse(e.data);
+    u.samples.forEach((ch, c) => { const r = app.rings[c]; if (r) for (const v of ch) r.push(v); });
+    Object.assign(app, { t: u.t, phase: u.phase, metric: u.metric ?? NaN, threshold: u.threshold ?? NaN, reward: u.reward,
+      artifact: u.artifact, rewardFrac: u.reward_fraction, stimOn: u.stim_on });
+    if (analyse()) { drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); }
+    updateStatus();
+  });
+  es.addEventListener("end", () => { $("srcText").textContent = `Session ended · ${app.device}`; $("srcDot").className = "dot"; es.close(); });
+}
+
+/* ---------- Main loop ---------- */
+function start() {
+  ["brain", "traces", "spectrum", "timeline", "balance"].forEach(bindCanvas);
+  buildIndices(); buildBandChips(); wireControls();
+  try { const b = localStorage.getItem("nova.band"); if (b && BAND[b]) document.querySelector(`[data-band="${b}"]`)?.click(); } catch {}
+  resetChannels(SIM_CHANNELS, 128);
+  app.sim = new Simulator(SIM_CHANNELS, 128);
+  setMode("sim");
+  // Warm up 40 s of history so the first frame is a working view, not an empty one.
+  for (let i = 0; i < 160; i++) {
+    const chunk = app.sim.generate(32, app.scenario); chunk.forEach((ch, c) => ch.forEach(v => app.rings[c].push(v)));
+    analyse();
+  }
+  drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); updateStatus();
+  connectLive();
+
+  let last = performance.now(), acc = 0, sinceAnalysis = 0;
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.1); last = now;
+    if (app.mode === "sim" && !app.paused) {
+      acc += dt * app.fs; const n = Math.floor(acc); acc -= n;
+      if (n > 0) { const chunk = app.sim.generate(n, app.scenario); chunk.forEach((ch, c) => { for (const v of ch) app.rings[c].push(v); }); }
+      sinceAnalysis += dt * 1000;
+      if (sinceAnalysis >= UPDATE_MS) { sinceAnalysis = 0; analyse(); drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); updateStatus(); }
+    }
+    for (const c of Object.values(canvases)) if (c.dirty) { c.dirty = false; drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); break; }
+    drawBrain(now);
+    if (!app.paused) drawTraces();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+start();
+})();
+</script>

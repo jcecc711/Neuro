@@ -27,9 +27,13 @@ class FeedbackState:
     reward_fraction: float = 0.0
     band_powers: dict[str, float] = field(default_factory=dict)  # relative to 1-40 Hz
     stim_on: bool = False
+    samples: np.ndarray | None = None  # filtered µV received since the previous update
 
 
 class FeedbackSink:
+    def configure(self, session) -> None:
+        """Called with the running Session before open(), for sinks that need its setup."""
+
     def open(self) -> None:
         pass
 
@@ -160,7 +164,7 @@ class VisualFeedback(FeedbackSink):
         try:
             import pygame
         except ImportError as e:
-            raise RuntimeError("visual feedback needs pygame: pip install 'neuro[visual]'") from e
+            raise RuntimeError("visual feedback needs pygame: pip install 'nova[visual]'") from e
         self._pg = pygame
         self.size = size
         self.fullscreen = fullscreen
@@ -208,16 +212,21 @@ class VisualFeedback(FeedbackSink):
             self._screen = None
 
 
-FEEDBACK_KINDS = ("console", "audio", "sonify", "visual")
+FEEDBACK_KINDS = ("console", "audio", "sonify", "visual", "dashboard")
 
 
-def make_sinks(names: list[str], engine: AudioEngine | None = None) -> list[FeedbackSink]:
+def make_sinks(
+    names: list[str], engine: AudioEngine | None = None, dashboard_port: int = 8765
+) -> list[FeedbackSink]:
+    from .live import DashboardFeedback
+
     engine = engine or AudioEngine()
     factories = {
         "console": ConsoleFeedback,
         "audio": lambda: AudioFeedback(engine),
         "sonify": lambda: SonifyFeedback(engine),
         "visual": VisualFeedback,
+        "dashboard": lambda: DashboardFeedback(port=dashboard_port),
     }
     sinks = []
     for name in names:

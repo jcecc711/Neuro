@@ -170,6 +170,7 @@ class Session:
         if self.stimulus:
             self.stimulus.open()
         for sink in self.sinks:
+            sink.configure(self)
             sink.open()
         try:
             with self.device:
@@ -195,10 +196,11 @@ class Session:
         self._samples += chunk.shape[1]
         self._since_update += chunk.shape[1]
         if self._since_update >= self._update_samples and self._buffer.full:
+            new = self._since_update
             self._since_update = 0
-            self._update()
+            self._update(new)
 
-    def _update(self) -> None:
+    def _update(self, new_samples: int = 0) -> None:
         cfg = self.config
         window = self._buffer.get()
         freqs, psd = power_spectrum(window, self.device.sampling_rate)
@@ -255,6 +257,7 @@ class Session:
             reward_fraction=st.rewarded / st.training_updates if st.training_updates else 0.0,
             band_powers=band_powers,
             stim_on=stim_on,
+            samples=window[:, -min(new_samples, window.shape[1]):] if new_samples else None,
         )
         for sink in self.sinks:
             sink.update(state)

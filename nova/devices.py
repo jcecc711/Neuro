@@ -137,7 +137,7 @@ class BrainFlowDevice(Device):
         try:
             from brainflow.board_shim import BoardShim, BrainFlowInputParams
         except ImportError as e:  # pragma: no cover - depends on environment
-            raise DeviceError("BrainFlow is not installed: pip install 'neuro[brainflow]'") from e
+            raise DeviceError("BrainFlow is not installed: pip install 'nova[brainflow]'") from e
 
         self._BoardShim = BoardShim
         self.board_id = resolve_brainflow_board(board)
@@ -200,7 +200,7 @@ class LSLDevice(Device):
         try:
             import pylsl
         except ImportError as e:  # pragma: no cover - depends on environment
-            raise DeviceError("pylsl is not installed: pip install 'neuro[lsl]'") from e
+            raise DeviceError("pylsl is not installed: pip install 'nova[lsl]'") from e
 
         prop, value = ("name", stream_name) if stream_name else ("type", stream_type)
         streams = pylsl.resolve_byprop(prop, value, timeout=timeout)
@@ -258,4 +258,4 @@ def resolve_brainflow_board(board: str | int) -> int:
     for candidate in (key, f"{key}_BOARD"):
         if candidate in BoardIds.__members__:
             return BoardIds[candidate].value
-    raise DeviceError(f"unknown BrainFlow board {board!r}; run 'neuro devices' to list them")
+    raise DeviceError(f"unknown BrainFlow board {board!r}; run 'nova devices' to list them")

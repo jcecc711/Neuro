@@ -1,4 +1,4 @@
-"""Command-line interface: `neuro devices | protocols | check | run`."""
+"""Command-line interface: `nova devices | protocols | check | run`."""
 
 from __future__ import annotations
 
@@ -64,7 +64,7 @@ def cmd_devices(_args: argparse.Namespace) -> int:
         for n in names:
             print(f"  {n.removesuffix('_board')}")
     else:
-        print("\nBrainFlow not installed; pip install 'neuro[brainflow]' for OpenBCI, Muse, etc.")
+        print("\nBrainFlow not installed; pip install 'nova[brainflow]' for OpenBCI, Muse, etc.")
     return 0
 
 
@@ -201,7 +201,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     device = open_device(args)
     engine = AudioEngine()
-    sinks = make_sinks(args.feedback.split(","), engine)
+    sinks = make_sinks(args.feedback.split(","), engine, dashboard_port=args.dashboard_port)
     stimulus = Stimulus(spec, engine) if spec else None
     session = Session(device, protocol, config, sinks, log_path, stimulus)
     print(f"{device.description}")
@@ -215,8 +215,29 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_dashboard(args: argparse.Namespace) -> int:
+    """Serve the NOVA dashboard on its own; the page runs its built-in simulation."""
+    from .live import DashboardServer
+
+    server = DashboardServer(port=args.port)
+    server.start()
+    print(f"NOVA dashboard (simulation): {server.url}  Ctrl-C to stop.")
+    if not args.no_browser:
+        import webbrowser
+
+        webbrowser.open(server.url)
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        server.stop()
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="neuro", description="Real-time EEG neurofeedback trainer")
+    parser = argparse.ArgumentParser(prog="nova", description="NOVA: real-time EEG neurofeedback")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("devices", help="list supported hardware").set_defaults(func=cmd_devices)
@@ -240,6 +261,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument(
         "--feedback", default="console", help=f"comma list of: {', '.join(FEEDBACK_KINDS)} (default console)"
     )
+    run.add_argument("--dashboard-port", type=int, default=8765, help="port for --feedback dashboard")
     run.add_argument("--log-dir", default="sessions")
     run.add_argument("--no-log", action="store_true")
     add_stim_args(run)
@@ -257,6 +279,11 @@ def build_parser() -> argparse.ArgumentParser:
     stim.add_argument("--seconds", type=float, default=300.0)
     stim.add_argument("--out", default=None, help="write a .wav file instead of playing (e.g. to play on a phone)")
     stim.set_defaults(func=cmd_stim)
+
+    dash = sub.add_parser("dashboard", help="open the NOVA dashboard with its built-in simulation")
+    dash.add_argument("--port", type=int, default=8765)
+    dash.add_argument("--no-browser", action="store_true")
+    dash.set_defaults(func=cmd_dashboard)
     return parser
 
 
@@ -264,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
         return args.func(args)
-    except (DeviceError, ValueError, RuntimeError) as e:
+    except (DeviceError, ValueError, RuntimeError, OSError) as e:
         print(f"error: {e}", file=sys.stderr)
         return 1
 
