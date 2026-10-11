@@ -93,3 +93,17 @@ class _Forward:
 
     def close(self):
         pass
+
+
+def test_home_screen_app_assets():
+    server = DashboardServer(port=0)
+    server.start()
+    try:
+        html = urllib.request.urlopen(server.url, timeout=5).read().decode()
+        assert 'apple-mobile-web-app-capable" content="yes"' in html and 'rel="manifest"' in html
+        manifest = json.loads(urllib.request.urlopen(server.url + "manifest.webmanifest", timeout=5).read())
+        assert manifest["display"] == "fullscreen" and manifest["orientation"] == "landscape"
+        icon = urllib.request.urlopen(server.url + "icon-180.png", timeout=5).read()
+        assert icon[:8] == b"\x89PNG\r\n\x1a\n"
+    finally:
+        server.stop()

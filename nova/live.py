@@ -33,14 +33,39 @@ from .feedback import FeedbackSink, FeedbackState
 _SKELETON = (
     '<!doctype html><html lang="en"><head><meta charset="utf-8">'
     '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">'
+    # Add to Home Screen on iPad: opens full screen, without Safari's bars.
+    '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">'
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">'
+    '<meta name="apple-mobile-web-app-title" content="NOVA"><meta name="theme-color" content="#000000">'
+    '<link rel="manifest" href="/manifest.webmanifest"><link rel="apple-touch-icon" href="/icon-180.png">'
+    "<style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);"
+    "background:#000}body{margin:0}[hidden]{display:none!important}</style>"
     "</head><body>{body}</body></html>"
 )
+
+MANIFEST = {
+    "name": "NOVA Neurofeedback",
+    "short_name": "NOVA",
+    "start_url": "/",
+    "display": "fullscreen",
+    "orientation": "landscape",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "icons": [
+        {"src": "/icon-180.png", "sizes": "180x180", "type": "image/png"},
+        {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    ],
+}
+
+
+def _asset(name: str) -> bytes:
+    return files("nova").joinpath(f"dashboard/{name}").read_bytes()
 
 
 def dashboard_html() -> str:
     """The console page, wrapped in a full HTML document."""
     body = files("nova").joinpath("dashboard/index.html").read_text(encoding="utf-8")
-    return _SKELETON.format(body=body)
+    return _SKELETON.replace("{body}", body)
 
 
 class DashboardServer:
@@ -88,6 +113,21 @@ class DashboardServer:
                 elif self.path == "/favicon.ico":
                     self.send_response(204)
                     self.end_headers()
+                elif self.path == "/manifest.webmanifest":
+                    body = json.dumps(MANIFEST).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/manifest+json")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.end_headers()
+                    self.wfile.write(body)
+                elif self.path in ("/icon-180.png", "/icon-512.png"):
+                    body = _asset(self.path.lstrip("/"))
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Cache-Control", "max-age=86400")
+                    self.end_headers()
+                    self.wfile.write(body)
                 elif self.path == "/api/status":
                     ctl = server.controller
                     self._json(200, {"app": ctl is not None, "session": ctl.status() if ctl else None})

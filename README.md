@@ -51,6 +51,14 @@ nova app --host 0.0.0.0     # prints an address like http://192.168.1.20:8765 fo
 
 Anyone on that network can open it, so use it on a home network you trust.
 
+**Full screen in landscape.** With the iPad (or a wide window) in landscape, the session fits
+one screen with no scrolling: the brain fills the left, the on-target ring and live activity sit
+on the right, the band cards and timeline run along the bottom, and **Details** slides up the
+phase list, spectrum and other tabs. For an edge-to-edge app without Safari's bars, open
+`nova app` in Safari, tap Share, then **Add to Home Screen**; NOVA then launches full screen in
+landscape from its own icon. In Safari you can also tap the full-screen button in the brain viewer
+where the browser allows it, or hide the toolbar from the **aA** menu.
+
 ### Learn and the training plan
 
 The **Learn** section explains what's different in the ADHD brain, what EEG shows (and doesn't),

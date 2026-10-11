@@ -565,6 +565,67 @@ details.builder summary::marker { color: var(--link); }
 @media (prefers-reduced-motion: reduce) {
   .card, .ring-fill, .gesture-hint { transition: none; }
 }
+
+/* Fit-to-screen session for landscape iPad and wide windows: brain on the left, live activity on
+   the right, compact band cards and timeline below; the detail tabs open as a sheet. */
+.console-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sheet-done, .details-btn { display: none; }
+@media (orientation: landscape) and (min-width: 1000px) {
+  .session { height: calc(100dvh - 52px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 34px); min-height: 560px; gap: 12px;
+    grid-template-columns: minmax(0, 1fr) clamp(300px, 27vw, 380px); grid-template-rows: minmax(0, 1fr) auto auto auto;
+    grid-template-areas: "view target" "view activity" "view states" "cards cards" "time time"; grid-template-rows: auto minmax(0, 1fr) auto auto auto; }
+  .target-slot { grid-area: target; }
+  .target-slot .target-card { position: static; width: auto; display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; justify-items: start;
+    gap: 2px 16px; padding: 14px 18px; border-radius: 22px; background: var(--tile); box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .target-slot .ring { width: 84px; height: 84px; grid-row: 1 / span 3; }
+  .target-slot .target-card b { font-size: 19px; }
+  .target-slot .target-label { justify-content: flex-start; }
+  .target-slot .target-card small { display: block; }
+  .target-slot .target-menu { grid-column: 1 / -1; }
+  .band-cards { grid-template-columns: repeat(6, minmax(0, 1fr)); row-gap: 10px; }
+  .guidance { left: 90px; right: 90px; bottom: 74px; }
+  .viewport { min-height: 0; border-radius: 26px; }
+  #brain3d { border-radius: 26px; }
+  .activity, .states { padding: 16px 18px; border-radius: 22px; gap: 8px; }
+  .activity { min-height: 0; }
+  #activity { height: clamp(140px, calc(100dvh - 690px), 290px); }
+  #stateChart { height: clamp(96px, calc(100dvh - 760px), 170px); }
+  .states .legend-row { display: none; }
+  .band-cards { gap: 10px; padding-top: 8px; }
+  .bcard { padding: 16px 12px 8px; border-radius: 18px; gap: 6px; }
+  .bcard h3 { font-size: 13px; color: var(--muted); }
+  .bmain { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; }
+  .bsym { width: 30px; height: 30px; font-size: 19px; border-radius: 9px; }
+  .bmain b { font-size: 18px; }
+  .brange { display: none; }
+  .bcard canvas { height: 30px; }
+  .bchip { top: -8px; padding: 3px 9px; font-size: 10px; }
+  .timebar-panel { padding: 6px 16px; border-radius: 18px; }
+  #timebar { height: 52px; }
+  .guidance { font-size: clamp(17px, 1.6vw, 21px); }
+  .view-actions { right: 16px; bottom: 16px; }
+  .details-btn { display: inline-flex; }
+  .shell { padding-block: 18px 12px; }
+  /* Details as a bottom sheet over the session. */
+  .console { position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom, 0px)); transform: translate(-50%, calc(100% + 40px)); z-index: 30;
+    width: min(1100px, calc(100vw - 40px)); max-height: 62dvh; overflow: auto; visibility: hidden;
+    background: rgba(28, 28, 30, 0.94); -webkit-backdrop-filter: saturate(180%) blur(24px); backdrop-filter: saturate(180%) blur(24px);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6); transition: transform .45s cubic-bezier(.2, .8, .2, 1), visibility 0s .45s; }
+  .session.show-console .console { transform: translate(-50%, 0); visibility: visible; transition: transform .45s cubic-bezier(.2, .8, .2, 1); }
+  .sheet-done { display: inline-flex; border: 0; background: none; color: var(--link); font: 600 17px var(--body); padding: 6px 4px; }
+}
+@media (orientation: landscape) and (min-width: 1000px) and (max-height: 700px) {
+  .band-cards .bcard canvas { display: none; }
+  .view-band { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .console { transition: none !important; }
+}
+/* Fullscreen and Home Screen app: drop the page gutter so the session is edge to edge. */
+:fullscreen .shell, :-webkit-full-screen .shell { max-width: none; }
+@media (display-mode: fullscreen), (display-mode: standalone) {
+  .nav { margin-top: 0; }
+}
 </style>
 
 <div class="shell">
@@ -695,7 +756,7 @@ details.builder summary::marker { color: var(--link); }
       <div class="view-metric"><span class="lab">Training metric</span><span class="big" id="metricBig">--</span><span class="lab" id="metricLabel">--</span></div>
       <div class="gauge" aria-hidden="true"><span>Target</span><div class="gauge-track"><i id="gaugeThr"></i><b id="gaugePtr"></b></div><span>Search</span></div>
       <p class="guidance" id="guidance"></p>
-      <div class="view-actions"><button type="button" class="glass-btn" id="skipBtn">Next phase</button><button type="button" class="glass-btn end" id="endBtn">End session</button></div>
+      <div class="view-actions"><button type="button" class="glass-btn details-btn" id="detailsBtn" aria-expanded="false" aria-controls="consolePanel">Details</button><button type="button" class="glass-btn" id="skipBtn">Next phase</button><button type="button" class="glass-btn end" id="endBtn">End session</button></div>
       <aside class="target-card" aria-live="polite">
         <div class="ring" aria-hidden="true">
           <svg viewBox="0 0 120 120"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f35a"/><stop offset="1" stop-color="#2fd36b"/></linearGradient></defs>
@@ -714,6 +775,7 @@ details.builder summary::marker { color: var(--link); }
       </aside>
     </section>
 
+    <div class="target-slot" id="targetSlot"></div>
     <section class="panel activity">
       <div class="panel-head"><h2>Brain activity</h2><span class="wave-src" id="waveSrc">Live</span></div>
       <canvas id="activity" aria-label="Live brain rhythms, each band on its own line, with its peak frequency"></canvas>
@@ -729,15 +791,15 @@ details.builder summary::marker { color: var(--link); }
 
     <section class="panel timebar-panel"><canvas id="timebar" aria-label="Session timeline"></canvas></section>
 
-    <section class="panel console">
-      <div class="console-tabs" role="tablist" id="consoleTabs">
+    <section class="panel console" id="consolePanel">
+      <div class="console-bar"><div class="console-tabs" role="tablist" id="consoleTabs">
         <button type="button" role="tab" data-tab="session" aria-selected="true">Phases</button>
         <button type="button" role="tab" data-tab="training" aria-selected="false">Training</button>
         <button type="button" role="tab" data-tab="spectrum" aria-selected="false">Spectrum</button>
         <button type="button" role="tab" data-tab="channels" aria-selected="false">Channels</button>
         <button type="button" role="tab" data-tab="indices" aria-selected="false">Indices</button>
         <button type="button" role="tab" data-tab="balance" aria-selected="false">Balance</button>
-      </div>
+      </div><button type="button" class="sheet-done" id="consoleClose">Done</button></div>
       <div class="pane pane-session" data-pane="session">
         <div class="session-side">
           <div class="stats">
@@ -2256,6 +2318,7 @@ function enterSession(program, deviceLabel, dotClass) {
 }
 function leaveSession() {
   keepAwake(false);
+  $("sessionView").classList.remove("show-console");
   app.session = null; app.runner = null; app.demo = null; app.u = null;
   $("clockPill").hidden = true; $("rewardPill").hidden = true;
   $("navMain").textContent = "Programs"; showView("programs");
@@ -2687,8 +2750,29 @@ function wire() {
     for (const cl of [app.cloud, app.heroCloud]) if (cl) cl.auto = on; });
   $("toolMute").addEventListener("click", e => { const muted = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(muted));
     audio.setVolume(muted ? 0 : Number($("volume").value)); });
-  $("toolFull").addEventListener("click", () => { const el = document.documentElement;
-    (document.fullscreenElement ? document.exitFullscreen() : el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(() => {}); });
+  // Real fullscreen where the browser allows it (Safari on iPad uses the webkit-prefixed API).
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  const fsOK = document.fullscreenEnabled || document.webkitFullscreenEnabled;
+  if (!fsOK) $("toolFull").hidden = true;
+  $("toolFull").addEventListener("click", () => {
+    const el = document.documentElement;
+    try {
+      if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: "hide" }); if (p && p.catch) p.catch(() => {}); }
+    } catch {}
+  });
+  const fsSync = () => $("toolFull").setAttribute("aria-pressed", String(!!fsEl()));
+  document.addEventListener("fullscreenchange", fsSync); document.addEventListener("webkitfullscreenchange", fsSync);
+  // In the fit-to-screen layout the on-target card moves from the brain viewer into the right column.
+  const fitMQ = window.matchMedia("(orientation: landscape) and (min-width: 1000px)");
+  const placeTarget = () => { const card = document.querySelector(".target-card");
+    if (fitMQ.matches) $("targetSlot").appendChild(card); else document.querySelector(".viewport").appendChild(card); };
+  placeTarget(); (fitMQ.addEventListener ? fitMQ.addEventListener("change", placeTarget) : fitMQ.addListener(placeTarget));
+  const sheet = open => { $("sessionView").classList.toggle("show-console", open); $("detailsBtn").setAttribute("aria-expanded", String(open));
+    Object.values(canvases).forEach(c => (c.dirty = true)); if (open) $("consoleClose").focus(); };
+  $("detailsBtn").addEventListener("click", () => sheet(!$("sessionView").classList.contains("show-console")));
+  $("consoleClose").addEventListener("click", () => { sheet(false); $("detailsBtn").focus(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && $("sessionView").classList.contains("show-console")) sheet(false); });
   $("consoleTabs").addEventListener("click", e => { const b = e.target.closest("[data-tab]"); if (!b) return;
     document.querySelectorAll("#consoleTabs [data-tab]").forEach(x => x.setAttribute("aria-selected", String(x === b)));
     document.querySelectorAll(".hud-console [data-pane]").forEach(p => { p.hidden = p.dataset.pane !== b.dataset.tab; });
