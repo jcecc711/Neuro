@@ -32,6 +32,27 @@ phase, and a CSV log is saved in `sessions/`.
 
 Without a headset, choose **Demo signal** to try any program with generated EEG.
 
+### What's on screen during a session
+
+- **3D brain** on a holographic platform, coloured by live activity at each sensor. Drag
+  to turn it; zoom with the buttons or the scroll wheel.
+- **On target card:** the share of training time you've been rewarded. **Set new target**
+  changes difficulty mid-session: Gentle (70%), Balanced (60%) or Challenging (50%).
+- **Band cards:** concentration (γ), active mind (β), calm focus (SMR), reflective (α),
+  drowsy (θ) and deep rest (δ). Each shows its live peak frequency and share of total
+  power at the training sites. The rhythm being trained is outlined.
+- **Brain activity:** every band's live trace with its peak frequency.
+- **Time in each state:** how long your brain has spent dominated by each rhythm.
+- **Timeline** of the whole session, and tabs for phases, training trace, spectrum, raw
+  channels, state indices and left/right balance.
+
+### History and reports
+
+Every finished session is saved (`sessions/*.json` next to the CSV log). **My history**
+lists them with time on target per session against the target line, change from baseline
+and top brain state. **Reports** shows minutes trained per day, total time in each state,
+and per-program progress.
+
 ## Programs
 
 | Program | For | Trains | Sensors | Research basis |

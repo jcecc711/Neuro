@@ -8,7 +8,9 @@ the wall clock, so the same loop drives live hardware and fast offline runs.
 from __future__ import annotations
 
 import csv
+import json
 import threading
+from datetime import datetime
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -22,6 +24,22 @@ from .programs import Phase, Program, simple_program
 from .protocols import BANDS, Protocol
 from .stimulation import Stimulus
 from .threshold import AdaptiveThreshold, InhibitThreshold
+
+# Brain states shown in the app, each tied to the band that dominates it. A state is
+# "dominant" when its band's relative power is highest compared with a typical resting
+# share, so delta (always the largest raw share) doesn't win every time.
+STATES: dict[str, tuple[str, float]] = {
+    "concentration": ("gamma", 0.04),
+    "active": ("beta", 0.14),
+    "calm_focus": ("smr", 0.07),
+    "reflective": ("alpha", 0.2),
+    "drowsy": ("theta", 0.16),
+    "deep_rest": ("delta", 0.3),
+}
+
+
+def dominant_state(band_powers: dict[str, float]) -> str:
+    return max(STATES, key=lambda s: band_powers.get(STATES[s][0], 0.0) / STATES[s][1])
 
 
 @dataclass
@@ -77,6 +95,9 @@ class SessionSummary:
     stim_power_off: float = float("nan")
     program: str = ""
     phases: list[PhaseSummary] = field(default_factory=list)
+    program_id: str = ""
+    started_at: str = ""
+    states: dict[str, float] = field(default_factory=dict)  # seconds spent in each brain state
 
     @property
     def change(self) -> float:
@@ -97,6 +118,10 @@ class SessionSummary:
             f"Artifacts:       {self.artifact_fraction:.1%} of updates",
         ]
         lines = [line for line in lines if line]
+        if self.states and sum(self.states.values()) > 0:
+            total = sum(self.states.values())
+            top = sorted(self.states.items(), key=lambda kv: -kv[1])[:3]
+            lines.append("Brain states:    " + ", ".join(f"{k.replace('_', ' ')} {v / total:.0%}" for k, v in top))
         if len(self.phases) > 2:
             lines.append("Phases:")
             for p in self.phases:
@@ -236,6 +261,9 @@ class Session:
         self._skip = threading.Event()
         self._stop = threading.Event()
         self._frozen = False
+        self._rate_override: float | None = None
+        self._state_seconds = {s: 0.0 for s in STATES}
+        self._started_at = ""
         self._streak = 0
         self._samples = 0
         self._since_update = 0
@@ -282,6 +310,28 @@ class Session:
         """Move on to the next phase at the next update. Safe to call from another thread."""
         self._skip.set()
 
+    def set_reward_rate(self, rate: float) -> None:
+        """Set a new target share of time rewarded for this and later training phases.
+
+        Safe to call from another thread; takes effect at the next update.
+        """
+        if not 0.05 <= rate <= 0.95:
+            raise ValueError("reward rate must be between 0.05 and 0.95")
+        self._rate_override = rate
+
+    def _phase_rate(self, phase: Phase) -> float:
+        if self._rate_override is None:
+            return phase.reward_rate
+        # Warm-up stays a little easier than the chosen target.
+        return min(0.95, self._rate_override + 0.15) if phase.reward_rate > 0.7 else self._rate_override
+
+    @property
+    def reward_rate(self) -> float:
+        phase = self.phase
+        if phase is not None and phase.kind == "training":
+            return self._phase_rate(phase)
+        return self._rate_override if self._rate_override is not None else 0.6
+
     def stop(self) -> None:
         """End the session early. Safe to call from another thread."""
         self._stop.set()
@@ -299,7 +349,7 @@ class Session:
             phase = self.phase
             if phase is not None and phase.kind == "training":
                 trainer = self.trainer
-                trainer.threshold.set_target(phase.reward_rate)
+                trainer.threshold.set_target(self._phase_rate(phase))
                 if self.config.freeze_thresholds and not self._frozen:
                     self._frozen = True
                     for t in self.trainers.values():
@@ -317,7 +367,8 @@ class Session:
             sink.open()
         first = self.phase
         if first is not None and first.kind == "training":
-            self.trainer.threshold.set_target(first.reward_rate)
+            self.trainer.threshold.set_target(self._phase_rate(first))
+        self._started_at = datetime.now().isoformat(timespec="seconds")
         try:
             with self.device:
                 while not self.finished and not self._stop.is_set():
@@ -333,6 +384,7 @@ class Session:
                 self._phase_stats[self._phase_idx].seconds = self.elapsed - self._phase_start
             aborted = aborted or self._stop.is_set()
             summary = self.summary(aborted)
+            self._save_summary(summary)
             for sink in self.sinks:
                 sink.finish(summary)
                 sink.close()
@@ -376,6 +428,8 @@ class Session:
             for name, t in self.trainers.items()
         }
         active = self.trainer
+        if active is not None and abs(active.threshold.target_rate - self._phase_rate(phase)) > 1e-9:
+            active.threshold.set_target(self._phase_rate(phase))
         shown = active or self._display_trainer()
         metric, inhibit_powers = readings[shown.protocol.name]
 
@@ -392,6 +446,9 @@ class Session:
         ps = self._phase_stats[self._phase_idx]
         st.updates += 1
         ps.updates += 1
+        state_name = dominant_state(band_powers)
+        if not artifact:
+            self._state_seconds[state_name] += cfg.update_sec
         if artifact:
             st.artifacts += 1
             ps.artifacts += 1
@@ -438,6 +495,8 @@ class Session:
             phase_duration=phase.seconds,
             session_duration=self.total_sec,
             guidance=phase.guidance,
+            brain_state=state_name,
+            target_rate=self.reward_rate,
             binaural=phase.binaural,
             protocol=shown.protocol.name,
             metric_label=shown.protocol.metric_label,
@@ -491,7 +550,16 @@ class Session:
             stim_power_off=_mean(st.stim_power_off),
             program=self.program.name,
             phases=phases,
+            program_id=self.program.id,
+            started_at=self._started_at,
+            states={k: round(v, 2) for k, v in self._state_seconds.items()},
         )
+
+    def _save_summary(self, summary: SessionSummary) -> None:
+        """Keep a JSON summary next to the CSV log; the app's history reads these."""
+        if self.log_path and summary.updates:
+            self.log_path.parent.mkdir(parents=True, exist_ok=True)
+            self.log_path.with_suffix(".json").write_text(json.dumps(summary.to_dict(), indent=2))
 
     def _open_log(self) -> None:
         if not self.log_path:

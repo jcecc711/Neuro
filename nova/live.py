@@ -226,6 +226,8 @@ class DashboardFeedback(FeedbackSink):
                 "inhibited": s.inhibited,
                 "reward_fraction": round(s.reward_fraction, 4),
                 "stim_on": s.stim_on,
+                "state": s.brain_state,
+                "target_rate": round(s.target_rate, 3),
                 "samples": np.round(samples, 2).tolist(),
             },
         )
@@ -276,6 +278,8 @@ class SessionController:
                 "programs": [p.to_dict() for p in all_programs(self.programs_dir)],
                 "soundscapes": SOUNDSCAPES,
             }
+        if path == "/api/history":
+            return 200, {"sessions": load_history(self.log_dir)}
         if path == "/api/devices":
             common = [{"id": i, "label": label, "connect": how} for i, label, how in COMMON_HEADSETS]
             known = {d["id"] for d in common}
@@ -295,6 +299,11 @@ class SessionController:
                 if self.session:
                     self.session.skip_phase()
                 return 200, self.status()
+            if path == "/api/session/target":
+                if not self.session:
+                    raise ValueError("no session is running")
+                self.session.set_reward_rate(float(body["reward_rate"]))
+                return 200, {"reward_rate": self.session.reward_rate}
             if path == "/api/session/stop":
                 if self.session:
                     self.session.stop()
@@ -367,6 +376,17 @@ class SessionController:
             self._set_state(state="error", program=program.id, error=str(e))
         finally:
             self.session = None
+
+
+def load_history(log_dir: str | Path, limit: int = 300) -> list[dict]:
+    """Saved session summaries, newest first."""
+    out = []
+    for path in sorted(Path(log_dir).glob("*.json"), reverse=True)[:limit]:
+        try:
+            out.append(json.loads(path.read_text()))
+        except (OSError, json.JSONDecodeError):
+            continue
+    return out
 
 
 def _finite(x: float) -> float | None:

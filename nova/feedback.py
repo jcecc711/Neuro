@@ -39,6 +39,8 @@ class FeedbackState:
     protocol: str = ""
     metric_label: str = ""
     direction: int = 1
+    brain_state: str = ""
+    target_rate: float = 0.6
 
 
 class FeedbackSink:

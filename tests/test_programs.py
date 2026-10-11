@@ -195,3 +195,64 @@ class _Rec:
 
     def close(self):
         pass
+
+
+def test_reward_rate_can_change_mid_session():
+    session = Session(demo_device(), program=tiny(get_program("stress-recovery"), seconds=20))
+    assert session.reward_rate == 0.6
+    with pytest.raises(ValueError):
+        session.set_reward_rate(1.5)
+    session.set_reward_rate(0.5)
+    with session.device:
+        for _ in range(int(25 * 250 / 25)):  # into the warm-up
+            session.process_chunk(session.device.read())
+    assert session.phase.name == "Warm-up"
+    assert session.reward_rate == pytest.approx(0.65)  # warm-up stays easier than the chosen target
+    assert session.trainer.threshold.target_rate == pytest.approx(0.65)
+
+
+def test_summary_tracks_states_and_is_saved(tmp_path):
+    log = tmp_path / "run.csv"
+    summary = Session(demo_device(), program=tiny(get_program("calm-anxiety")), log_path=log).run()
+    assert set(summary.states) == {"concentration", "active", "calm_focus", "reflective", "drowsy", "deep_rest"}
+    assert sum(summary.states.values()) == pytest.approx(summary.updates * 0.25 * (1 - summary.artifact_fraction), abs=0.5)
+    saved = json.loads(log.with_suffix(".json").read_text())
+    assert saved["program_id"] == "calm-anxiety" and saved["started_at"]
+    assert saved["states"] == summary.states
+    assert "Brain states:" in summary.format()
+
+
+def test_history_and_target_api(tmp_path):
+    from nova.live import DashboardServer, SessionController, load_history
+
+    (tmp_path / "logs").mkdir()
+    (tmp_path / "logs" / "a.json").write_text(json.dumps({"program": "A", "started_at": "2026-01-01T10:00:00"}))
+    (tmp_path / "logs" / "b.json").write_text(json.dumps({"program": "B", "started_at": "2026-01-02T10:00:00"}))
+    (tmp_path / "logs" / "bad.json").write_text("{")
+    assert [h["program"] for h in load_history(tmp_path / "logs")] == ["B", "A"]
+
+    ctl = SessionController(log_dir=tmp_path / "logs", programs_dir=tmp_path / "programs")
+    assert ctl.handle_get("/api/history")[1]["sessions"][0]["program"] == "B"
+    code, body = ctl.handle_post("/api/session/target", {"reward_rate": 0.5})
+    assert code == 400 and "no session" in body["error"]
+
+    server = DashboardServer(port=0)
+    ctl.attach(server)
+    server.start()
+    try:
+        ctl.start({"program": "calm-anxiety", "device": {"id": "demo"}})
+        for _ in range(100):
+            if ctl.session is not None:
+                break
+            time.sleep(0.05)
+        code, body = ctl.handle_post("/api/session/target", {"reward_rate": 0.5})
+        assert code == 200 and ctl.session._rate_override == 0.5
+        time.sleep(2.6)  # past the first 2 s analysis window, so the session has data to save
+        ctl.session.stop()
+        for _ in range(100):
+            if ctl.status()["state"] == "finished":
+                break
+            time.sleep(0.05)
+        assert len(load_history(tmp_path / "logs")) == 3  # the new session was saved too
+    finally:
+        server.stop()
