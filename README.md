@@ -63,8 +63,9 @@ behind willpower and motivation. Its two-track plan counts your sessions:
 
 ### What's on screen during a session
 
-- **3D brain** on a holographic platform, coloured by live activity at each sensor. Drag
-  to turn it; zoom with the buttons or the scroll wheel.
+- **3D brain** with anatomical lobes, fissures and folds, coloured by live activity at each
+  sensor. Drag or swipe to rotate (it glides with momentum), pinch to zoom on iPad or a
+  trackpad, use the scroll wheel or the +/- buttons on desktop, and double-tap to reset.
 - **On target card:** the share of training time you've been rewarded. **Set new target**
   changes difficulty mid-session: Gentle (70%), Balanced (60%) or Challenging (50%).
 - **Band cards:** concentration (γ), active mind (β), calm focus (SMR), reflective (α),

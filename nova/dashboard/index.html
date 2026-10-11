@@ -1,7 +1,4 @@
 <title>NOVA</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&display=swap">
 <style>
 /* Layout: a session console. A setup view (program library + detail + headset)
    and a session view (phase strip with guidance, cortical map, analysis deck).
@@ -21,10 +18,10 @@
   --violet: #8b7cff;
   --good: #3ddc84;
   --bad: #ff5d6c;
-  --display: "Chakra Petch", "Eurostile", "Bank Gothic", system-ui, sans-serif;
-  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --voice: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --voice: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
   --radius: 12px;
   --lime: #c4f25a;
   --glass-line: rgba(150, 200, 230, 0.14);
@@ -390,6 +387,184 @@ details.builder[open] summary { margin-bottom: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .asym-bar i, .guidance { transition: none; }
 }
+
+/* =====================================================================
+   Apple-style layer: system type (SF Pro on Apple devices), true black,
+   soft tiles, large radii, frosted nav, blue pill buttons, sentence case.
+   ===================================================================== */
+:root {
+  --void: #000000;
+  --panel: #161617;
+  --panel-hi: #1d1d1f;
+  --tile: #1d1d1f;
+  --line: rgba(255, 255, 255, 0.08);
+  --glass-line: rgba(255, 255, 255, 0.08);
+  --ink: #f5f5f7;
+  --muted: #86868b;
+  --faint: #6e6e73;
+  --blue: #0071e3;
+  --link: #2997ff;
+  --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --voice: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", system-ui, sans-serif;
+}
+body { background: var(--void); font: 17px/1.47 var(--body); letter-spacing: -0.022em; }
+.shell { max-width: 1440px; gap: 22px; }
+
+/* Global nav: thin, frosted, full-bleed, sticky. */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; border-radius: 0; border: 0; box-shadow: none;
+  margin-inline: calc(-1 * clamp(16px, 2.4vw, 32px)); margin-top: -18px; padding: 0 clamp(16px, 2.4vw, 32px); min-height: 52px;
+  background: rgba(22, 22, 23, 0.72); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.wordmark { font: 600 21px/1 var(--display); letter-spacing: 0.02em; background: none; -webkit-background-clip: border-box; background-clip: border-box; color: var(--ink); }
+.brand svg { width: 24px; height: 24px; }
+.nav-tabs { background: none; padding: 0; gap: 2px; }
+.nav-tabs button { font: 400 13px var(--body); letter-spacing: -0.01em; color: rgba(245, 245, 247, 0.8); padding: 8px 14px; border-radius: 999px; }
+.nav-tabs button:hover { color: #fff; }
+.nav-tabs button[aria-selected="true"] { background: rgba(255, 255, 255, 0.12); color: #fff; box-shadow: none; font-weight: 500; }
+.pill { border: 0; border-radius: 980px; background: var(--blue); color: #fff; font: 400 17px/1 var(--body); letter-spacing: -0.022em; padding: 13px 24px; cursor: pointer; }
+.pill:hover { background: #0077ed; }
+.pill.small { font-size: 14px; padding: 9px 16px; }
+.more { color: var(--link); text-decoration: none; font-size: 17px; }
+.more::after { content: " ›"; }
+.more:hover { text-decoration: underline; }
+.btn-primary { border-radius: 980px; background: var(--blue); color: #fff; font: 400 17px/1 var(--body); letter-spacing: -0.022em; text-transform: none; padding: 14px 26px; box-shadow: none; }
+.btn-primary:hover { background: #0077ed; filter: none; }
+select, button, input { font-family: var(--body); letter-spacing: -0.01em; border-radius: 12px; background: #2c2c2e; border-color: transparent; }
+select:hover, button:hover { border-color: rgba(255, 255, 255, 0.2); }
+
+/* Sentence-case labels instead of spaced uppercase. */
+.panel h2, .panel-head h2 { font: 600 21px/1.2 var(--display); letter-spacing: -0.01em; text-transform: none; }
+.eyebrow, .field label, .phase-sub, .stat span, .kpi span, .bigstats span, .index .name, .view-metric .lab, .view-band,
+.wave-src, .gauge, .console-tabs button, .prow .kind, .prow .st, .card .target, .card .meta, .tagline, .pill b, .pill,
+.asym-scale, .summary-table th, .proto-table th, .track .count, .fact .tag, .readouts, .toc a, .brange, .bshare, .tag-demo, .badge, .bchip, .chip, .seg button {
+  text-transform: none; letter-spacing: -0.005em; }
+.eyebrow, .field label { font: 600 13px var(--body); color: var(--muted); }
+.phase-sub, .view-metric .lab, .view-band, .wave-src, .stat span, .kpi span, .bigstats span, .index .name { font: 500 13px var(--body); color: var(--muted); }
+.readouts { font: 400 14px var(--body); }
+.status .pill { padding: 5px 11px; font: 500 12px var(--body); background: rgba(255, 255, 255, 0.08); border: 0; color: rgba(245,245,247,.75); }
+.status .pill b { font-variant-numeric: tabular-nums; }
+
+/* Tiles instead of glass. */
+.panel { background: var(--tile); border: 0; border-radius: 28px; padding: 26px 28px 28px; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.bcard, .index, .stat, .kpi, .prow, .preport, .fact, .chart-card, .track, .card, .scape { border-color: transparent; }
+.bcard { background: var(--tile); border-radius: 24px; padding: 26px 18px 16px; }
+.bchip { background: #000; font: 600 11px var(--body); }
+.brange, .bshare { font-family: var(--body); }
+.card .sum { color: #a1a1a6; font-size: 15px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; margin-top: 4px; }
+.bmain b { font: 600 24px var(--display); letter-spacing: -0.01em; }
+.bsym { background: #000; border-radius: 12px; font: 300 26px var(--display); }
+.index, .stat, .kpi, .preport, .fact, .prow { background: #2c2c2e; border-radius: 16px; }
+.prow.active { background: rgba(0, 113, 227, 0.18); border-color: transparent; }
+.prow.active .pdot { background: var(--link); box-shadow: 0 0 10px var(--link); }
+.prow .bar i, .prow.done .pdot { background: #30d158; }
+.prow.active .bar i { background: linear-gradient(90deg, #30d158, var(--link)); }
+.chart-card { background: #2c2c2e; border-radius: 20px; }
+.track { background: #2c2c2e; border-radius: 20px; }
+.console-tabs { background: #2c2c2e; border-radius: 10px; padding: 3px; }
+.console-tabs button { font: 500 13px var(--body); padding: 7px 14px; border-radius: 8px; }
+.console-tabs button[aria-selected="true"] { background: #636366; color: #fff; }
+.chip { font: 500 13px var(--body); padding: 8px 14px; background: #2c2c2e; border: 0; color: rgba(245,245,247,.8); }
+.chip[aria-pressed="true"] { background: var(--ink); color: #000; }
+.seg { border: 0; background: #2c2c2e; border-radius: 10px; padding: 3px; }
+.seg button { border-radius: 8px; font-size: 14px; padding: 7px 14px; }
+.seg button[aria-pressed="true"] { background: #636366; color: #fff; box-shadow: none; }
+.phase-name, .panel .phase-name { font: 600 34px/1.1 var(--display); letter-spacing: -0.02em; }
+.view-metric .big { font: 600 34px/1 var(--display); letter-spacing: -0.02em; }
+.guidance { font: 400 clamp(19px, 1.9vw, 24px)/1.35 var(--display); font-style: normal; letter-spacing: -0.015em; color: rgba(245, 245, 247, 0.92); }
+.view-caption { font: 500 13px var(--body); color: rgba(245,245,247,.7); letter-spacing: -0.005em; }
+.glass-btn { border-radius: 980px; padding: 10px 18px; background: rgba(44, 44, 46, 0.8); border: 0; font-size: 14px; }
+.glass-btn.end { color: #ff6961; }
+.view-tools .tool { border-radius: 50%; background: rgba(44, 44, 46, 0.72); border: 0; width: 40px; height: 40px; }
+.viewport { border: 0; border-radius: 32px; background: radial-gradient(60% 55% at 50% 46%, rgba(200, 186, 160, 0.06), transparent 70%), #000; box-shadow: none; }
+#brain3d { border-radius: 32px; }
+.brackets i { border-color: rgba(255, 255, 255, 0.14); }
+
+/* Activity-style ring for time on target. */
+.target-card { background: rgba(28, 28, 30, 0.82); border: 0; border-radius: 26px; width: 210px; padding: 18px; gap: 10px; justify-items: center;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px); }
+.ring { position: relative; width: 132px; height: 132px; display: grid; place-items: center; }
+.ring svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 12; }
+.ring-track { stroke: rgba(48, 209, 88, 0.18); }
+.ring-fill { stroke: url(#ringGrad); stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray .6s ease; }
+.ring-goal { stroke: #fff; stroke-width: 14; stroke-dasharray: 0.6 99.4; stroke-dashoffset: -60; opacity: .9; }
+.target-card b { font: 600 26px/1 var(--display); letter-spacing: -0.02em; background: none; -webkit-background-clip: border-box; background-clip: border-box; color: #fff; }
+.target-label { background: none; padding: 0; font: 600 15px var(--body); letter-spacing: -0.01em; color: #fff; }
+.target-card small { font-size: 12px; }
+.target-menu { width: 100%; background: #2c2c2e; border: 0; border-radius: 14px; }
+
+/* Landing: hero, program gallery, detail. */
+.setup { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+.hero { display: grid; justify-items: center; text-align: center; gap: 14px; padding-top: clamp(24px, 6vw, 72px); }
+.hero-eyebrow { margin: 0; font: 600 clamp(17px, 1.8vw, 21px)/1.2 var(--display); color: #e4c9a4; letter-spacing: -0.01em; }
+.hero-title { margin: 0; font: 600 clamp(44px, 7.4vw, 96px)/1.04 var(--display); letter-spacing: -0.03em; text-wrap: balance; }
+.hero-title span { background: linear-gradient(92deg, #d9c3a1 10%, #f5f5f7 45%, #9fd8ff 90%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hero-sub { margin: 0; max-width: 36ch; font: 400 clamp(19px, 2vw, 24px)/1.35 var(--display); color: var(--muted); letter-spacing: -0.015em; }
+.hero-ctas { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 28px; margin-top: 6px; }
+.hero-brain { position: relative; width: 100%; height: clamp(360px, 60vh, 640px); margin-top: 8px; }
+.hero-brain canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+.hero-brain canvas:active { cursor: grabbing; }
+.gesture-hint { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); font-size: 13px; color: var(--faint); white-space: nowrap; transition: opacity 1s; pointer-events: none; }
+.gesture-hint.used { opacity: 0; }
+.section { display: grid; gap: 22px; }
+.section-head { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 14px 24px; }
+.section-title { margin: 0; font: 600 clamp(32px, 4.4vw, 56px)/1.08 var(--display); letter-spacing: -0.025em; }
+.cards { display: grid; grid-auto-flow: column; grid-auto-columns: min(340px, 82%); grid-template-columns: none; gap: 20px;
+  overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 18px; scrollbar-width: thin; scrollbar-color: #424245 transparent; }
+.card { scroll-snap-align: start; background: var(--tile); border-radius: 28px; padding: 30px 28px; min-height: 300px; gap: 12px; align-content: start; transition: transform .35s ease; }
+.card:hover { transform: scale(1.012); border-color: transparent; }
+.card[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--link); border-color: transparent; }
+.card .target { font: 600 13px var(--body); color: #e4c9a4; }
+.card .name { font: 600 30px/1.1 var(--display); letter-spacing: -0.02em; }
+.card .meta { font: 400 15px var(--body); color: var(--muted); }
+.badge { font: 600 12px var(--body); border: 0; padding: 5px 10px; background: #2c2c2e; }
+.badge.most { color: #30d158; } .badge.emerging { color: #ffd60a; } .badge.limited { color: #bf9eff; } .badge.custom { color: var(--muted); }
+details.builder { background: var(--tile); border-radius: 28px; padding: 22px 28px; }
+details.builder summary { font: 500 17px var(--body); color: var(--link); letter-spacing: -0.02em; text-transform: none; }
+details.builder summary::marker { color: var(--link); }
+.detail { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 40px; align-items: start; padding: clamp(26px, 4vw, 48px); }
+.detail > * { grid-column: 1; }
+.detail > .field, .detail > .row, .detail > .foot { grid-column: 2; }
+.detail > .row:first-child { grid-column: 1 / -1; }
+.detail h3 { font: 600 clamp(32px, 4vw, 48px)/1.08 var(--display); letter-spacing: -0.025em; }
+.detail p { font-size: 17px; line-height: 1.5; }
+.detail .evidence { border-left: 0; padding: 0; }
+.caution { border: 0; background: rgba(255, 214, 10, 0.1); border-radius: 16px; }
+.scapes { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.scape { background: #2c2c2e; border-radius: 16px; padding: 12px; }
+.scape b { font: 600 15px var(--body); letter-spacing: -0.01em; }
+.scape[aria-pressed="true"] { box-shadow: inset 0 0 0 2px var(--link); }
+.foot { font-size: 12px; color: var(--faint); }
+
+/* Learn, history, reports. */
+.learn-hero h2.big { font: 600 clamp(36px, 5vw, 64px)/1.06 var(--display); letter-spacing: -0.025em; }
+.prose h3 { font: 600 28px/1.15 var(--display); letter-spacing: -0.02em; }
+.prose p, .prose li { font-size: 17px; line-height: 1.55; color: #d2d2d7; }
+.fact b { font: 600 17px var(--body); }
+.fact span { font-size: 15px; }
+.toc a { background: #2c2c2e; border: 0; font: 500 13px var(--body); color: rgba(245,245,247,.85); }
+.steps li::before { background: var(--link); color: #fff; }
+.track .meter i { background: linear-gradient(90deg, #30d158, var(--link)); }
+.kpi b, .bigstats b, .stat b, .index .val { font-family: var(--display); letter-spacing: -0.02em; }
+
+@media (max-width: 1100px) {
+  .detail { grid-template-columns: minmax(0, 1fr); }
+  .detail > .field, .detail > .row, .detail > .foot { grid-column: 1; }
+}
+@media (max-width: 640px) {
+  .nav-tabs button { padding: 8px 8px; }
+  .panel { padding: 20px 18px 22px; border-radius: 24px; }
+  .card { min-height: 240px; padding: 24px 22px; }
+  .target-card { width: 160px; padding: 12px; }
+  .ring { width: 96px; height: 96px; }
+  .target-card b { font-size: 20px; }
+  .phase-name, .panel .phase-name { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card, .ring-fill, .gesture-hint { transition: none; }
+}
 </style>
 
 <div class="shell">
@@ -416,18 +591,26 @@ details.builder[open] summary { margin-bottom: 12px; }
 
   <!-- ============ SETUP ============ -->
   <main id="setupView" class="setup">
-    <section class="panel">
-      <div class="panel-head">
-        <h2>Programs</h2>
+    <section class="hero" aria-labelledby="heroTitle">
+      <p class="hero-eyebrow">NOVA Neurofeedback</p>
+      <h2 class="hero-title" id="heroTitle">Train your brain.<br><span>Hear it change.</span></h2>
+      <p class="hero-sub">Guided sessions that listen to your brain in real time and answer with sound. Built for focus, calm and self-control.</p>
+      <div class="hero-ctas"><button type="button" class="pill" id="heroStart">Begin a session</button><a class="more" href="#programs">Choose a program</a></div>
+      <div class="hero-brain"><canvas id="setupBrain" aria-label="3D brain model. Drag to rotate, pinch to zoom, double-tap to reset."></canvas>
+        <span class="gesture-hint">Drag to rotate · Pinch to zoom · Double-tap to reset</span></div>
+    </section>
+
+    <section class="section" id="programs" aria-labelledby="progTitle">
+      <div class="section-head">
+        <h2 class="section-title" id="progTitle">Choose your program.</h2>
         <div class="tabs" role="group" aria-label="Program category" id="catTabs">
           <button type="button" class="chip" data-cat="condition" aria-pressed="true">Conditions</button>
           <button type="button" class="chip" data-cat="state" aria-pressed="false">Brain states</button>
           <button type="button" class="chip" data-cat="custom" aria-pressed="false">My programs</button>
         </div>
       </div>
-      <div class="setup-hero"><canvas id="setupBrain" aria-label="Rotating brain model"></canvas><span>Choose a program, then begin</span></div>
       <div class="cards" id="cards"></div>
-      <details class="builder panel" id="builder">
+      <details class="builder" id="builder">
         <summary>Build a custom program</summary>
         <form id="builderForm" class="builder-grid">
           <div class="field"><label for="bName">Name</label><input id="bName" value="My alpha training" required></div>
@@ -514,10 +697,15 @@ details.builder[open] summary { margin-bottom: 12px; }
       <p class="guidance" id="guidance"></p>
       <div class="view-actions"><button type="button" class="glass-btn" id="skipBtn">Next phase</button><button type="button" class="glass-btn end" id="endBtn">End session</button></div>
       <aside class="target-card" aria-live="polite">
-        <b id="targetPct">--</b>
+        <div class="ring" aria-hidden="true">
+          <svg viewBox="0 0 120 120"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f35a"/><stop offset="1" stop-color="#2fd36b"/></linearGradient></defs>
+            <circle cx="60" cy="60" r="50" class="ring-track"/><circle cx="60" cy="60" r="50" class="ring-fill" id="ringFill" pathLength="100"/>
+            <circle cx="60" cy="60" r="50" class="ring-goal" id="ringGoal" pathLength="100"/></svg>
+          <b id="targetPct">--</b>
+        </div>
         <span class="target-label">On target <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10v11H3V10h4zM7 10l4-7c1.5 0 2.5 1 2.2 2.6L12.5 9H19a2 2 0 0 1 2 2.3l-1.3 7.4A2 2 0 0 1 17.7 21H7"/></svg></span>
         <small id="targetGoal">Aiming for 60% of the time</small>
-        <button type="button" class="lime" id="setTargetBtn" aria-haspopup="menu" aria-expanded="false">Set new target <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2"><circle cx="12" cy="12" r="10" fill="#0f1405" stroke="none"/><path d="M9 15l6-6M10 9h5v5" stroke="#c4f25a"/></svg></button>
+        <button type="button" class="pill small" id="setTargetBtn" aria-haspopup="menu" aria-expanded="false">Set new target</button>
         <div class="target-menu" id="targetMenu" role="menu" hidden>
           <button type="button" role="menuitemradio" data-rate="0.7" aria-checked="false">Gentle · 70%<span>Rewards come easily</span></button>
           <button type="button" role="menuitemradio" data-rate="0.6" aria-checked="true">Balanced · 60%<span>The program default</span></button>
@@ -1361,7 +1549,7 @@ function bindCanvas(id) {
   new ResizeObserver(fit).observe(el); fit(); canvases[id] = c; return c;
 }
 const INK = "#dce6f7", MUTED = "#7b8bab", FAINT = "#44557a", LINE = "rgba(68,85,122,0.35)";
-const MONO = '500 10px "IBM Plex Mono", ui-monospace, monospace';
+const MONO = '500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
 
 /* Session arc: phases along time, with the sound's intensity envelope drawn over them. */
 function arcEnvelope(kind, f) {
@@ -1548,16 +1736,53 @@ class BrainCloud {
     this.sx = new Float32Array(n); this.sy = new Float32Array(n); this.sz = new Float32Array(n); this.ci = new Uint8Array(n); this.db = new Uint8Array(n);
     this.buckets = Array.from({ length: 256 }, () => []); this.wires = Array.from({ length: 16 }, () => []);
     this.k = 0; this.wi = new Int16Array(n * 4); this.ww = new Float32Array(n * 4);
-    const el = $(canvasId);
-    el.addEventListener("pointerdown", e => { this.drag = { x: e.clientX, y: e.clientY, yaw: this.yaw, pitch: this.pitch }; el.setPointerCapture(e.pointerId); });
-    el.addEventListener("pointermove", e => { if (!this.drag) return; this.yaw = this.drag.yaw + (e.clientX - this.drag.x) * 0.008; this.pitch = clamp(this.drag.pitch + (e.clientY - this.drag.y) * 0.006, -0.6, 1.1); });
-    const end = () => { this.drag = null; this.resumeAt = performance.now() + 5000; };
-    el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
-    if (opts.zoomable) el.addEventListener("wheel", e => { e.preventDefault(); this.setZoom(this.zoom * (e.deltaY < 0 ? 1.08 : 0.93)); }, { passive: false });
-    else el.style.touchAction = "pan-y";
+    this.el = $(canvasId); this.vyaw = 0; this.vpitch = 0; this.pointers = new Map(); this.lastTap = 0;
+    this.wheelZoom = !!opts.zoomable; // plain wheel zooms in the session viewer; on the landing page it scrolls the page
+    this.bindGestures();
   }
-  setZoom(z) { this.zoom = clamp(z, 0.6, 2.2); }
-  reset() { this.yaw = -0.55; this.pitch = 0.3; this.zoom = 1; this.resumeAt = 0;
+  /* One finger or mouse: rotate, with momentum. Two fingers: pinch to zoom. Trackpad pinch
+     (ctrl + wheel, or Safari gesture events) zooms everywhere. Double-tap resets. */
+  bindGestures() {
+    const el = this.el, P = this.pointers;
+    const pinchDist = () => { const [a, b] = [...P.values()]; return Math.hypot(a.x - b.x, a.y - b.y); };
+    el.addEventListener("pointerdown", e => {
+      el.setPointerCapture(e.pointerId); P.set(e.pointerId, { x: e.clientX, y: e.clientY, t: performance.now() });
+      this.hint();
+      if (P.size === 1) {
+        const now = performance.now();
+        if (now - this.lastTap < 300) { this.reset(); this.lastTap = 0; return; }
+        this.lastTap = now; this.drag = true; this.vyaw = this.vpitch = 0;
+      } else if (P.size === 2) { this.drag = false; this.pinch = { d: pinchDist(), z: this.zoom }; }
+    });
+    el.addEventListener("pointermove", e => {
+      const p = P.get(e.pointerId); if (!p) return;
+      const now = performance.now(), dx = e.clientX - p.x, dy = e.clientY - p.y, dt = Math.max(now - p.t, 1);
+      p.x = e.clientX; p.y = e.clientY; p.t = now;
+      if (P.size >= 2 && this.pinch) { this.setZoom(this.pinch.z * pinchDist() / this.pinch.d); return; }
+      if (!this.drag) return;
+      if (Math.abs(dx) + Math.abs(dy) > 3) this.lastTap = 0;
+      this.yaw += dx * 0.009; this.pitch = clamp(this.pitch + dy * 0.006, -0.7, 1.2);
+      this.vyaw = (dx * 0.009) / dt * 16; this.vpitch = (dy * 0.006) / dt * 16;
+    });
+    const end = e => {
+      P.delete(e.pointerId);
+      if (P.size < 2) this.pinch = null;
+      if (P.size === 0) { this.drag = false; this.resumeAt = performance.now() + 6000; }
+    };
+    el.addEventListener("pointerup", end); el.addEventListener("pointercancel", end);
+    el.addEventListener("wheel", e => {
+      if (!e.ctrlKey && !this.wheelZoom) return;             // let the page scroll
+      e.preventDefault(); this.hint();
+      this.setZoom(this.zoom * Math.exp(-e.deltaY * (e.ctrlKey ? 0.012 : 0.0015)));
+    }, { passive: false });
+    let gz = 1;                                                // Safari trackpad / iPad keyboard-case pinch
+    el.addEventListener("gesturestart", e => { e.preventDefault(); gz = this.zoom; });
+    el.addEventListener("gesturechange", e => { e.preventDefault(); this.setZoom(gz * e.scale); });
+    el.addEventListener("dblclick", e => { e.preventDefault(); this.reset(); });
+  }
+  hint() { const h = this.el.parentElement.querySelector(".gesture-hint"); if (h) h.classList.add("used"); }
+  setZoom(z) { this.zoom = clamp(z, 0.55, 3.2); }
+  reset() { this.yaw = -0.55; this.pitch = 0.3; this.zoom = 1; this.resumeAt = 0; this.vyaw = this.vpitch = 0;
   }
   setChannels(names) {
     const E = names.map((nm, i) => electrode3d(positionFor(nm, i, names.length)));
@@ -1571,7 +1796,10 @@ class BrainCloud {
   }
   draw(c, now, dt, tvals, boost = 0) {
     const { ctx, w, h } = c; if (!w || !h) return;
-    if (this.auto && !this.drag && now > this.resumeAt) this.yaw += dt * 0.16;
+    if (!this.drag && (Math.abs(this.vyaw) > 1e-4 || Math.abs(this.vpitch) > 1e-4)) {   // momentum after a flick
+      const k = Math.min(dt * 60, 3); this.yaw += this.vyaw * k; this.pitch = clamp(this.pitch + this.vpitch * k, -0.7, 1.2);
+      const decay = Math.pow(0.93, k); this.vyaw *= decay; this.vpitch *= decay;
+    } else if (this.auto && !this.drag && now > this.resumeAt) this.yaw += dt * 0.16;
     ctx.clearRect(0, 0, w, h);
     const s = Math.min(w * 0.32, h * (this.platform ? 0.34 : 0.46)) * this.zoom, cx = w / 2, cy = this.platform ? h * 0.47 : h / 2 + s * 0.06;
     const cyw = Math.cos(this.yaw), syw = Math.sin(this.yaw), cp = Math.cos(this.pitch), sp = Math.sin(this.pitch);
@@ -1633,7 +1861,7 @@ class BrainCloud {
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
     if (this.targets && this.targets.length) {
       const pulse = reduceMotion ? 0.5 : (Math.sin(now / 320) + 1) / 2;
-      ctx.font = '600 11px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+      ctx.font = '600 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
       for (const tg of this.targets) {
         const [x, y, z] = tg.p, X = x * cyw - y * syw, Yd = x * syw + y * cyw, Z = z * cp - Yd * sp, D = z * sp + Yd * cp, p = 2.8 / (2.8 + D);
         const px = cx + X * s * p, py = cy - Z * s * p, front = D < 0.25;
@@ -1725,10 +1953,10 @@ function drawWaves() {
   if (c && c.w) {
     const { ctx, w, h } = c; ctx.clearRect(0, 0, w, h);
     const rows = app.waves, lane = h / rows.length, left = 104, right = 62, N = Math.round(app.fs * 5);
-    ctx.font = '600 10.5px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = "middle";
+    ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif'; ctx.textBaseline = "middle";
     rows.forEach((wv, k) => {
       const y0 = lane * (k + 0.5), active = wv.key === app.trainedState, x = wv.ring.last(N);
-      ctx.textAlign = "left"; ctx.fillStyle = active ? wv.color : hexA(wv.color, 0.75); ctx.fillText(wv.name.toUpperCase(), 0, y0);
+      ctx.textAlign = "left"; ctx.fillStyle = active ? wv.color : hexA(wv.color, 0.75); ctx.fillText(wv.name, 0, y0);
       ctx.textAlign = "right"; ctx.fillStyle = MUTED;
       if (wv.key !== "raw" && app.peaks && app.peaks[wv.key]) ctx.fillText(`${app.peaks[wv.key].toFixed(1)} Hz`, w, y0);
       if (x.length < 2) return;
@@ -1759,7 +1987,7 @@ function drawStates() {
     const g = ctx.createLinearGradient(0, y, 0, base); g.addColorStop(0, d.color); g.addColorStop(1, hexA(d.color, 0.3));
     ctx.fillStyle = g; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(x, y, ww, bh, [6, 6, 0, 0]); else ctx.rect(x, y, ww, bh); ctx.fill();
     ctx.fillStyle = INK; ctx.textBaseline = "bottom"; if (v) ctx.fillText(fmtDur(v), x + ww / 2, y - 4);
-    ctx.fillStyle = hexA(d.color, 0.95); ctx.textBaseline = "top"; ctx.font = '400 15px "Cormorant Garamond", Georgia, serif'; ctx.fillText(d.sym, x + ww / 2, base + 5); ctx.font = MONO;
+    ctx.fillStyle = hexA(d.color, 0.95); ctx.textBaseline = "top"; ctx.font = '400 15px -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif'; ctx.fillText(d.sym, x + ww / 2, base + 5); ctx.font = MONO;
   });
 }
 function updateBandLabel() {
@@ -1802,7 +2030,7 @@ function drawTraces() {
   const c = canvases.traces; const { ctx, w, h } = c; if (!w || !app.rings.length) return;
   ctx.clearRect(0, 0, w, h);
   const idx = app.traceIdx; const n = Math.round(app.fs * 6); const lane = h / idx.length; const left = 44;
-  ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
+  ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif'; ctx.textBaseline = "middle"; ctx.textAlign = "left";
   ctx.strokeStyle = LINE; ctx.lineWidth = 1;
   for (let s = 0; s <= 6; s++) { const x = left + (w - left) * s / 6; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
   const grad = ctx.createLinearGradient(left, 0, w, 0);
@@ -1878,7 +2106,7 @@ function drawBalance() {
   const rows = BANDS.map(b => ({ b, L: mean(left, b.key), R: mean(right, b.key) }));
   const max = Math.max(...rows.map(r => Math.max(r.L, r.R)), 0.05);
   const mid = w / 2, rowH = h / rows.length, half = mid - 52;
-  ctx.font = '500 11px "IBM Plex Mono", ui-monospace, monospace'; ctx.textBaseline = "middle";
+  ctx.font = '500 11px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif'; ctx.textBaseline = "middle";
   rows.forEach(({ b, L, R }, i) => {
     const y = rowH * (i + 0.5), bh = Math.min(12, rowH * 0.45);
     const gl = ctx.createLinearGradient(mid, 0, mid - half, 0); gl.addColorStop(0, b.color + "33"); gl.addColorStop(1, b.color);
@@ -1973,7 +2201,9 @@ function onUpdate(u) {
     : { baseline: "measuring your resting levels", rest: "breathing interlude", cooldown: "integrating" }[u.phase]);
   updatePhaseRows(u);
   if (u.state && !u.artifact && app.stateTime) app.stateTime[u.state] = (app.stateTime[u.state] || 0) + UPDATE_MS / 1000;
-  $("targetPct").textContent = (u.reward_fraction * 100).toFixed(1) + "%";
+  $("targetPct").textContent = (u.reward_fraction * 100).toFixed(0) + "%";
+  $("ringFill").style.strokeDasharray = `${clamp(u.reward_fraction * 100, 0, 100)} 100`;
+  if (u.target_rate) $("ringGoal").style.strokeDashoffset = String(-(u.target_rate * 100 - 0.3));
   if (u.target_rate) {
     $("targetGoal").textContent = `Aiming for ${Math.round(u.target_rate * 100)}% of the time` + (u.phase === "training" && u.phase_name === "Warm-up" ? " during warm-up" : "");
     document.querySelectorAll("#targetMenu [data-rate]").forEach(b => b.setAttribute("aria-checked", String(Math.abs(Number(b.dataset.rate) - (app.chosenRate ?? 0.6)) < 0.01)));
@@ -2012,7 +2242,7 @@ function enterSession(program, deviceLabel, dotClass) {
   app.session = { program };
   $("clockPill").hidden = false; $("rewardPill").hidden = false;
   app.stateTime = Object.fromEntries(STATE_DEFS.map(d => [d.key, 0])); app.chosenRate = null;
-  $("targetPct").textContent = "--"; $("targetMenu").hidden = true;
+  $("targetPct").textContent = "--"; $("targetMenu").hidden = true; $("ringFill").style.strokeDasharray = "0 100";
   $("navMain").textContent = "Session"; showView("programs"); keepAwake(true);
   $("summaryOverlay").hidden = true; $("connectOverlay").hidden = true;
   $("phaseName").textContent = program.phases[0].name; $("guidance").textContent = program.phases[0].guidance || "";
@@ -2132,6 +2362,7 @@ function renderCards() {
       <span class="name">${esc(p.name)}</span>
       <span class="meta">${Math.round(p.minutes)} min · ${esc(PRESETS[p.soundscape]?.name || p.soundscape)} · eyes ${esc(p.eyes)}</span>
       ${p.evidence ? `<span class="badge ${BADGE[p.evidence] || ""}">${esc(p.evidence)}</span>` : `<span class="badge custom">Custom</span>`}
+      <span class="sum">${esc(p.summary)}</span>
     </button>`).join("") : `<p class="note">No saved programs yet. Build one below and it will appear here.</p>`;
 }
 function setCategory(cat) {
@@ -2353,13 +2584,13 @@ function drawReportCharts() {
     const { ctx, w, h } = cs; ctx.clearRect(0, 0, w, h);
     const tot = STATE_DEFS.map(d => list.reduce((a, s) => a + ((s.states && s.states[d.key]) || 0), 0)), max = Math.max(...tot, 1);
     const lane = h / STATE_DEFS.length, left = 130;
-    ctx.font = '500 12px "IBM Plex Sans", system-ui, sans-serif'; ctx.textBaseline = "middle";
+    ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif'; ctx.textBaseline = "middle";
     STATE_DEFS.forEach((d, i) => {
       const y = lane * (i + 0.5), bw = (w - left - 70) * tot[i] / max;
       ctx.fillStyle = d.color; ctx.textAlign = "left"; ctx.fillText(`${d.sym}  ${d.name}`, 0, y);
       const g = ctx.createLinearGradient(left, 0, left + bw, 0); g.addColorStop(0, hexA(d.color, 0.35)); g.addColorStop(1, d.color);
       ctx.fillStyle = g; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(left, y - 7, Math.max(bw, 2), 14, 7); else ctx.rect(left, y - 7, Math.max(bw, 2), 14); ctx.fill();
-      ctx.fillStyle = INK; ctx.font = MONO; ctx.fillText(fmtDur(tot[i]), left + Math.max(bw, 2) + 8, y); ctx.font = '500 12px "IBM Plex Sans", system-ui, sans-serif';
+      ctx.fillStyle = INK; ctx.font = MONO; ctx.fillText(fmtDur(tot[i]), left + Math.max(bw, 2) + 8, y); ctx.font = '500 12px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif';
     });
   }
   // Per-program sparklines, oldest to newest.
@@ -2421,6 +2652,7 @@ function wire() {
   $("listenBtn").addEventListener("click", () => audio.preview(app.scape || app.selected.soundscape));
   $("device").addEventListener("change", onDeviceChange);
   $("startBtn").addEventListener("click", startSession);
+  $("heroStart").addEventListener("click", startSession);
   $("volume").addEventListener("input", e => { $("toolMute").setAttribute("aria-pressed", "false"); audio.setVolume(Number(e.target.value)); });
   $("scapeSwitch").innerHTML = Object.entries(PRESETS).map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
   $("scapeSwitch").addEventListener("change", e => { app.scape = e.target.value; audio.play(app.scape); });
