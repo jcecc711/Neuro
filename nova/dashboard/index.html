@@ -1408,43 +1408,120 @@ function drawArc(c, phases, progressT) {
 
 /* 3D point-cloud brain. Points sit on wrinkled cortical shells; each one takes its colour
    from the nearest electrodes, so live activity glows where it is on the head. */
+/* Anatomical point-cloud brain. Each part is an implicit surface: hemispheres built from
+   frontal, parietal-occipital and temporal masses, split by the longitudinal fissure, with the
+   temporal lobe joined tightly so the Sylvian fissure stays a deep crease; then the cerebellum
+   and brainstem. Points are sampled on the surfaces; meandering sulci come from ridged simplex
+   noise, plus the central sulcus as a fixed landmark. Axes: x forward, y left-right, z up. */
 const CLOUD = (() => {
   const r = mulberry32(11);
-  const g = () => { let u = 0, v = 0; while (!u) u = r(); while (!v) v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
-  const unit = () => { const a = g(), b = g(), c = g(), n = Math.hypot(a, b, c) || 1; return [a / n, b / n, c / n]; };
-  const fold = (x, y, z) => Math.sin(9 * x + 2.5 * Math.sin(6 * z)) * Math.sin(8 * z + 2 * Math.sin(7 * y + 3 * x));
-  const X = [], Y = [], Z = [], R = [];
-  function shell(c, rad, n, region, disp, keep) {
-    for (let k = 0, made = 0; made < n && k < n * 5; k++) {
-      const [u, v, w] = unit(); if (keep && !keep(u, v, w)) continue;
-      const d = 1 + disp(u, v, w);
-      X.push(c[0] + rad[0] * u * d); Y.push(c[1] + rad[1] * v * d); Z.push(c[2] + rad[2] * w * d); R.push(region); made++;
+  // 3D simplex noise (after Gustavson), seeded so the brain looks the same every time.
+  const G = [[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],[1,0,1],[-1,0,1],[1,0,-1],[-1,0,-1],[0,1,1],[0,-1,1],[0,1,-1],[0,-1,-1]];
+  const perm = new Uint8Array(512);
+  { const p = [...Array(256).keys()]; for (let i = 255; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } for (let i = 0; i < 512; i++) perm[i] = p[i & 255]; }
+  function noise(x, y, z) {
+    const s3 = (x + y + z) / 3, i = Math.floor(x + s3), j = Math.floor(y + s3), k = Math.floor(z + s3), t3 = (i + j + k) / 6;
+    const x0 = x - i + t3, y0 = y - j + t3, z0 = z - k + t3;
+    let i1, j1, k1, i2, j2, k2;
+    if (x0 >= y0) { if (y0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 1; k2 = 0; } else if (x0 >= z0) { i1 = 1; j1 = 0; k1 = 0; i2 = 1; j2 = 0; k2 = 1; } else { i1 = 0; j1 = 0; k1 = 1; i2 = 1; j2 = 0; k2 = 1; } }
+    else { if (y0 < z0) { i1 = 0; j1 = 0; k1 = 1; i2 = 0; j2 = 1; k2 = 1; } else if (x0 < z0) { i1 = 0; j1 = 1; k1 = 0; i2 = 0; j2 = 1; k2 = 1; } else { i1 = 0; j1 = 1; k1 = 0; i2 = 1; j2 = 1; k2 = 0; } }
+    const ii = i & 255, jj = j & 255, kk = k & 255;
+    const c = (h, a, b, d) => { let t = 0.6 - a * a - b * b - d * d; if (t < 0) return 0; const g = G[h % 12]; t *= t; return t * t * (g[0] * a + g[1] * b + g[2] * d); };
+    return 32 * (c(perm[ii + perm[jj + perm[kk]]], x0, y0, z0)
+      + c(perm[ii + i1 + perm[jj + j1 + perm[kk + k1]]], x0 - i1 + 1 / 6, y0 - j1 + 1 / 6, z0 - k1 + 1 / 6)
+      + c(perm[ii + i2 + perm[jj + j2 + perm[kk + k2]]], x0 - i2 + 1 / 3, y0 - j2 + 1 / 3, z0 - k2 + 1 / 3)
+      + c(perm[ii + 1 + perm[jj + 1 + perm[kk + 1]]], x0 - 0.5, y0 - 0.5, z0 - 0.5));
+  }
+  // Approximate distance (in head units) to an ellipsoid, so sampling density is even across parts.
+  const ell = (x, y, z, c, rr) => (Math.hypot((x - c[0]) / rr[0], (y - c[1]) / rr[1], (z - c[2]) / rr[2]) - 1) * Math.min(rr[0], rr[1], rr[2]);
+  const smin = (a, b, k) => { const h = clamp(0.5 + 0.5 * (b - a) / k, 0, 1); return lerp(b, a, h) - k * h * (1 - h); };
+  const smax = (a, b, k) => -smin(-a, -b, k);
+
+  // Cerebrum (one function for both hemispheres, mirrored through |y|).
+  function upper(x, y, z) {
+    let d = ell(x, y, z, [0.02, 0.36, 0.1], [0.95, 0.4, 0.68]);                // parietal dome
+    d = smin(d, ell(x, y, z, [0.5, 0.33, 0.12], [0.5, 0.37, 0.52]), 0.06);      // frontal lobe
+    d = smin(d, ell(x, y, z, [-0.6, 0.3, 0.02], [0.44, 0.33, 0.47]), 0.06);     // occipital lobe
+    // Curved base: the orbital surface rises at the front, and the underside bows down between the edges.
+    const floor = -0.3 + 0.07 * Math.max(0, x - 0.35) - 0.04 * Math.max(0, -x - 0.2) - 0.06 * Math.max(0, 1 - ((y - 0.36) / 0.42) ** 2) - 0.03 * Math.cos(2.4 * x);
+    return smax(d, floor - z, 0.05);                                             // rounded floor over the temporal lobe and cerebellum
+  }
+  const temporal = (x, y, z) => ell(x, y, z, [0.06, 0.41, -0.33], [0.55, 0.25, 0.25]);
+  function cerebrum(x, y, z) {
+    const ay = Math.abs(y);
+    const d = smin(upper(x, ay, z), temporal(x, ay, z), 0.012);                  // tight join keeps the Sylvian fissure deep
+    return smax(d, 0.035 - ay, 0.02);                                            // longitudinal fissure
+  }
+  const cerebellum = (x, y, z) => smax(ell(x, Math.abs(y), z, [-0.58, 0.21, -0.5], [0.33, 0.27, 0.19]), 0.012 - Math.abs(y), 0.02);
+  function stem(x, y, z) {
+    const pons = (Math.hypot((x + 0.18) / 0.15, y / 0.15, (z + 0.5) / 0.13) - 1) * 0.13;
+    const ax = -0.22, az = -0.58, bx = -0.29, bz = -1.0, abx = bx - ax, abz = bz - az;
+    const h = clamp(((x - ax) * abx + (z - az) * abz) / (abx * abx + abz * abz), 0, 1);
+    const med = Math.hypot(x - ax - abx * h, y, z - az - abz * h) - (0.085 - 0.02 * h);
+    return smin(pons, med, 0.04);
+  }
+
+  const X = [], Y = [], Z = [], R = [], S = [], NX = [], NY = [], NZ = [];
+  function grad(f, x, y, z) {
+    const e = 0.004, gx = f(x + e, y, z) - f(x - e, y, z), gy = f(x, y + e, z) - f(x, y - e, z), gz = f(x, y, z + e) - f(x, y, z - e), n = Math.hypot(gx, gy, gz) || 1;
+    return [gx / n, gy / n, gz / n];
+  }
+  // Sample points in a thin shell just inside each surface (uniform over surface area).
+  function sample(f, box, count, eps, region, fold) {
+    for (let made = 0, tries = 0; made < count && tries < count * 400; tries++) {
+      const x = box[0] + r() * (box[1] - box[0]), y = box[2] + r() * (box[3] - box[2]), z = box[4] + r() * (box[5] - box[4]);
+      const d = f(x, y, z); if (d > 0 || d < -eps) continue;
+      const nrm = grad(f, x, y, z), [depth, keep, kind] = fold(x, y, z);
+      if (r() > keep * (nrm[2] < -0.6 ? 0.35 : 1)) continue;                       // thinner on the underside
+      X.push(x - nrm[0] * depth); Y.push(y - nrm[1] * depth); Z.push(z - nrm[2] * depth); R.push(region); S.push(kind);
+      NX.push(nrm[0]); NY.push(nrm[1]); NZ.push(nrm[2]); made++;
     }
   }
-  for (const side of [-1, 1]) {
-    shell([0, side * 0.35, 0.08], [1.0, 0.37, 0.72], 2600, 0, (u, v, w) => 0.05 * fold(u, v * side, w), (u, v, w) => w > -0.62);
-    shell([0.14, side * 0.43, -0.36], [0.56, 0.23, 0.3], 520, 0, (u, v, w) => 0.06 * fold(u * 1.3, v, w), (u, v, w) => w < 0.35 && side * v > -0.2);
-    shell([-0.7, side * 0.19, -0.5], [0.28, 0.22, 0.15], 380, 1, (u, v, w) => 0.035 * Math.sin(48 * w + 4 * u), (u, v, w) => w < 0.6);
+  // Cortex: winding sulci from domain-warped simplex noise, the central sulcus, and the Sylvian crease.
+  // Each cortex point is a gyrus (0), a sulcal wall (1) or the floor of a sulcus (2). Sulcal
+  // floors are kept dense and drawn as bright lines, so the folding pattern reads like an
+  // anatomical drawing; gyri are a sparse fill and the walls between are nearly empty.
+  function cortexFold(x, y, z) {
+    const ay = Math.abs(y);
+    if (ay < 0.06) return [0, 0.06, 0];                                           // very sparse medial wall inside the fissure
+    const w = 0.55 * noise(x * 2.2 + 7.1, y * 2.2, z * 2.2);
+    const a = Math.abs(noise(x * 3.6 + w, y * 3.6 - w, z * 3.6 + 0.5 * w));
+    let kind = a < 0.045 ? 2 : a < 0.2 ? 1 : 0, depth = 0.04 * (1 - smooth(a / 0.2));
+    const xc = -0.06 + (0.74 - z) * 0.24, dc = Math.abs(x - xc);                 // central sulcus, sloping forward and down
+    if (z > -0.12 && ay > 0.08 && dc < 0.045) { kind = dc < 0.013 ? 2 : Math.max(kind, 1); depth = Math.max(depth, 0.05 * (1 - smooth(dc / 0.045))); }
+    if (z < 0.02 && z > -0.42) {                                                  // Sylvian fissure where the temporal lobe meets the rest
+      const crease = Math.abs(upper(x, ay, z) - temporal(x, ay, z));
+      if (crease < 0.035) { kind = crease < 0.009 ? 2 : Math.max(kind, 1); depth = Math.max(depth, 0.05 * (1 - smooth(crease / 0.035))); }
+    }
+    return [depth, kind === 2 ? 1 : kind === 1 ? 0.05 : 0.14, kind];
   }
-  for (let i = 0; i < 240; i++) { const t = r(), a = r() * Math.PI * 2; X.push(-0.3 + 0.08 * Math.cos(a) - 0.15 * t); Y.push(0.08 * Math.sin(a)); Z.push(-0.45 - 0.5 * t); R.push(2); }
-  for (let i = 0; i < 520; i++) { const side = r() < 0.5 ? -1 : 1, [u, v, w] = unit(), k = 0.82 * Math.cbrt(r()); X.push(u * k); Y.push(side * 0.35 + 0.37 * v * k); Z.push(0.08 + 0.72 * w * k * (w < -0.6 ? 0.5 : 1)); R.push(3); }
-  const n = X.length, xs = Float32Array.from(X), ys = Float32Array.from(Y), zs = Float32Array.from(Z), region = Uint8Array.from(R);
-  // Wireframe: link each surface point to its two nearest neighbours.
-  const cell = 0.07, grid = new Map(), key = (a, b, c) => a * 73856093 ^ b * 19349663 ^ c * 83492791;
-  for (let i = 0; i < n; i++) { if (region[i] === 3) continue; const k = key(Math.floor(xs[i] / cell), Math.floor(ys[i] / cell), Math.floor(zs[i] / cell)); let l = grid.get(k); if (!l) grid.set(k, l = []); l.push(i); }
+  sample(cerebrum, [-1.08, 1.06, -0.8, 0.8, -0.62, 0.82], 11000, 0.014, 0, cortexFold);
+  // Cerebellum: fine horizontal folia.
+  sample(cerebellum, [-0.95, -0.22, -0.52, 0.52, -0.72, -0.28], 1500, 0.014, 1, (x, y, z) => {
+    const f = Math.abs(Math.sin(62 * z + 5 * x + 2.5 * noise(x * 3, y * 3, z * 3)));  // horizontal folia
+    const kind = f < 0.12 ? 2 : f < 0.45 ? 1 : 0;
+    return [0.014 * (1 - smooth(f / 0.45)), kind === 2 ? 1 : kind === 1 ? 0.15 : 0.45, kind];
+  });
+  sample(stem, [-0.42, -0.02, -0.18, 0.18, -1.05, -0.36], 380, 0.012, 2, () => [0, 1, 0]);
+
+  const n = X.length, xs = Float32Array.from(X), ys = Float32Array.from(Y), zs = Float32Array.from(Z), region = Uint8Array.from(R), sulcus = Uint8Array.from(S);
+  const nx = Float32Array.from(NX), ny = Float32Array.from(NY), nz = Float32Array.from(NZ);
+  // Wireframe: link each point to its two nearest neighbours.
+  const cell = 0.045, gridMap = new Map(), key = (a, b, c) => a * 73856093 ^ b * 19349663 ^ c * 83492791;
+  for (let i = 0; i < n; i++) { const k = key(Math.floor(xs[i] / cell), Math.floor(ys[i] / cell), Math.floor(zs[i] / cell)); let l = gridMap.get(k); if (!l) gridMap.set(k, l = []); l.push(i); }
   const seg = [];
   for (let i = 0; i < n; i++) {
-    if (region[i] === 3) continue;
     const cx = Math.floor(xs[i] / cell), cy = Math.floor(ys[i] / cell), cz = Math.floor(zs[i] / cell);
     let b1 = -1, b2 = -1, d1 = cell * cell, d2 = cell * cell;
     for (let a = -1; a <= 1; a++) for (let b = -1; b <= 1; b++) for (let c = -1; c <= 1; c++) {
-      const list = grid.get(key(cx + a, cy + b, cz + c)); if (!list) continue;
-      for (const j of list) { if (j <= i) continue; const dx = xs[i] - xs[j], dy = ys[i] - ys[j], dz = zs[i] - zs[j], d = dx * dx + dy * dy + dz * dz;
+      const list = gridMap.get(key(cx + a, cy + b, cz + c)); if (!list) continue;
+      // Wires follow gyri and never bridge a sulcus.
+      for (const j of list) { if (j <= i || region[j] !== region[i] || S[j] !== S[i]) continue; const dx = xs[i] - xs[j], dy = ys[i] - ys[j], dz = zs[i] - zs[j], d = dx * dx + dy * dy + dz * dz;
         if (d < d1) { d2 = d1; b2 = b1; d1 = d; b1 = j; } else if (d < d2) { d2 = d; b2 = j; } }
     }
     if (b1 >= 0) seg.push(i, b1); if (b2 >= 0) seg.push(i, b2);
   }
-  return { n, xs, ys, zs, region, seg: Uint32Array.from(seg) };
+  return { n, xs, ys, zs, nx, ny, nz, region, sulcus, seg: Uint32Array.from(seg) };
 })();
 // Subdued tan wireframe at rest. Colour appears only where activity rises, in the colour of the
 // rhythm shown, brightening toward white at the strongest sites.
@@ -1525,27 +1602,31 @@ class BrainCloud {
       if (reg === 0) {
         if (this.k && tvals) { t = 0; for (let j = 0; j < this.k; j++) t += this.ww[i * 4 + j] * tvals[this.wi[i * 4 + j]]; }
         else t = 0.42 + 0.32 * Math.sin(2.2 * x + now * 0.0005) * Math.cos(1.8 * z - now * 0.00035) + 0.18 * Math.max(0, Math.sin(3 * y + 2 * x + now * 0.0003));
-      } else t = reg === 3 ? 0.3 : 0.4;
+      } else t = reg === 2 ? 0.3 : 0.38;
       const ci = this.ci[i] = clamp(((0.36 + 0.62 * Math.pow(clamp(t, 0, 1), 1.6)) * 63) | 0, 0, 63);
-      const db = this.db[i] = D < -0.35 ? 0 : D < 0.1 ? 1 : D < 0.5 ? 2 : 3;
-      if (i % step === 0) this.buckets[ci * 4 + db].push(i);
+      const nD = C.nz[i] * sp + (C.nx[i] * syw + C.ny[i] * cyw) * cp;  // normal toward (-) or away from (+) the viewer
+      // Lit like a surface: facing points bright, edge-on points faint, back faces only as a sparse outline.
+      const kind = C.sulcus[i], lit = nD < -0.6 ? 0 : nD < -0.35 ? 1 : nD < -0.1 ? 2 : 3;
+      this.db[i] = clamp(lit + (kind === 2 ? -1 : kind === 1 ? 2 : 1), 0, 3);       // sulcal floors brightest, walls faint
+      if (nD > 0.1 && (i & 3)) { this.db[i] = 4; continue; }
+      if (i % step === 0) this.buckets[ci * 4 + this.db[i]].push(i);
     }
     ctx.globalCompositeOperation = "lighter";
     const seg = C.seg;
-    for (let k = 0; k < seg.length; k += 2 * step) { const a = seg[k]; this.wires[(this.ci[a] >> 3) * 2 + (this.db[a] < 2 ? 0 : 1)].push(a, seg[k + 1]); }
-    ctx.lineWidth = 0.6;
+    for (let k = 0; k < seg.length; k += 2 * step) { const a = seg[k]; if (this.db[a] > 3) continue; this.wires[(this.ci[a] >> 3) * 2 + (C.sulcus[a] === 2 && this.db[a] < 3 ? 0 : 1)].push(a, seg[k + 1]); }  // fold lines get the bright stroke
+    ctx.lineWidth = 0.8;
     this.wires.forEach((list, gidx) => {
       if (!list.length) return;
-      const [r, g, b] = CLOUD_RGB[(gidx >> 1) * 8 + 4]; ctx.strokeStyle = `rgba(${r},${g},${b},${(gidx & 1 ? 0.1 : 0.26) * (1 + 0.6 * boost)})`;
+      const [r, g, b] = CLOUD_RGB[(gidx >> 1) * 8 + 4]; ctx.strokeStyle = `rgba(${r},${g},${b},${(gidx & 1 ? 0.07 : 0.42) * (1 + 0.6 * boost)})`;
       ctx.beginPath(); for (let k = 0; k < list.length; k += 2) { ctx.moveTo(this.sx[list[k]], this.sy[list[k]]); ctx.lineTo(this.sx[list[k + 1]], this.sy[list[k + 1]]); } ctx.stroke();
     });
     for (let k = 0; k < 256; k++) {
       const list = this.buckets[k]; if (!list.length) continue;
       ctx.fillStyle = CLOUD_FILL[k];
-      for (const i of list) { const z = 0.9 + 1.4 * this.sz[i]; ctx.fillRect(this.sx[i] - z / 2, this.sy[i] - z / 2, z, z); }
+      for (const i of list) { const z = 0.7 + 1.1 * this.sz[i]; ctx.fillRect(this.sx[i] - z / 2, this.sy[i] - z / 2, z, z); }
     }
     for (let i = 0; i < n; i += 3) {
-      const ci = this.ci[i]; if (ci < 52 || C.region[i] !== 0) continue;
+      const ci = this.ci[i]; if (ci < 52 || C.region[i] !== 0 || this.db[i] > 3) continue;
       ctx.globalAlpha = ((ci - 51) / 12) * (this.db[i] < 2 ? 0.26 : 0.1);
       const rr = 13 * this.sz[i] * (s / 220); ctx.drawImage(HOT, this.sx[i] - rr, this.sy[i] - rr, 2 * rr, 2 * rr);
     }
