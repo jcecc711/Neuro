@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import math
 import sys
-import threading
 from dataclasses import dataclass, field
 
 import numpy as np
+
+from .audio import AudioEngine, NoiseVoice, ToneVoice, Voice
 
 
 class SessionAborted(Exception):
@@ -25,6 +25,8 @@ class FeedbackState:
     inhibited: list[str] = field(default_factory=list)
     artifact: bool = False
     reward_fraction: float = 0.0
+    band_powers: dict[str, float] = field(default_factory=dict)  # relative to 1-40 Hz
+    stim_on: bool = False
 
 
 class FeedbackSink:
@@ -54,6 +56,8 @@ class ConsoleFeedback(FeedbackSink):
             status = "inhibit:" + ",".join(s.inhibited)
         else:
             status = "REWARD" if s.reward else ""
+        if s.stim_on:
+            status = ("~ " + status).strip()
         line = (
             f"\r{s.t:6.1f}s {s.phase:<8} [{bar}] metric={s.metric:.3f} "
             f"thr={s.threshold:.3f} rewarded={s.reward_fraction:5.1%} {status:<16}"
@@ -69,48 +73,84 @@ class ConsoleFeedback(FeedbackSink):
 class AudioFeedback(FeedbackSink):
     """Continuous tone whose volume follows feedback intensity; silent unless rewarded."""
 
-    def __init__(self, frequency: float = 440.0, volume: float = 0.3, sample_rate: int = 44100):
-        try:
-            import sounddevice
-        except ImportError as e:
-            raise RuntimeError("audio feedback needs sounddevice: pip install 'neuro[audio]'") from e
-        self._sd = sounddevice
-        self.frequency = frequency
+    def __init__(self, engine: AudioEngine, frequency: float = 440.0, volume: float = 0.3):
+        self.engine = engine
         self.volume = volume
-        self.sample_rate = sample_rate
-        self._phase = 0.0
-        self._amp = 0.0
-        self._target = 0.0
-        self._lock = threading.Lock()
-        self._stream = None
+        self.voice = ToneVoice(frequency, harmonics=(0.3, 0.1))
 
     def open(self) -> None:
-        self._stream = self._sd.OutputStream(
-            samplerate=self.sample_rate, channels=1, dtype="float32", callback=self._callback
-        )
-        self._stream.start()
-
-    def _callback(self, outdata, frames, _time, _status) -> None:
-        with self._lock:
-            target = self._target
-        # Ramp amplitude across the block to avoid clicks.
-        amps = np.linspace(self._amp, target, frames, dtype=np.float32)
-        self._amp = target
-        step = 2 * math.pi * self.frequency / self.sample_rate
-        phases = self._phase + step * np.arange(frames)
-        self._phase = float((phases[-1] + step) % (2 * math.pi))
-        outdata[:, 0] = amps * np.sin(phases).astype(np.float32)
+        self.engine.add(self.voice)
+        self.engine.start()
 
     def update(self, s: FeedbackState) -> None:
-        target = self.volume * s.intensity if (s.reward and s.phase == "training") else 0.0
-        with self._lock:
-            self._target = target
+        rewarded = s.reward and s.phase == "training"
+        self.voice.target = self.volume * s.intensity if rewarded else 0.0
 
     def close(self) -> None:
-        if self._stream is not None:
-            self._stream.stop()
-            self._stream.close()
-            self._stream = None
+        self.engine.remove(self.voice)
+        self.engine.stop()
+
+
+# Each band gets a note from the A minor pentatonic scale so any mix sounds consonant;
+# slower rhythms are lower notes. High beta (often muscle tension) is a soft hiss.
+SONIFY_VOICES: dict[str, tuple[float, float]] = {
+    "delta": (110.0, -0.6),
+    "theta": (164.8, -0.3),
+    "alpha": (220.0, 0.0),
+    "smr": (329.6, 0.3),
+    "beta": (440.0, 0.6),
+}
+
+
+class SonifyFeedback(FeedbackSink):
+    """Hear your EEG: each frequency band drives its own tone.
+
+    A band's loudness tracks its relative power compared with its own running
+    average, so you hear changes ("alpha is rising") rather than raw levels,
+    which are dominated by slow waves.
+    """
+
+    def __init__(self, engine: AudioEngine, volume: float = 0.35, adapt_sec: float = 30.0, update_sec: float = 0.25):
+        self.engine = engine
+        self.volume = volume
+        self._alpha = min(1.0, update_sec / adapt_sec)
+        self.voices: dict[str, Voice] = {
+            band: ToneVoice(freq, pan=pan, harmonics=(0.25,)) for band, (freq, pan) in SONIFY_VOICES.items()
+        }
+        self.voices["hibeta"] = NoiseVoice(brightness=0.25)
+        self._means: dict[str, float] = {}
+
+    def open(self) -> None:
+        for v in self.voices.values():
+            self.engine.add(v)
+        self.engine.start()
+
+    def levels(self, band_powers: dict[str, float]) -> dict[str, float]:
+        """Update running means and return a 0..1 loudness per band."""
+        out = {}
+        for band in self.voices:
+            p = band_powers.get(band)
+            if p is None or not np.isfinite(p):
+                out[band] = 0.0
+                continue
+            mean = self._means.get(band, p)
+            mean += self._alpha * (p - mean)
+            self._means[band] = mean
+            ratio = p / mean if mean > 0 else 1.0
+            # ratio 1 (typical) -> 0.33; 2x typical -> ~1; below half typical -> silent.
+            out[band] = float(np.clip((ratio - 0.5) / 1.5, 0.0, 1.0))
+        return out
+
+    def update(self, s: FeedbackState) -> None:
+        levels = self.levels(s.band_powers)
+        gain = 0.0 if s.artifact else self.volume / len(self.voices) * 2
+        for band, voice in self.voices.items():
+            voice.target = gain * levels[band]
+
+    def close(self) -> None:
+        for v in self.voices.values():
+            self.engine.remove(v)
+        self.engine.stop()
 
 
 class VisualFeedback(FeedbackSink):
@@ -168,11 +208,20 @@ class VisualFeedback(FeedbackSink):
             self._screen = None
 
 
-def make_sinks(names: list[str]) -> list[FeedbackSink]:
-    factories = {"console": ConsoleFeedback, "audio": AudioFeedback, "visual": VisualFeedback}
+FEEDBACK_KINDS = ("console", "audio", "sonify", "visual")
+
+
+def make_sinks(names: list[str], engine: AudioEngine | None = None) -> list[FeedbackSink]:
+    engine = engine or AudioEngine()
+    factories = {
+        "console": ConsoleFeedback,
+        "audio": lambda: AudioFeedback(engine),
+        "sonify": lambda: SonifyFeedback(engine),
+        "visual": VisualFeedback,
+    }
     sinks = []
     for name in names:
         if name not in factories:
-            raise ValueError(f"unknown feedback {name!r}; choose from {', '.join(factories)}")
+            raise ValueError(f"unknown feedback {name!r}; choose from {', '.join(FEEDBACK_KINDS)}")
         sinks.append(factories[name]())
     return sinks

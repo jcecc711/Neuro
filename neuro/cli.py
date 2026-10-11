@@ -12,9 +12,11 @@ import numpy as np
 
 from .devices import BrainFlowDevice, Device, DeviceError, LSLDevice, SimulatedDevice, brainflow_board_names
 from .dsp import StreamingFilter, band_power, power_spectrum
-from .feedback import make_sinks
+from .audio import AudioEngine
+from .feedback import FEEDBACK_KINDS, make_sinks
 from .protocols import BANDS, PROTOCOLS, get_protocol
 from .session import Session, SessionConfig
+from .stimulation import SCHEDULES, Stimulus, StimulusSpec
 
 
 def add_device_args(p: argparse.ArgumentParser) -> None:
@@ -121,8 +123,66 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def add_stim_args(p: argparse.ArgumentParser, required: bool = False) -> None:
+    g = p.add_argument_group("auditory stimulation (use headphones)")
+    g.add_argument(
+        "--stim",
+        choices=["binaural", "pulsed"],
+        required=required,
+        default=None,
+        help="binaural: beat between ears (default 10 Hz); pulsed: amplitude-modulated tone (default 40 Hz)",
+    )
+    g.add_argument("--stim-freq", type=float, default=None, help="beat / pulse frequency in Hz")
+    g.add_argument("--stim-carrier", type=float, default=None, help="carrier tone in Hz (200 binaural, 500 pulsed)")
+    g.add_argument("--stim-volume", type=float, default=0.15, help="0-1, default 0.15. Start low")
+
+
+def stim_spec(args: argparse.Namespace, schedule: str = "always", block_sec: float = 30.0) -> StimulusSpec:
+    return StimulusSpec.create(args.stim, args.stim_freq, args.stim_carrier, args.stim_volume, schedule, block_sec)
+
+
+def cmd_stim(args: argparse.Namespace) -> int:
+    """Play stimulation on its own, without EEG, e.g. to try it on headphones."""
+    spec = stim_spec(args)
+    engine = AudioEngine()
+    stim = Stimulus(spec, engine)
+    if args.out:
+        write_stim_wav(stim, args.seconds, args.out)
+        print(f"Wrote {args.seconds:g}s of {spec.sound} to {args.out}")
+        return 0
+    print(f"Playing {spec.sound} for {args.seconds:g}s. Ctrl-C to stop.")
+    stim.open()
+    try:
+        stim.step(0.0, 0.0)
+        time.sleep(args.seconds)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        stim.close()
+    return 0
+
+
+def write_stim_wav(stim: Stimulus, seconds: float, path: str, fade_sec: float = 2.0) -> None:
+    from scipy.io import wavfile
+
+    engine = stim.engine
+    engine.add(stim.voice)
+    stim.step(0.0, 0.0)
+    audio = engine.render(int(seconds * engine.sample_rate))
+    engine.remove(stim.voice)
+    fade = min(int(fade_sec * engine.sample_rate), len(audio) // 2)
+    if fade:
+        ramp = np.linspace(0.0, 1.0, fade)[:, None]
+        audio[:fade] *= ramp
+        audio[-fade:] *= ramp[::-1]
+    wavfile.write(path, engine.sample_rate, (audio * 32767).astype(np.int16))
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     protocol = get_protocol(args.protocol)
+    spec = stim_spec(args, args.stim_schedule, args.stim_block) if args.stim else None
+    # Keep the stimulation frequency inside the analysed band so its EEG response is visible.
+    high_hz = max(40.0, spec.freq + 5.0) if spec else 40.0
     config = SessionConfig(
         baseline_sec=args.baseline,
         training_sec=args.duration,
@@ -132,6 +192,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         artifact_uv=args.artifact_uv,
         notch_hz=args.line_freq or None,
         channels=args.channels.split(",") if args.channels else None,
+        high_hz=high_hz,
     )
     log_path = None
     if not args.no_log:
@@ -139,11 +200,15 @@ def cmd_run(args: argparse.Namespace) -> int:
         log_path = Path(args.log_dir) / f"{stamp}-{protocol.name}.csv"
 
     device = open_device(args)
-    sinks = make_sinks(args.feedback.split(","))
-    session = Session(device, protocol, config, sinks, log_path)
+    engine = AudioEngine()
+    sinks = make_sinks(args.feedback.split(","), engine)
+    stimulus = Stimulus(spec, engine) if spec else None
+    session = Session(device, protocol, config, sinks, log_path, stimulus)
     print(f"{device.description}")
     print(f"Protocol '{protocol.name}': {protocol.description}")
     print(f"Channels: {', '.join(session.channel_names)}")
+    if spec:
+        print(f"Stimulus: {spec.description}")
     print(f"Baseline {config.baseline_sec:g}s, then training {config.training_sec:g}s. Ctrl-C to stop.\n")
     summary = session.run()
     print("\n" + summary.format())
@@ -172,10 +237,26 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--sustain", type=float, default=0.5, help="seconds criteria must hold before reward")
     run.add_argument("--freeze-thresholds", action="store_true", help="fix thresholds after baseline")
     run.add_argument("--artifact-uv", type=float, default=200.0, help="peak-to-peak artifact limit in µV")
-    run.add_argument("--feedback", default="console", help="comma list of: console, audio, visual")
+    run.add_argument(
+        "--feedback", default="console", help=f"comma list of: {', '.join(FEEDBACK_KINDS)} (default console)"
+    )
     run.add_argument("--log-dir", default="sessions")
     run.add_argument("--no-log", action="store_true")
+    add_stim_args(run)
+    run.add_argument(
+        "--stim-schedule",
+        choices=SCHEDULES,
+        default="blocks",
+        help="when the stimulus plays; 'blocks' alternates on/off so its effect can be measured (default)",
+    )
+    run.add_argument("--stim-block", type=float, default=30.0, help="seconds per on/off block (default 30)")
     run.set_defaults(func=cmd_run)
+
+    stim = sub.add_parser("stim", help="play binaural beats or pulsed tones without EEG")
+    add_stim_args(stim, required=True)
+    stim.add_argument("--seconds", type=float, default=300.0)
+    stim.add_argument("--out", default=None, help="write a .wav file instead of playing (e.g. to play on a phone)")
+    stim.set_defaults(func=cmd_stim)
     return parser
 
 
