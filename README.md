@@ -1,105 +1,148 @@
 # NOVA: real-time EEG neurofeedback
 
-NOVA reads EEG from your hardware, measures a brain rhythm in real time, and gives you
-audio, visual or terminal feedback when it moves the way you're training it to.
+NOVA reads EEG from your headset, measures your brain rhythms in real time, and guides you
+through training sessions with ethereal soundscapes that respond as your brain moves toward
+its target.
 
 > **Not a medical device.** This is for research, education and personal experimentation.
 > It does not diagnose or treat any condition.
 
+## Start here: the NOVA app
+
+```bash
+pip install -e ".[brainflow]"
+nova app
+```
+
+`nova app` opens NOVA in your browser at http://127.0.0.1:8765. Choose a program, pick
+your headset, press **Begin session**, and put on headphones. The app does the rest:
+
+1. **Arrive** (about 2 min). The soundscape fades in while NOVA measures your resting levels.
+2. **Warm-up.** An easy target, so the sound rewards you often while you find it.
+3. **Training blocks**, separated by one-minute **Breathe** interludes. During each
+   interlude the sound swells at six breaths a minute for you to follow.
+4. **Integrate** (2-3 min). Rewards stop and the sound thins and fades out.
+
+While you train, the soundscape is the feedback. When your brain meets the target, a
+shimmer layer blooms, the pads open up and bells chime more often. When it drifts, the
+sound stays soft and muted, and it never cuts out. The screen shows the current phase,
+spoken-style guidance, your progress through the session, a live cortical map, the EEG,
+spectrum, hemispheric balance and the training trace. At the end you get a summary per
+phase, and a CSV log is saved in `sessions/`.
+
+Without a headset, choose **Demo signal** to try any program with generated EEG.
+
+## Programs
+
+| Program | For | Trains | Sensors | Research basis |
+|---|---|---|---|---|
+| Focus Builder | ADHD and attention | theta/beta down, SMR up | Cz, C4 | Most studied |
+| Mood Lift | Low mood and depression | frontal alpha asymmetry | F3/F4 (or AF7/AF8) | Emerging |
+| Calm Waters | Anxiety | posterior alpha up, then theta/alpha | Pz, O1, O2 | Limited |
+| Unwind | Stress | SMR up, then alpha up | C4, Pz | Limited |
+| Recharge | Fatigue and low energy | beta up, theta/beta down | Cz, Fz | Limited |
+| Deep Rest | Deep relaxation | alpha, then alpha-theta (eyes closed) | Pz, O1, O2 | Limited |
+| Peak Focus | Calm, sharp concentration | SMR, then beta | C4, Cz | Limited |
+
+Each program shows its research basis in the app. **These are training programs, not
+treatments.** They follow protocols from published neurofeedback research, and the
+evidence ranges from moderate (ADHD) to preliminary. For ADHD, depression or anxiety,
+work with a qualified clinician. If you are in crisis, contact local emergency services
+or a crisis line (call or text 988 in the US).
+
+Every program comes in Short, Standard and Extended lengths; this scales the training
+blocks while arrival and integration keep their length.
+
+**Custom programs.** In the app, open **Build a custom program**. Choose:
+- the target rhythm, whether it should go up or down, and optionally a rhythm to measure
+  it against (for example theta relative to beta),
+- the sensor sites, length, number of blocks and how often to reward,
+- the soundscape, eyes open or closed, and an optional binaural beat.
+
+Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
+
+## Soundscapes
+
+All sound is synthesized live in the browser, so every session sounds slightly different:
+detuned pads in a long reverb, a low drone, a texture layer, and bell chimes, moving through
+a slow chord progression. Each phase has its own voicing; each new phase opens on a new chord.
+
+| Soundscape | Character |
+|---|---|
+| Aurora | airy Lydian pads and glass shimmer |
+| Deep Ocean | low swells, slow waves, distant bells |
+| Celestial | bright bells over a floating major drone |
+| Forest Rain | soft rain, warm pads, wooden chimes |
+| Nebula | dark, slow drones with a glowing upper layer |
+| Dawn | warm, rising major chords |
+
+You can preview any soundscape before a session, and switch soundscape or volume during one.
+Programs with a binaural beat play it quietly under the soundscape (headphones required).
+
 ## Supported hardware
 
-| Source | How | Examples |
+| Source | Choose in the app / `--device` | Examples |
 |---|---|---|
-| BrainFlow | `--device <board>` | OpenBCI Cyton / Ganglion / Daisy, Muse 2 / S, Neurosity Crown, BrainBit, g.tec Unicorn, and others |
-| Lab Streaming Layer | `--device lsl` | Anything that publishes an LSL EEG stream (OpenBCI GUI, Muse via muselsl, BrainVision, ...) |
-| Simulator | `--device sim` (default) | No hardware. Generates synthetic EEG with alpha that rises and falls |
+| BrainFlow | the headset's name, e.g. `muse_2`, `cyton` | OpenBCI Cyton / Ganglion / Daisy, Muse 2 / S, Neurosity Crown, BrainBit, g.tec Unicorn, and others |
+| Lab Streaming Layer | `lsl` | Anything that publishes an LSL EEG stream (OpenBCI GUI, Muse via muselsl, BrainVision, ...) |
+| Demo signal | `demo` | No hardware. Generated EEG on a standard 10-20 montage |
 
-Run `nova devices` to list every BrainFlow board name.
+Run `nova devices` to list every BrainFlow board name. Electrode positions use standard
+10-20/10-10 names (`Fp1`, `C3`, `O2`, `AF7`, `TP9`, ...).
 
 ## Install
 
 ```bash
-pip install -e ".[all]"        # BrainFlow, LSL, audio and visual feedback
-# or only what you need:
-pip install -e ".[brainflow,audio]"
+pip install -e ".[all]"        # BrainFlow, LSL, terminal audio and pygame visual
+pip install -e ".[brainflow]"  # enough for the app with most headsets
 ```
 
-## Quick start
+## Command line
 
 ```bash
-nova protocols                                   # see training protocols
-nova run                                         # try it with the simulator
+nova programs                                    # list programs and their phases
+nova run --program calm-anxiety --device muse_2  # run a program in the terminal
+nova run --program focus-adhd --length 0.6 --device cyton --serial-port /dev/ttyUSB0 \
+         --feedback console,dashboard            # shorter, and watch it in the browser
+nova run --program ~/my-program.json             # a program file
 
-# OpenBCI Cyton over the USB dongle (use COM3 etc. on Windows)
-nova check --device cyton --serial-port /dev/ttyUSB0          # check electrode contact first
-nova run   --device cyton --serial-port /dev/ttyUSB0 --protocol smr --channels C4 \
-            --feedback console,audio
-
-# Muse 2 over native Bluetooth
-nova run --device muse_2 --protocol alpha --channels TP9,TP10 --feedback visual
-
-# Any LSL stream
-nova run --device lsl --lsl-name "OpenBCI_EEG" --protocol theta-beta
+nova check --device cyton --serial-port /dev/ttyUSB0   # check electrode contact first
+nova run --device muse_2 --protocol alpha              # a single protocol, no program
 ```
 
-Use `--line-freq 50` in Europe, Asia and other regions with 50 Hz mains power.
+Use `--line-freq 50` (or "Mains power: 50 Hz" in the app) in Europe, Asia and other regions
+with 50 Hz mains power.
 
-## How a session works
+## How rewards work
 
-1. **Baseline** (`--baseline`, default 60 s). Your normal levels are measured. No rewards
-   are given.
-2. **Training** (`--duration`, default 300 s). Every 250 ms the last 2 s of EEG is
-   band-pass filtered (1-40 Hz) with a mains notch, and band powers are computed. You are rewarded when:
-   - the protocol metric is past an **adaptive threshold**, set so you hit it about
-     `--reward-rate` of the time (default 60%),
-   - no **inhibit band** (for example, theta from eye movement or high beta from muscle
-     tension) is spiking,
-   - the signal has no **artifact** (peak-to-peak above `--artifact-uv`),
-   - and all of that has held for `--sustain` seconds.
-3. **Summary and log.** You get a summary of baseline vs. training metric and time
-   rewarded. A per-update CSV is written to `sessions/`.
+Every 250 ms the last 2 s of EEG is band-pass filtered (1-40 Hz) with a mains notch, and band
+powers are computed at the program's sensor sites. You are rewarded when:
+- the metric is past an **adaptive threshold**, set so you hit it a target share of the time
+  (75% in warm-up, about 60% in training blocks, a little less in the final block),
+- no **inhibit band** (for example, theta from eye movement or high beta from muscle
+  tension) is spiking,
+- the signal has no **artifact** (peak-to-peak above `--artifact-uv`),
+- and all of that has held for half a second.
 
-Thresholds keep adapting during training. Use `--freeze-thresholds` to fix them at the
-end of baseline instead.
-
-## NOVA dashboard
-
-NOVA includes a browser console for watching your brain activity:
-- a top-down **cortical map** of both hemispheres, with a heat gradient for any band from
-  delta to gamma,
-- scrolling **EEG traces** and the **spectrum**, with your individual alpha peak marked,
-- **hemispheric balance**: left vs right power per band, and frontal alpha asymmetry,
-- **state indices**: calm, engagement, drowsiness and muscle tension, with 60 s trends,
-- the **training timeline**: protocol metric vs adaptive threshold, with reward and artifact
-  periods shaded.
-
-```bash
-nova dashboard                                      # built-in simulation, no hardware
-nova run --device muse_2 --feedback dashboard       # live: streams your session into it
-nova run --device cyton --serial-port /dev/ttyUSB0 --feedback dashboard,audio
-```
-
-The dashboard is served locally at http://127.0.0.1:8765 and opens in your browser.
-In simulation mode, you can switch mental-state scenarios (rest, focus, meditation,
-drowsy, stress), change the protocol, and toggle 40 Hz stimulation and blink artifacts.
-When a session starts streaming, the page switches to live data on its own.
-
-Electrode positions use standard 10-20/10-10 names (`Fp1`, `C3`, `O2`, `AF7`, `TP9`, ...).
-Channels with other names are placed in a ring around the head.
+Thresholds are calibrated during **Arrive** and keep adapting as you train. Use
+`--freeze-thresholds` to fix them when training starts.
 
 ## Protocols
 
 | Name | Trains | Typical sites |
 |---|---|---|
 | `alpha` | relative alpha (8-12 Hz) up | Pz, O1, O2 |
-| `smr` | relative SMR (12-15 Hz) up | C4, Cz |
+| `smr` | relative SMR (12-15 Hz) up | C4, Cz, C3 |
 | `theta-beta` | theta/beta ratio down | Cz, Fz |
 | `alpha-theta` | theta/alpha ratio up | Pz, O1, O2 |
-| `beta` | relative beta (15-22 Hz) up | C3, Fz |
+| `beta` | relative beta (15-22 Hz) up | Cz, Fz |
+| `alpha-asymmetry` | frontal alpha, right minus left (log) up | F3/F4, AF7/AF8 |
 
 To add a protocol, add a `Protocol(...)` entry in `nova/protocols.py`.
 
-## Feedback
+## Terminal feedback outputs
+
+For `nova run`; the app uses its own soundscapes.
 
 - `console`: live bar with metric, threshold and reward status.
 - `audio`: a reward tone whose volume follows how far past threshold you are. It's silent when
@@ -109,7 +152,7 @@ To add a protocol, add a `Protocol(...)` entry in `nova/protocols.py`.
   stereo field: delta, theta, alpha (center), SMR, beta. High beta, often muscle tension,
   is a soft hiss. Each band's loudness follows its power compared with its own recent
   average, so you hear changes rather than raw levels. Needs `sounddevice`.
-- `dashboard`: streams the session into the NOVA dashboard in your browser (see above).
+- `dashboard`: streams the session into the NOVA console in your browser, with soundscapes.
 - `visual`: a pygame window with a circle that grows and glows with reward. Press Esc
   to stop. Needs `pygame`.
 
@@ -174,12 +217,14 @@ can't be used. Neurofeedback here needs the raw signal. Once connected, run
 ## Using it as a library
 
 ```python
-from nova import BrainFlowDevice, Session, SessionConfig, get_protocol
+from nova import BrainFlowDevice, Session, SessionConfig
 from nova.feedback import ConsoleFeedback
+from nova.programs import get_program
 
-device = BrainFlowDevice("ganglion", serial_port="/dev/ttyACM0")
-cfg = SessionConfig(baseline_sec=60, training_sec=600, channels=["EEG1"])
-summary = Session(device, get_protocol("smr"), cfg, [ConsoleFeedback()], "my_session.csv").run()
+device = BrainFlowDevice("muse_2")
+program = get_program("calm-anxiety").scaled(0.6)
+summary = Session(device, config=SessionConfig(), program=program,
+                  sinks=[ConsoleFeedback()], log_path="my_session.csv").run()
 print(summary.format())
 ```
 
@@ -191,7 +236,8 @@ and `read`. `read` returns new samples in µV as a `(channels, samples)` array.
 ```bash
 pip install -e ".[dev,brainflow]"
 pytest
+python -m nova.programs    # after changing built-in programs: refresh the app's embedded copy
 ```
 
 Session time comes from the count of received samples, not the wall clock. So the test
-suite runs full sessions against the simulator in fast mode in a few seconds.
+suite runs every built-in program against the demo signal in fast mode in a few seconds.

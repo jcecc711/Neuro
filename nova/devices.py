@@ -44,8 +44,15 @@ class Device(ABC):
         self.stop()
 
 
+# Montage for the demo signal: enough standard sites for every built-in program.
+DEMO_MONTAGE = ["F3", "F4", "Fz", "C3", "Cz", "C4", "Pz", "O1", "O2"]
+
+# Rough y position (front +1 .. back -1) of common sites, for the demo's alpha gradient.
+_SITE_Y = {"F": 0.5, "A": 0.75, "C": 0.0, "T": 0.0, "P": -0.5, "O": -0.95}
+
+
 class SimulatedDevice(Device):
-    """Synthetic EEG: pink background, slowly waxing/waning alpha, line noise.
+    """Synthetic EEG: pink background, slowly waxing/waning rhythms, line noise.
 
     With ``realtime=True`` samples are produced at wall-clock pace like real
     hardware. With ``realtime=False`` every ``read()`` returns ``chunk_size``
@@ -64,9 +71,12 @@ class SimulatedDevice(Device):
         realtime: bool = True,
         chunk_size: int = 25,
         seed: int | None = None,
+        montage: list[str] | None = None,
     ):
         self.sampling_rate = float(sampling_rate)
-        self.channel_names = [f"SIM{i + 1}" for i in range(n_channels)]
+        self.channel_names = list(montage) if montage else [f"SIM{i + 1}" for i in range(n_channels)]
+        n_channels = len(self.channel_names)
+        self._montage = bool(montage)
         self.line_freq = line_freq
         self.realtime = realtime
         self.chunk_size = chunk_size
@@ -77,6 +87,8 @@ class SimulatedDevice(Device):
 
     @property
     def description(self) -> str:
+        if self._montage:
+            return f"Demo signal ({len(self.channel_names)} ch @ {self.sampling_rate:g} Hz)"
         mode = "realtime" if self.realtime else "fast"
         return f"Simulator ({len(self.channel_names)} ch @ {self.sampling_rate:g} Hz, {mode})"
 
@@ -114,9 +126,39 @@ class SimulatedDevice(Device):
         alpha = alpha_amp * np.sin(2 * np.pi * 10.0 * t)
         beta = 2.0 * np.sin(2 * np.pi * 20.0 * t + 1.0)
         line = 4.0 * np.sin(2 * np.pi * self.line_freq * t)
-        # Posterior channels get more alpha, like a real montage.
-        weights = np.linspace(0.6, 1.0, n_ch)[:, None]
-        return signal + weights * alpha + beta + line
+        if not self._montage:
+            # Later channels get more alpha, like posterior sites in a real montage.
+            weights = np.linspace(0.6, 1.0, n_ch)[:, None]
+            return signal + weights * alpha + beta + line
+
+        # Demo montage: site-dependent rhythms, each drifting on its own slow cycle,
+        # so every protocol (including frontal asymmetry) has something to train.
+        y = np.array([_SITE_Y.get(name[0].upper(), 0.0) for name in self.channel_names])[:, None]
+        side = np.array([_side(name) for name in self.channel_names])[:, None]
+        alpha_w = 0.35 + 0.9 / (1 + np.exp(4 * (y + 0.1)))
+        asym = 0.25 * np.sin(2 * np.pi * t / 33.0)  # right-frontal alpha share drifts
+        alpha_w = alpha_w * (1 + side * asym * (y > 0.2))
+        theta = (4.5 + 3.0 * np.sin(2 * np.pi * t / 27.0 + 0.5)) * np.sin(2 * np.pi * 6.0 * t)
+        smr = (2.5 + 1.8 * np.sin(2 * np.pi * t / 17.0 + 2.0)) * np.sin(2 * np.pi * 13.5 * t)
+        beta_amp = 2.5 + 1.5 * np.sin(2 * np.pi * t / 23.0 + 4.0)
+        theta_w = 0.6 + 0.6 * np.exp(-((y - 0.4) ** 2) / 0.3)
+        smr_w = 0.4 + 0.8 * (np.abs(y) < 0.2)
+        return (
+            signal
+            + alpha_w * alpha
+            + theta_w * theta
+            + smr_w * smr
+            + beta_amp / 2.0 * beta
+            + line
+        )
+
+
+def _side(name: str) -> int:
+    """-1 for left-hemisphere sites (odd numbers), +1 right (even), 0 midline (z)."""
+    digits = "".join(ch for ch in name if ch.isdigit())
+    if not digits:
+        return 0
+    return -1 if int(digits) % 2 else 1
 
 
 class BrainFlowDevice(Device):
@@ -259,3 +301,34 @@ def resolve_brainflow_board(board: str | int) -> int:
         if candidate in BoardIds.__members__:
             return BoardIds[candidate].value
     raise DeviceError(f"unknown BrainFlow board {board!r}; run 'nova devices' to list them")
+
+
+# Headsets offered in the app's device menu: (id, label, how it connects).
+COMMON_HEADSETS = [
+    ("demo", "Demo signal (no headset)", "none"),
+    ("muse_2", "Muse 2", "bluetooth"),
+    ("muse_s", "Muse S", "bluetooth"),
+    ("cyton", "OpenBCI Cyton", "serial"),
+    ("cyton_daisy", "OpenBCI Cyton + Daisy", "serial"),
+    ("ganglion", "OpenBCI Ganglion", "serial"),
+    ("crown", "Neurosity Crown", "serial_number"),
+    ("unicorn", "g.tec Unicorn", "none"),
+    ("lsl", "Lab Streaming Layer stream", "lsl"),
+]
+
+
+def open_device_spec(spec: dict) -> Device:
+    """Open a device from a JSON-style spec, as sent by the NOVA app."""
+    kind = (spec.get("id") or "demo").lower()
+    if kind in ("demo", "sim", "simulator"):
+        return SimulatedDevice(montage=DEMO_MONTAGE, line_freq=float(spec.get("line_freq") or 60.0))
+    if kind == "lsl":
+        return LSLDevice(stream_name=spec.get("lsl_name") or None)
+    return BrainFlowDevice(
+        kind,
+        serial_port=spec.get("serial_port", ""),
+        mac_address=spec.get("mac_address", ""),
+        ip_address=spec.get("ip_address", ""),
+        ip_port=int(spec.get("ip_port") or 0),
+        serial_number=spec.get("serial_number", ""),
+    )

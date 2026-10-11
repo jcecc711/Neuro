@@ -1,11 +1,11 @@
 <title>NOVA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,500;1,400;1,500&display=swap">
 <style>
-/* Layout: an instrument console. Header strip of status + controls; a large
-   topographic brain on the left with analysis readouts stacked beside it;
-   signal, spectrum and training timeline as a lower deck. One deliberate dark theme. */
+/* Layout: a session console. A setup view (program library + detail + headset)
+   and a session view (phase strip with guidance, cortical map, analysis deck).
+   One deliberate dark theme: instrument panels lit by a cyan-to-coral heat scale. */
 :root {
   --void: #05080f;
   --panel: #0a1120;
@@ -14,26 +14,21 @@
   --ink: #dce6f7;
   --muted: #7b8bab;
   --faint: #44557a;
-  --signal: #3ee6d4;   /* primary accent, NOVA cyan */
-  --flare: #ff5d8f;    /* hot end of the heat scale */
+  --signal: #3ee6d4;
+  --flare: #ff5d8f;
   --amber: #ffb547;
+  --violet: #9d8cff;
   --good: #59e39a;
-  --warn: #ffb547;
   --bad: #ff5d6c;
-  --b-delta: #6b74ff;
-  --b-theta: #4fb8ff;
-  --b-alpha: #3ee6d4;
-  --b-smr: #9bf26b;
-  --b-beta: #ffd05a;
-  --b-hibeta: #ff9248;
-  --b-gamma: #ff5d8f;
   --display: "Chakra Petch", "Eurostile", "Bank Gothic", system-ui, sans-serif;
   --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --voice: "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
   --radius: 10px;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { min-height: 100%; }
 body {
   margin: 0;
@@ -46,6 +41,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .shell { padding-inline: clamp(16px, 2.4vw, 32px); padding-block: 18px 32px; display: grid; gap: 16px; max-width: 1560px; margin: 0 auto; }
+code { font: 500 12.5px var(--mono); color: var(--ink); background: var(--panel-hi); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--line); }
 
 /* Header */
 .top { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
@@ -63,63 +59,115 @@ body {
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums;
 }
 .pill b { color: var(--ink); font-weight: 500; }
-.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; }
 .dot.live { background: var(--good); box-shadow: 0 0 10px var(--good); }
-.dot.sim { background: var(--signal); box-shadow: 0 0 10px var(--signal); }
+.dot.demo { background: var(--signal); box-shadow: 0 0 10px var(--signal); }
 .dot.reward { background: var(--signal); box-shadow: 0 0 12px var(--signal); }
 .dot.artifact { background: var(--bad); box-shadow: 0 0 10px var(--bad); }
+.dot.wait { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
 
-.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; }
-.field { display: grid; gap: 4px; }
+/* Controls */
+select, button, input {
+  font: 500 13px/1.2 var(--body); color: var(--ink); background: var(--panel-hi);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px;
+}
+button, select { cursor: pointer; }
+input[type="range"] { padding: 0; accent-color: var(--signal); background: transparent; border: 0; }
+select:focus-visible, button:focus-visible, input:focus-visible, .chip:focus-visible, .card:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
+button:hover, select:hover { border-color: #2b3d63; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.btn-primary {
+  border: 0; color: #041015; font: 600 15px/1 var(--display); letter-spacing: .14em; text-transform: uppercase;
+  padding: 14px 22px; border-radius: 10px;
+  background: linear-gradient(95deg, var(--signal), #8fd8ff 55%, #c9b8ff);
+  box-shadow: 0 6px 28px rgba(62,230,212,.25);
+}
+.btn-primary:hover { filter: brightness(1.08); }
+.btn-ghost { background: transparent; }
+.field { display: grid; gap: 5px; min-width: 0; }
 .field label, .eyebrow {
   font: 600 10px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--faint);
 }
-select, button {
-  font: 500 13px/1 var(--body); color: var(--ink); background: var(--panel-hi);
-  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; cursor: pointer;
-}
-select:focus-visible, button:focus-visible, .chip:focus-visible { outline: 2px solid var(--signal); outline-offset: 2px; }
-button:hover, select:hover { border-color: #2b3d63; }
-.toggle[aria-pressed="true"] { border-color: var(--signal); color: var(--signal); box-shadow: inset 0 0 0 1px rgba(62,230,212,.25); }
-.live-only[hidden], .sim-only[hidden] { display: none !important; }
+.row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: end; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: transparent; color: var(--muted); padding: 8px 12px; }
+.seg button[aria-pressed="true"] { background: var(--panel-hi); color: var(--signal); box-shadow: inset 0 -2px 0 var(--signal); }
 
 /* Panels */
-.grid-main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
-.grid-deck { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
 .panel {
   background: linear-gradient(180deg, var(--panel-hi), var(--panel));
   border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; min-width: 0;
-  display: grid; gap: 10px; align-content: start;
+  display: grid; gap: 12px; align-content: start;
 }
 .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .panel h2 { margin: 0; font: 600 13px/1.2 var(--display); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink); }
 .hint { color: var(--muted); font-size: 12px; }
 canvas { display: block; width: 100%; }
 
-/* Brain */
-.brain-wrap { position: relative; }
-#brain { aspect-ratio: 1 / 1.02; max-height: 640px; }
-.bands { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Setup view */
+.setup { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.card {
+  text-align: left; display: grid; gap: 6px; align-content: start; padding: 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: rgba(5,8,15,.35); color: var(--ink); cursor: pointer; min-height: 132px;
+}
+.card:hover { border-color: #2b3d63; }
+.card[aria-pressed="true"] { border-color: var(--signal); box-shadow: inset 0 0 0 1px rgba(62,230,212,.35), 0 0 24px rgba(62,230,212,.08); }
+.card .name { font: 600 17px/1.2 var(--display); letter-spacing: .04em; }
+.card .target { color: var(--signal); font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; }
+.card .meta { color: var(--muted); font: 500 11px var(--mono); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font: 600 10px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; border: 1px solid currentColor; width: max-content; }
+.badge.most { color: var(--good); } .badge.emerging { color: var(--amber); } .badge.limited { color: var(--violet); } .badge.custom { color: var(--muted); }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .chip {
   font: 600 11px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase;
   padding: 7px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted);
 }
-.chip[aria-pressed="true"] { color: var(--void); background: var(--c); border-color: var(--c); }
+.chip[aria-pressed="true"] { color: var(--void); background: var(--c, var(--signal)); border-color: var(--c, var(--signal)); }
 .chip span { opacity: .7; font-weight: 500; margin-left: 4px; }
+.detail h3 { margin: 0; font: 600 26px/1.15 var(--display); letter-spacing: .04em; text-wrap: balance; }
+.detail p { margin: 0; color: var(--muted); max-width: 68ch; }
+.evidence { border-left: 2px solid var(--line); padding-left: 12px; display: grid; gap: 6px; }
+.caution { border: 1px solid rgba(255,181,71,.35); background: rgba(255,181,71,.06); color: var(--ink); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+#arc { height: 120px; }
+.scapes { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.scape { display: grid; gap: 3px; text-align: left; padding: 10px; border-radius: 9px; background: rgba(5,8,15,.35); }
+.scape b { font: 600 13px var(--display); letter-spacing: .06em; }
+.scape span { color: var(--muted); font-size: 11.5px; line-height: 1.35; }
+.scape[aria-pressed="true"] { border-color: var(--signal); }
+.connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.note { color: var(--muted); font-size: 12.5px; margin: 0; }
+details.builder summary { cursor: pointer; font: 600 12px var(--display); letter-spacing: .16em; text-transform: uppercase; color: var(--ink); }
+details.builder[open] summary { margin-bottom: 12px; }
+.builder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.error { color: var(--bad); font-size: 13px; }
+
+/* Session view */
+.strip { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px 24px; align-items: start; }
+.panel .phase-name { font: 600 30px/1.1 var(--display); letter-spacing: .06em; margin: 0; text-transform: none; }
+.phase-sub { color: var(--muted); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; }
+.guidance { font: italic 500 clamp(19px, 2.1vw, 25px)/1.35 var(--voice); color: #e9eefb; max-width: 60ch; min-height: 2.7em; transition: opacity .9s ease; }
+.guidance.fading { opacity: 0; }
+.session-controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; justify-content: flex-end; }
+.vol { display: grid; gap: 5px; min-width: 140px; }
+#sessionArc { height: 74px; grid-column: 1 / -1; }
+.session-grid { display: grid; gap: 16px; }
+.grid-main { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; }
+.grid-deck { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; }
+.brain-wrap { position: relative; }
+#brain { aspect-ratio: 1 / 1.02; max-height: 640px; }
+.bands { display: flex; flex-wrap: wrap; gap: 6px; }
 .legend { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font: 500 11px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .legend .ramp { height: 8px; border-radius: 4px; background: linear-gradient(90deg, #0b1838, #1550a8, #17b9b0, #b9f070, #ffb547, #ff5d8f); }
 .brain-overlay { position: absolute; inset: 8px 8px auto auto; text-align: right; display: grid; gap: 2px; pointer-events: none; }
 .brain-overlay .big { font: 600 30px/1 var(--display); letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
 .brain-overlay .lab { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
 .side-label { position: absolute; top: 50%; font: 600 11px var(--mono); letter-spacing: .3em; color: var(--faint); pointer-events: none; }
-
-/* Analysis column */
 .stack { display: grid; gap: 16px; align-content: start; min-width: 0; }
 .indices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .index { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 4px; background: rgba(5,8,15,.35); }
-.index .name { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; }
+.index .name { font: 600 10px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
 .index .val { font: 600 24px/1.1 var(--display); font-variant-numeric: tabular-nums; }
-.index .val small { font: 500 11px var(--mono); color: var(--muted); margin-left: 4px; }
 .index canvas { height: 30px; }
 .index .desc { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
 #balance { height: 210px; }
@@ -127,25 +175,39 @@ canvas { display: block; width: 100%; }
 .asym-bar { position: relative; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgba(79,184,255,.35), rgba(255,255,255,.06) 50%, rgba(255,93,143,.35)); }
 .asym-bar i { position: absolute; top: -4px; width: 3px; height: 18px; border-radius: 2px; background: var(--ink); box-shadow: 0 0 10px var(--ink); left: 50%; transition: left .4s ease; }
 .asym-scale { display: flex; justify-content: space-between; font: 500 10px var(--mono); color: var(--faint); letter-spacing: .08em; text-transform: uppercase; }
-
 #traces { height: 470px; }
 #spectrum { height: 200px; }
 #timeline { height: 150px; }
 .readouts { display: flex; flex-wrap: wrap; gap: 8px 22px; font: 500 12px var(--mono); color: var(--muted); font-variant-numeric: tabular-nums; }
 .readouts b { color: var(--ink); font-weight: 500; }
-.foot { color: var(--faint); font-size: 12px; max-width: 80ch; }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; padding: 16px; background: rgba(3,5,10,.72); backdrop-filter: blur(6px); }
+.dialog { width: min(720px, 100%); max-height: calc(100vh - 32px); overflow: auto; }
+.summary-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.summary-table th, .summary-table td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.summary-table th { font: 600 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.table-wrap { overflow-x: auto; }
+.bigstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.bigstats div { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; display: grid; gap: 2px; }
+.bigstats b { font: 600 24px var(--display); font-variant-numeric: tabular-nums; }
+.bigstats span { font: 500 10px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.foot { color: var(--faint); font-size: 12px; max-width: 90ch; margin: 0; }
 
 @media (max-width: 1100px) {
-  .grid-main, .grid-deck { grid-template-columns: minmax(0, 1fr); }
+  .setup, .grid-main, .grid-deck { grid-template-columns: minmax(0, 1fr); }
 }
-@media (max-width: 520px) {
+@media (max-width: 640px) {
   .wordmark { font-size: 24px; }
   .status { margin-left: 0; }
+  .strip { grid-template-columns: minmax(0, 1fr); }
+  .session-controls { justify-content: flex-start; }
   .indices { grid-template-columns: minmax(0, 1fr); }
-  #traces { height: 260px; }
+  #traces { height: 280px; }
+  .panel .phase-name { font-size: 24px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .asym-bar i { transition: none; }
+  .asym-bar i, .guidance { transition: none; }
 }
 </style>
 
@@ -153,113 +215,190 @@ canvas { display: block; width: 100%; }
   <header class="top">
     <div class="brand">
       <h1 class="wordmark">NOVA</h1>
-      <span class="tagline">Neurofeedback analysis</span>
+      <span class="tagline">Neurofeedback</span>
     </div>
     <div class="status" aria-live="polite">
-      <span class="pill"><span class="dot sim" id="srcDot"></span><b id="srcText">Simulation</b></span>
-      <span class="pill">Phase <b id="phaseText">Training</b></span>
-      <span class="pill">T <b id="clock">00:00</b></span>
-      <span class="pill"><span class="dot" id="rewardDot"></span><b id="rewardText">Waiting</b></span>
+      <span class="pill"><span class="dot" id="srcDot"></span><b id="srcText">Starting</b></span>
+      <span class="pill" id="clockPill" hidden>T <b id="clock">00:00</b></span>
+      <span class="pill" id="rewardPill" hidden><span class="dot" id="rewardDot"></span><b id="rewardText">Waiting</b></span>
     </div>
   </header>
 
-  <div class="controls">
-    <div class="field sim-only">
-      <label for="scenario">Simulated state</label>
-      <select id="scenario">
-        <option value="tour">Auto tour</option>
-        <option value="rest">Eyes-closed rest</option>
-        <option value="focus">Focused work</option>
-        <option value="meditate">Meditation</option>
-        <option value="drowsy">Drowsy</option>
-        <option value="stress">Stressed, tense jaw</option>
-      </select>
-    </div>
-    <div class="field sim-only">
-      <label for="protocol">Training protocol</label>
-      <select id="protocol">
-        <option value="alpha">Alpha up (Pz, O1, O2)</option>
-        <option value="smr">SMR up (C3, Cz, C4)</option>
-        <option value="theta-beta">Theta/beta down (Fz, Cz)</option>
-      </select>
-    </div>
-    <div class="field sim-only">
-      <label for="stimBtn">Audio stimulation</label>
-      <button id="stimBtn" class="toggle" aria-pressed="false" type="button">40 Hz pulsed tone</button>
-    </div>
-    <div class="field sim-only">
-      <label for="blinkBtn">Artifacts</label>
-      <button id="blinkBtn" class="toggle" aria-pressed="true" type="button">Eye blinks</button>
-    </div>
-    <div class="field">
-      <label for="pauseBtn">Stream</label>
-      <button id="pauseBtn" type="button">Pause</button>
+  <!-- ============ SETUP ============ -->
+  <main id="setupView" class="setup">
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Programs</h2>
+        <div class="tabs" role="group" aria-label="Program category" id="catTabs">
+          <button type="button" class="chip" data-cat="condition" aria-pressed="true">Conditions</button>
+          <button type="button" class="chip" data-cat="state" aria-pressed="false">Brain states</button>
+          <button type="button" class="chip" data-cat="custom" aria-pressed="false">My programs</button>
+        </div>
+      </div>
+      <div class="cards" id="cards"></div>
+      <details class="builder panel" id="builder">
+        <summary>Build a custom program</summary>
+        <form id="builderForm" class="builder-grid">
+          <div class="field"><label for="bName">Name</label><input id="bName" value="My alpha training" required></div>
+          <div class="field"><label for="bBand">Target rhythm</label>
+            <select id="bBand">
+              <option value="delta">Delta 1-4 Hz</option><option value="theta">Theta 4-8 Hz</option>
+              <option value="alpha" selected>Alpha 8-12 Hz</option><option value="smr">SMR 12-15 Hz</option>
+              <option value="beta">Beta 15-22 Hz</option><option value="hibeta">High beta 22-30 Hz</option>
+            </select></div>
+          <div class="field"><label for="bDir">Direction</label>
+            <select id="bDir"><option value="up">Increase</option><option value="down">Decrease</option></select></div>
+          <div class="field"><label for="bRatio">Relative to</label>
+            <select id="bRatio"><option value="">All rhythms (1-40 Hz)</option><option value="theta">Theta</option>
+              <option value="alpha">Alpha</option><option value="beta">Beta</option></select></div>
+          <div class="field"><label for="bSites">Sites</label><input id="bSites" value="Pz, O1, O2" placeholder="e.g. Cz, C4"></div>
+          <div class="field"><label for="bMinutes">Length (min)</label><input id="bMinutes" type="number" min="8" max="60" value="20"></div>
+          <div class="field"><label for="bBlocks">Training blocks</label><input id="bBlocks" type="number" min="1" max="6" value="3"></div>
+          <div class="field"><label for="bRate">Reward often</label>
+            <select id="bRate"><option value="0.7">Gentle (70%)</option><option value="0.6" selected>Balanced (60%)</option><option value="0.5">Challenging (50%)</option></select></div>
+          <div class="field"><label for="bScape">Soundscape</label><select id="bScape"></select></div>
+          <div class="field"><label for="bEyes">Eyes</label><select id="bEyes"><option value="open">Open</option><option value="closed">Closed</option></select></div>
+          <div class="field"><label for="bBinaural">Binaural beat</label>
+            <select id="bBinaural"><option value="">None</option><option value="6">6 Hz theta</option><option value="10">10 Hz alpha</option><option value="14">14 Hz SMR</option><option value="18">18 Hz beta</option></select></div>
+          <div class="field"><label for="bSave">&nbsp;</label><button id="bSave" type="submit">Save program</button></div>
+        </form>
+        <p class="note" id="builderNote"></p>
+      </details>
+    </section>
+
+    <section class="panel detail" id="detail" aria-live="polite">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <span class="badge" id="dBadge"></span>
+        <span class="hint" id="dMeta"></span>
+      </div>
+      <h3 id="dName"></h3>
+      <p id="dSummary"></p>
+      <div class="evidence"><span class="eyebrow">Research basis</span><p id="dEvidence"></p></div>
+      <div class="caution" id="dCaution" hidden></div>
+      <div class="field"><span class="eyebrow">Session arc</span><canvas id="arc" aria-label="Phases of the session and how the sound eases in and out"></canvas></div>
+      <div class="field"><span class="eyebrow">Soundscape</span><div class="scapes" id="scapes"></div></div>
+      <div class="row">
+        <div class="field"><span class="eyebrow">Length</span>
+          <div class="seg" id="lengthSeg"><button type="button" data-len="0.6" aria-pressed="false">Short</button><button type="button" data-len="1" aria-pressed="true">Standard</button><button type="button" data-len="1.4" aria-pressed="false">Extended</button></div></div>
+        <div class="field"><label for="listenBtn">Preview</label><button id="listenBtn" type="button" class="btn-ghost">Listen 15 s</button></div>
+      </div>
+      <div class="field"><span class="eyebrow">Headset</span>
+        <div class="connect">
+          <div class="field"><label for="device">Device</label><select id="device"></select></div>
+          <div class="field" id="fPort" hidden><label for="port">Serial port</label><input id="port" placeholder="/dev/ttyUSB0 or COM3"></div>
+          <div class="field" id="fSerial" hidden><label for="serial">Device name / serial</label><input id="serial" placeholder="Optional"></div>
+          <div class="field" id="fLsl" hidden><label for="lslName">LSL stream name</label><input id="lslName" placeholder="First EEG stream"></div>
+          <div class="field"><label for="mains">Mains power</label><select id="mains"><option value="60">60 Hz (Americas)</option><option value="50">50 Hz (Europe, Asia)</option></select></div>
+        </div>
+        <p class="note" id="deviceNote"></p>
+      </div>
+      <div class="row" style="align-items:center">
+        <button id="startBtn" class="btn-primary" type="button">Begin session</button>
+        <span class="error" id="startError" role="alert"></span>
+      </div>
+      <p class="foot">NOVA is not a medical device. Programs follow protocols from neurofeedback research; they support training and don't diagnose or treat any condition. For ADHD, depression or anxiety, work with a qualified clinician.</p>
+    </section>
+  </main>
+
+  <!-- ============ SESSION ============ -->
+  <main id="sessionView" class="session-grid" hidden>
+    <section class="panel strip">
+      <div style="display:grid;gap:6px;min-width:0">
+        <span class="phase-sub" id="phaseSub">Phase 1</span>
+        <h2 class="phase-name" id="phaseName">Arrive</h2>
+        <div class="guidance" id="guidance"></div>
+      </div>
+      <div class="session-controls">
+        <div class="vol"><label class="eyebrow" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.7"></div>
+        <div class="field"><label for="scapeSwitch">Soundscape</label><select id="scapeSwitch"></select></div>
+        <button id="skipBtn" type="button">Next phase</button>
+        <button id="endBtn" type="button">End session</button>
+      </div>
+      <canvas id="sessionArc" aria-label="Session progress"></canvas>
+    </section>
+
+    <section class="grid-main">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Cortical map</h2>
+          <span class="hint" id="mapHint">Relative alpha power, viewed from above</span>
+        </div>
+        <div class="bands" id="bandChips" role="group" aria-label="Frequency band shown on the map"></div>
+        <div class="brain-wrap">
+          <canvas id="brain" aria-label="Top-down brain map with activity heat gradient"></canvas>
+          <span class="side-label" style="left:2px">L</span>
+          <span class="side-label" style="right:2px">R</span>
+          <div class="brain-overlay">
+            <span class="lab">Training metric</span>
+            <span class="big" id="metricBig">--</span>
+            <span class="lab" id="metricLabel">--</span>
+          </div>
+        </div>
+        <div class="legend"><span id="legendLo">--</span><div class="ramp"></div><span id="legendHi">--</span></div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2>State indices</h2><span class="hint">Last 60 s</span></div>
+          <div class="indices" id="indices"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Hemispheric balance</h2><span class="hint">Left vs right relative power</span></div>
+          <canvas id="balance" aria-label="Left versus right hemisphere power per band"></canvas>
+          <div class="asym">
+            <div class="readouts"><span>Frontal alpha asymmetry <b id="faa">--</b></span><span id="faaWhich" class="hint"></span></div>
+            <div class="asym-bar"><i id="faaMark"></i></div>
+            <div class="asym-scale"><span>Withdrawal</span><span>Balanced</span><span>Approach</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid-deck">
+      <div class="panel">
+        <div class="panel-head"><h2>Signal</h2><span class="hint">Band-passed EEG, 6 s window, µV</span></div>
+        <canvas id="traces" aria-label="Scrolling EEG traces"></canvas>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-head"><h2>Spectrum</h2><span class="hint">Mean power, 1-45 Hz, log scale</span></div>
+          <canvas id="spectrum" aria-label="Power spectrum"></canvas>
+          <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>Binaural <b id="binText">off</b></span></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h2>Training</h2><span class="hint">Metric vs adaptive threshold</span></div>
+          <canvas id="timeline" aria-label="Training metric over time with threshold"></canvas>
+          <div class="readouts"><span>Rewarded <b id="rewardPct">--</b></span><span>Threshold <b id="thrVal">--</b></span><span>Artifacts <b id="artPct">--</b></span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="overlay" id="connectOverlay" hidden>
+    <div class="panel dialog" role="dialog" aria-labelledby="connTitle">
+      <h2 id="connTitle">Connecting</h2>
+      <p class="hint" id="connText">Connecting to your headset. Bluetooth headsets can take up to 20 seconds.</p>
+      <div class="row"><button type="button" id="connCancel">Cancel</button></div>
     </div>
   </div>
 
-  <section class="grid-main">
-    <div class="panel">
-      <div class="panel-head">
-        <h2>Cortical map</h2>
-        <span class="hint" id="mapHint">Relative alpha power, 10-20 montage, viewed from above</span>
-      </div>
-      <div class="bands" id="bandChips" role="group" aria-label="Frequency band shown on the map"></div>
-      <div class="brain-wrap">
-        <canvas id="brain" aria-label="Top-down brain map with activity heat gradient"></canvas>
-        <span class="side-label" style="left:2px">L</span>
-        <span class="side-label" style="right:2px">R</span>
-        <div class="brain-overlay">
-          <span class="lab">Protocol metric</span>
-          <span class="big" id="metricBig">--</span>
-          <span class="lab" id="metricLabel">rel. alpha</span>
-        </div>
-      </div>
-      <div class="legend"><span id="legendLo">--</span><div class="ramp"></div><span id="legendHi">--</span></div>
+  <div class="overlay" id="summaryOverlay" hidden>
+    <div class="panel dialog" role="dialog" aria-labelledby="sumTitle">
+      <div class="panel-head"><h2 id="sumTitle">Session complete</h2><span class="hint" id="sumWhen"></span></div>
+      <div class="bigstats" id="sumStats"></div>
+      <div class="table-wrap"><table class="summary-table" id="sumTable"></table></div>
+      <p class="note" id="sumNote"></p>
+      <div class="row"><button type="button" class="btn-primary" id="sumDone">Back to programs</button></div>
     </div>
-
-    <div class="stack">
-      <div class="panel">
-        <div class="panel-head"><h2>State indices</h2><span class="hint">Last 60 s</span></div>
-        <div class="indices" id="indices"></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h2>Hemispheric balance</h2><span class="hint">Left vs right relative power</span></div>
-        <canvas id="balance" aria-label="Left versus right hemisphere power per band"></canvas>
-        <div class="asym">
-          <div class="readouts"><span>Frontal alpha asymmetry <b id="faa">--</b></span><span id="faaWhich" class="hint"></span></div>
-          <div class="asym-bar"><i id="faaMark"></i></div>
-          <div class="asym-scale"><span>Withdrawal</span><span>Balanced</span><span>Approach</span></div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section class="grid-deck">
-    <div class="panel">
-      <div class="panel-head"><h2>Signal</h2><span class="hint">Band-passed EEG, 6 s window, µV</span></div>
-      <canvas id="traces" aria-label="Scrolling EEG traces"></canvas>
-    </div>
-    <div class="stack">
-      <div class="panel">
-        <div class="panel-head"><h2>Spectrum</h2><span class="hint">Mean power, 1-45 Hz, log scale</span></div>
-        <canvas id="spectrum" aria-label="Power spectrum"></canvas>
-        <div class="readouts"><span>Peak alpha <b id="iaf">--</b></span><span>40 Hz response <b id="assr">--</b></span></div>
-      </div>
-      <div class="panel">
-        <div class="panel-head"><h2>Training</h2><span class="hint">Metric vs adaptive threshold</span></div>
-        <canvas id="timeline" aria-label="Protocol metric over time with threshold"></canvas>
-        <div class="readouts"><span>Rewarded <b id="rewardPct">--</b></span><span>Threshold <b id="thrVal">--</b></span><span>Artifacts <b id="artPct">--</b></span></div>
-      </div>
-    </div>
-  </section>
-
-  <p class="foot">NOVA runs a built-in EEG simulation when no headset is connected. Run <code>nova run --feedback dashboard</code> with your device to stream live data into this view. For research and personal use; not a medical device.</p>
+  </div>
 </div>
 
+<script type="application/json" id="nova-programs">{"programs":[{"id":"focus-adhd","name":"Focus Builder","category":"condition","target":"ADHD and attention","summary":"Alternates lowering the theta/beta ratio at the top of the head with raising SMR over the right motor strip: the two most studied attention protocols.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Relax your shoulders and jaw. The sound brightens when you're calm and alert.","binaural":null,"protocol_name":"smr"},{"name":"Steady attention","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep a calm, steady attention on the sound. Brighter means you've found it.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Still body, clear mind","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Stay still and relaxed, eyes soft. Let the sound open up around you.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Sustain","kind":"training","minutes":5,"protocol":"theta-beta","reward_rate":0.55,"guidance":"Hold that steady attention a little longer. No need to strain.","binaural":null,"protocol_name":"theta-beta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"aurora","eyes":"open","evidence":"Most studied","evidence_note":"Theta/beta and SMR training are the most researched neurofeedback protocols. Meta-analyses report improvements in parent-rated ADHD symptoms; effects are smaller in blinded ratings. Courses usually run 30-40 sessions.","sites":["Cz","C4"],"caution":"","minutes":24.5,"protocols":{"smr":{"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"theta-beta":{"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"mood-depression","name":"Mood Lift","category":"condition","target":"Low mood and depression","summary":"Trains frontal alpha asymmetry toward relatively more left-frontal activity, a pattern associated with approach motivation and positive mood.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha-asymmetry","reward_rate":0.75,"guidance":"Settle into a light, curious mood. Rewards come easily at first.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Brighten","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Think of something you're looking forward to. Let the sound warm up.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Reach toward","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.6,"guidance":"Picture a place or person that feels good to move toward.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Carry it","kind":"training","minutes":5,"protocol":"alpha-asymmetry","reward_rate":0.55,"guidance":"Keep that warmth gently in mind as the sound rises.","binaural":null,"protocol_name":"alpha-asymmetry"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"dawn","eyes":"open","evidence":"Emerging","evidence_note":"Frontal alpha asymmetry training has small studies with encouraging results, but evidence is preliminary. Use alongside care from a clinician, not instead of it.","sites":["F3","F4"],"caution":"If you are in crisis or thinking about harming yourself, contact local emergency services or a crisis line (call or text 988 in the US).","minutes":24.5,"protocols":{"alpha-asymmetry":{"name":"alpha-asymmetry","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":[],"kind":"asymmetry","label":"alpha asymmetry (R-L)"}}},{"id":"calm-anxiety","name":"Calm Waters","category":"condition","target":"Anxiety","summary":"Raises posterior alpha, the rhythm of relaxed wakefulness, with eyes closed, then deepens into slower theta-alpha calm.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Close your eyes and settle. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha","reward_rate":0.75,"guidance":"Eyes closed. The sound grows fuller as you relax.","binaural":null,"protocol_name":"alpha"},{"name":"Open the breath","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Eyes closed. Breathe out slowly; let the waves carry the sound.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Soften","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Let your forehead, jaw and hands go soft.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Drift","kind":"training","minutes":4,"protocol":"alpha-theta","reward_rate":0.55,"guidance":"Let thoughts drift past like clouds. Nothing to do.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"ocean","eyes":"closed","evidence":"Limited","evidence_note":"Alpha up-training has small studies reporting reduced anxiety. Evidence is limited but the training is gentle and low-risk.","sites":["Pz","O1","O2"],"caution":"","minutes":23.5,"protocols":{"alpha":{"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"},"alpha-theta":{"name":"alpha-theta","reward":"theta","ratio_over":"alpha","direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","TP9","TP10"],"kind":"ratio","label":"theta/alpha"}}},{"id":"stress-recovery","name":"Unwind","category":"condition","target":"Stress","summary":"Builds calm, still alertness with SMR training, then moves into relaxed alpha while discouraging high-beta tension.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Drop your shoulders. Rewards come often as you settle.","binaural":null,"protocol_name":"smr"},{"name":"Ground","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Feel your feet and the chair. Stay still; let the rain brighten.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Release","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Let your eyes close if you like. Unclench, exhale, let go.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Rest in it","kind":"training","minutes":4,"protocol":"alpha","reward_rate":0.55,"guidance":"Stay with the calm. The sound will hold you there.","binaural":null,"protocol_name":"alpha"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"rain","eyes":"open","evidence":"Limited","evidence_note":"SMR and alpha training are widely used for stress regulation. Research is limited, and results vary between people.","sites":["C4","Pz"],"caution":"","minutes":23.5,"protocols":{"smr":{"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"alpha":{"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"}}},{"id":"energy-fatigue","name":"Recharge","category":"condition","target":"Fatigue and low energy","summary":"Raises beta at the top of the head for alert engagement while holding down slow theta.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":2,"protocol":"beta","reward_rate":0.75,"guidance":"Take three energizing breaths, then watch the sound come alive.","binaural":null,"protocol_name":"beta"},{"name":"Wake up","kind":"training","minutes":4,"protocol":"beta","reward_rate":0.6,"guidance":"Sit up tall, eyes open. Bring bright, interested attention to the sound.","binaural":null,"protocol_name":"beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Clear the fog","kind":"training","minutes":4,"protocol":"theta-beta","reward_rate":0.6,"guidance":"Keep your mind gently busy: notice each new bell.","binaural":null,"protocol_name":"theta-beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Bright focus","kind":"training","minutes":4,"protocol":"beta","reward_rate":0.55,"guidance":"Hold that alert, easy energy.","binaural":null,"protocol_name":"beta"},{"name":"Integrate","kind":"cooldown","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"celestial","eyes":"open","evidence":"Limited","evidence_note":"Beta up-training for alertness has limited evidence. Stop if you feel tense or get a headache, and avoid it late in the evening.","sites":["Cz","Fz"],"caution":"","minutes":20.0,"protocols":{"beta":{"name":"beta","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["Cz","Fz","C3"],"kind":"power","label":"rel. beta"},"theta-beta":{"name":"theta-beta","reward":"theta","ratio_over":"beta","direction":"down","inhibits":["delta","hibeta"],"sites":["Cz","Fz","FCz"],"kind":"ratio","label":"theta/beta"}}},{"id":"deep-rest","name":"Deep Rest","category":"state","target":"Deep relaxation","summary":"Classic eyes-closed alpha-theta training: drift toward the edge of sleep while staying aware.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Close your eyes and settle. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"alpha","reward_rate":0.75,"guidance":"Eyes closed. Breathe slowly; the sound deepens as you relax.","binaural":null,"protocol_name":"alpha"},{"name":"Descend","kind":"training","minutes":5,"protocol":"alpha","reward_rate":0.6,"guidance":"Eyes closed. Let your body grow heavy.","binaural":null,"protocol_name":"alpha"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Twilight","kind":"training","minutes":6,"protocol":"alpha-theta","reward_rate":0.6,"guidance":"Let images come and go. Stay just awake enough to hear the bells.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Deep","kind":"training","minutes":6,"protocol":"alpha-theta","reward_rate":0.55,"guidance":"Float. There's nothing to hold on to.","binaural":null,"protocol_name":"alpha-theta"},{"name":"Integrate","kind":"cooldown","minutes":3.0,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"nebula","eyes":"closed","evidence":"Limited","evidence_note":"Alpha-theta training is used for deep relaxation and in addiction and trauma programs. Best done lying back, eyes closed, when you don't need to be alert afterward.","sites":["Pz","O1","O2"],"caution":"","minutes":27.0,"protocols":{"alpha":{"name":"alpha","reward":"alpha","ratio_over":null,"direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","P3","P4","TP9","TP10"],"kind":"power","label":"rel. alpha"},"alpha-theta":{"name":"alpha-theta","reward":"theta","ratio_over":"alpha","direction":"up","inhibits":["delta","hibeta"],"sites":["Pz","O1","O2","TP9","TP10"],"kind":"ratio","label":"theta/alpha"}}},{"id":"peak-focus","name":"Peak Focus","category":"state","target":"Calm, sharp concentration","summary":"SMR for a quiet body and steady mind, then beta for engaged concentration.","phases":[{"name":"Arrive","kind":"baseline","minutes":2.0,"protocol":null,"reward_rate":0.6,"guidance":"Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels.","binaural":null,"protocol_name":null},{"name":"Warm-up","kind":"training","minutes":3,"protocol":"smr","reward_rate":0.75,"guidance":"Settle your body. The sound brightens as you become still.","binaural":null,"protocol_name":"smr"},{"name":"Quiet body","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.6,"guidance":"Stay physically still. Let your attention rest on the sound.","binaural":null,"protocol_name":"smr"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Engage","kind":"training","minutes":5,"protocol":"beta","reward_rate":0.6,"guidance":"Bring curious, focused attention to each detail of the sound.","binaural":null,"protocol_name":"beta"},{"name":"Breathe","kind":"rest","minutes":1.0,"protocol":null,"reward_rate":0.6,"guidance":"Pause. Follow the swell of the sound: in as it rises, out as it falls.","binaural":null,"protocol_name":null},{"name":"Flow","kind":"training","minutes":5,"protocol":"smr","reward_rate":0.55,"guidance":"Relaxed and alert at once. Let it feel easy.","binaural":null,"protocol_name":"smr"},{"name":"Integrate","kind":"cooldown","minutes":2.5,"protocol":null,"reward_rate":0.6,"guidance":"Let the effort go. Notice how you feel now, and stay with it as the sound fades.","binaural":null,"protocol_name":null}],"soundscape":"celestial","eyes":"open","evidence":"Limited","evidence_note":"SMR and beta training for performance have mixed evidence in healthy adults.","sites":["C4","Cz"],"caution":"","minutes":24.5,"protocols":{"smr":{"name":"smr","reward":"smr","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["C4","Cz","C3"],"kind":"power","label":"rel. smr"},"beta":{"name":"beta","reward":"beta","ratio_over":null,"direction":"up","inhibits":["theta","hibeta"],"sites":["Cz","Fz","C3"],"kind":"power","label":"rel. beta"}}}],"soundscapes":{"aurora":"Aurora: airy Lydian pads and glass shimmer","ocean":"Deep Ocean: low swells, slow waves, distant bells","celestial":"Celestial: bright bells over a floating major drone","rain":"Forest Rain: soft rain, warm pads, wooden chimes","nebula":"Nebula: dark, slow drones with a glowing upper layer","dawn":"Dawn: warm, rising major chords"}}</script>
 <script>
 "use strict";
 (() => {
-/* ---------- Constants ---------- */
+/* =====================================================================
+   Constants and helpers
+   ===================================================================== */
 const BANDS = [
   { key: "delta", name: "Delta", lo: 1, hi: 4, color: "#6b74ff" },
   { key: "theta", name: "Theta", lo: 4, hi: 8, color: "#4fb8ff" },
@@ -270,7 +409,6 @@ const BANDS = [
   { key: "gamma", name: "Gamma", lo: 30, hi: 45, color: "#ff5d8f" },
 ];
 const BAND = Object.fromEntries(BANDS.map(b => [b.key, b]));
-// 10-20 positions on a unit head, x to the right, y toward the nose.
 const POS = {
   Fp1: [-0.31, 0.95], Fp2: [0.31, 0.95], AF7: [-0.55, 0.8], AF8: [0.55, 0.8], AF3: [-0.3, 0.78], AF4: [0.3, 0.78],
   F7: [-0.78, 0.58], F3: [-0.4, 0.52], Fz: [0, 0.48], F4: [0.4, 0.52], F8: [0.78, 0.58],
@@ -287,31 +425,32 @@ const POS = {
   P1: [-0.2, -0.49], P2: [0.2, -0.49], P5: [-0.6, -0.54], P6: [0.6, -0.54],
   PO3: [-0.3, -0.76], POz: [0, -0.74], PO4: [0.3, -0.76], PO7: [-0.55, -0.8], PO8: [0.55, -0.8],
 };
-const SIM_CHANNELS = ["Fp1","Fp2","F7","F3","Fz","F4","F8","T7","C3","Cz","C4","T8","P7","P3","Pz","P4","P8","O1","O2"];
-const TRACE_PREF = ["Fp1","Fz","F4","C3","Cz","C4","Pz","O1","O2","AF7","AF8","TP9","TP10"];
+const DEMO_CHANNELS = ["Fp1","Fp2","F7","F3","Fz","F4","F8","T7","C3","Cz","C4","T8","P7","P3","Pz","P4","P8","O1","O2"];
+const TRACE_PREF = ["Fp1","Fz","F3","F4","C3","Cz","C4","Pz","O1","O2","AF7","AF8","TP9","TP10"];
+const FRONTAL_PAIRS = [["F3","F4"],["AF3","AF4"],["AF7","AF8"],["F7","F8"],["Fp1","Fp2"]];
+const KIND_COLOR = { baseline: "#6b74ff", training: "#3ee6d4", rest: "#9d8cff", cooldown: "#4fb8ff" };
 const UPDATE_MS = 250;
-const HISTORY = 240; // 60 s of updates
+const HISTORY = 240;
 const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-/* ---------- Small utilities ---------- */
 const $ = id => document.getElementById(id);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = x => { x = clamp(x, 0, 1); return x * x * (3 - 2 * x); };
 function mulberry32(seed) {
   return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
     t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
 }
-const rand = mulberry32(20261011);
+const rand = mulberry32(Date.now() & 0xffff);
 function gauss() { let u = 0, v = 0; while (!u) u = rand(); while (!v) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
 function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
 function fmtTime(s) { s = Math.max(0, Math.floor(s)); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+function esc(s) { return String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 function positionFor(name, i, n) {
   if (POS[name]) return POS[name];
-  const a = Math.PI / 2 - (2 * Math.PI * i) / n; // unknown labels: ring around the head
+  const a = Math.PI / 2 - (2 * Math.PI * i) / n;
   return [0.75 * Math.cos(a), 0.75 * Math.sin(a)];
 }
-
-/* Heat colour map: deep navy -> cobalt -> teal -> lime -> amber -> coral. */
 const STOPS = [[0, "#0b1838"], [0.2, "#1550a8"], [0.42, "#17b9b0"], [0.62, "#b9f070"], [0.8, "#ffb547"], [1, "#ff5d8f"]].map(([t, c]) => [t, hexRgb(c)]);
 const LUT = new Uint8ClampedArray(256 * 3);
 for (let i = 0; i < 256; i++) {
@@ -320,7 +459,9 @@ for (let i = 0; i < 256; i++) {
   for (let j = 0; j < 3; j++) LUT[i * 3 + j] = Math.round(lerp(c0[j], c1[j], f));
 }
 
-/* ---------- FFT + spectral analysis ---------- */
+/* =====================================================================
+   Spectral analysis
+   ===================================================================== */
 function fft(re, im) {
   const n = re.length;
   for (let i = 1, j = 0; i < n; i++) {
@@ -340,7 +481,6 @@ function fft(re, im) {
     }
   }
 }
-// Welch PSD with Hann windows and 50% overlap; returns µV²/Hz per bin.
 function welch(x, fs, nseg) {
   const win = new Float64Array(nseg); let wss = 0;
   for (let i = 0; i < nseg; i++) { win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (nseg - 1)); wss += win[i] * win[i]; }
@@ -358,8 +498,6 @@ function welch(x, fs, nseg) {
   return psd;
 }
 function bandSum(psd, df, lo, hi) { let s = 0; for (let k = Math.ceil(lo / df); k * df < hi && k < psd.length; k++) s += psd[k] * df; return s; }
-
-/* ---------- Ring buffer of samples per channel ---------- */
 class Ring {
   constructor(len) { this.buf = new Float32Array(len); this.pos = 0; this.count = 0; }
   push(v) { this.buf[this.pos] = v; this.pos = (this.pos + 1) % this.buf.length; this.count = Math.min(this.count + 1, this.buf.length); }
@@ -367,16 +505,17 @@ class Ring {
     for (let i = 0; i < n; i++) out[i] = this.buf[(this.pos - n + i + L) % L]; return out; }
 }
 
-/* ---------- EEG simulator ---------- */
-// Amplitudes (µV) per band for each mental state, plus frontal alpha asymmetry (+ = more right alpha).
+/* =====================================================================
+   Demo signal (used when no NOVA engine is running on this computer)
+   ===================================================================== */
 const STATES = {
-  rest:     { label: "Eyes-closed rest", amp: { delta: 7, theta: 5, alpha: 17, smr: 4, beta: 3.5, hibeta: 1.8, gamma: 0.9 }, asym: 0.08 },
-  focus:    { label: "Focused work",     amp: { delta: 6, theta: 4.5, alpha: 6, smr: 6, beta: 8, hibeta: 3, gamma: 1.4 }, asym: 0.12 },
-  meditate: { label: "Meditation",       amp: { delta: 6, theta: 9.5, alpha: 13, smr: 4, beta: 3.5, hibeta: 1.5, gamma: 1.1 }, asym: 0.1 },
-  drowsy:   { label: "Drowsy",           amp: { delta: 12, theta: 11, alpha: 6, smr: 3, beta: 2.6, hibeta: 1.3, gamma: 0.7 }, asym: 0 },
-  stress:   { label: "Stressed",         amp: { delta: 6.5, theta: 5, alpha: 4.5, smr: 3, beta: 7, hibeta: 7, gamma: 4 }, asym: -0.22 },
+  rest:     { amp: { delta: 7, theta: 5, alpha: 17, smr: 4, beta: 3.5, hibeta: 1.8, gamma: 0.9 }, asym: 0.08 },
+  focus:    { amp: { delta: 6, theta: 4.5, alpha: 6, smr: 6, beta: 8, hibeta: 3, gamma: 1.4 }, asym: 0.12 },
+  meditate: { amp: { delta: 6, theta: 9.5, alpha: 13, smr: 4, beta: 3.5, hibeta: 1.5, gamma: 1.1 }, asym: 0.15 },
+  drowsy:   { amp: { delta: 12, theta: 11, alpha: 6, smr: 3, beta: 2.6, hibeta: 1.3, gamma: 0.7 }, asym: 0 },
+  tense:    { amp: { delta: 6.5, theta: 5, alpha: 4.5, smr: 3, beta: 7, hibeta: 7, gamma: 4 }, asym: -0.22 },
 };
-const TOUR = ["rest", "focus", "meditate", "drowsy", "stress"];
+const TOUR = ["rest", "focus", "meditate", "focus", "drowsy", "rest", "tense", "meditate"];
 const CENTER = { delta: 2.2, theta: 6, alpha: 10.2, smr: 13.5, beta: 18, hibeta: 25, gamma: 36 };
 function spatial(band, x, y) {
   switch (band) {
@@ -385,58 +524,43 @@ function spatial(band, x, y) {
     case "alpha": return 0.3 + 1.2 / (1 + Math.exp(4 * (y + 0.1)));
     case "smr":   return 0.45 + 1.0 * Math.exp(-(((Math.abs(x) - 0.45) ** 2) + y * y) / 0.09);
     case "beta":  return 0.6 + 0.5 * Math.max(y, 0) + 0.3 * Math.exp(-(x * x + y * y) / 0.3);
-    case "hibeta":
-    case "gamma": return 0.35 + 1.4 * Math.abs(x) ** 3;
+    default:      return 0.35 + 1.4 * Math.abs(x) ** 3;
   }
-  return 1;
 }
-class Simulator {
+class DemoSignal {
   constructor(names, fs) {
     this.fs = fs; this.names = names; this.t = 0;
     this.pos = names.map((n, i) => positionFor(n, i, names.length));
-    this.amp = { ...STATES.rest.amp }; this.asym = 0;
-    this.state = "rest"; this.tourStart = 0;
-    this.stim = false; this.blinks = true; this.blinkLeft = 0; this.nextBlink = 3;
+    this.amp = { ...STATES.rest.amp }; this.asym = 0; this.nextBlink = 5; this.blinkLeft = 0;
     this.osc = names.map(() => BANDS.map(b => ({ phase: rand() * 6.283, f: CENTER[b.key] + (rand() - 0.5) * (b.hi - b.lo) * 0.4, env: 1 })));
     this.pink = names.map(() => new Float64Array(3));
   }
-  target(scenario) {
-    if (scenario !== "tour") return scenario;
-    return TOUR[Math.floor(this.t / 20) % TOUR.length];
-  }
-  generate(n, scenario) {
-    const out = this.names.map(() => new Float64Array(n));
-    const dt = 1 / this.fs;
+  generate(n) {
+    const out = this.names.map(() => new Float64Array(n)); const dt = 1 / this.fs;
     for (let s = 0; s < n; s++) {
       this.t += dt;
-      const st = STATES[this.state = this.target(scenario)];
-      const k = 1 - Math.exp(-dt / 2.5); // ~2.5 s state transitions
+      const st = STATES[TOUR[Math.floor(this.t / 35) % TOUR.length]];
+      const k = 1 - Math.exp(-dt / 4);
       for (const b of BANDS) this.amp[b.key] = lerp(this.amp[b.key], st.amp[b.key], k);
       this.asym = lerp(this.asym, st.asym, k);
       let blink = 0;
-      if (this.blinks) {
-        this.nextBlink -= dt;
-        if (this.nextBlink <= 0) { this.blinkLeft = 0.35; this.nextBlink = 4 + rand() * 7; }
-        if (this.blinkLeft > 0) { this.blinkLeft -= dt; blink = 140 * Math.sin(Math.PI * (0.35 - this.blinkLeft) / 0.35); }
-      }
+      this.nextBlink -= dt;
+      if (this.nextBlink <= 0) { this.blinkLeft = 0.35; this.nextBlink = 6 + rand() * 10; }
+      if (this.blinkLeft > 0) { this.blinkLeft -= dt; blink = 140 * Math.sin(Math.PI * (0.35 - this.blinkLeft) / 0.35); }
       for (let c = 0; c < this.names.length; c++) {
-        const [x, y] = this.pos[c];
-        let v = 0;
+        const [x, y] = this.pos[c]; let v = 0;
         for (let bi = 0; bi < BANDS.length; bi++) {
           const b = BANDS[bi], o = this.osc[c][bi];
-          o.f = clamp(o.f + gauss() * 0.02, b.lo + 0.3, b.hi - 0.3);
-          o.f = lerp(o.f, CENTER[b.key], 0.0005);
+          o.f = clamp(lerp(o.f + gauss() * 0.02, CENTER[b.key], 0.0005), b.lo + 0.3, b.hi - 0.3);
           o.env = clamp(o.env + gauss() * 0.035 + (1 - o.env) * 0.01, 0.15, 2.2);
           o.phase += 2 * Math.PI * o.f * dt;
           let a = this.amp[b.key] * spatial(b.key, x, y) * o.env;
           if (b.key === "alpha" && y > 0.2) a *= 1 + Math.sign(x) * this.asym;
           v += a * Math.sin(o.phase);
         }
-        // Pink background noise, Paul Kellet's economy filter.
         const p = this.pink[c], w = gauss();
         p[0] = 0.99765 * p[0] + w * 0.099046; p[1] = 0.963 * p[1] + w * 0.2965164; p[2] = 0.57 * p[2] + w * 1.0526913;
         v += 2.2 * (p[0] + p[1] + p[2] + w * 0.1848);
-        if (this.stim) v += 1.6 * Math.max(0, Math.abs(x) - 0.3) * Math.sin(2 * Math.PI * 40 * this.t + c * 0.2) + 0.5 * Math.sin(2 * Math.PI * 40 * this.t);
         if (blink && y > 0.6) v += blink * (y - 0.4);
         out[c][s] = v;
       }
@@ -445,49 +569,379 @@ class Simulator {
   }
 }
 
-/* ---------- Analysis state ---------- */
+/* =====================================================================
+   Program runner for demo sessions (the NOVA engine does this for headsets)
+   ===================================================================== */
+function protoMetric(spec, abs, names) {
+  if (!spec) return NaN;
+  if (spec.kind === "asymmetry") {
+    const pair = FRONTAL_PAIRS.find(([l, r]) => names.includes(l) && names.includes(r));
+    if (!pair) return NaN;
+    const L = abs[names.indexOf(pair[0])][spec.reward], R = abs[names.indexOf(pair[1])][spec.reward];
+    return Math.log(Math.max(R, 1e-12)) - Math.log(Math.max(L, 1e-12));
+  }
+  let idx = (spec.sites || []).map(s => names.indexOf(s)).filter(i => i >= 0);
+  if (!idx.length) idx = names.map((_, i) => i);
+  const mean = key => idx.reduce((s, i) => s + abs[i][key], 0) / idx.length;
+  const den = mean(spec.ratio_over || "total");
+  return den > 0 ? mean(spec.reward) / den : 0;
+}
+function quantile(arr, q) { const a = arr.slice().sort((x, y) => x - y); const p = (a.length - 1) * q; const lo = Math.floor(p); return a[lo] + (a[Math.min(lo + 1, a.length - 1)] - a[lo]) * (p - lo); }
+const meanOf = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+class DemoRunner {
+  constructor(program) {
+    this.program = program; this.phases = program.phases; this.idx = 0; this.phaseStart = 0; this.t = 0;
+    this.hist = Object.fromEntries(Object.keys(program.protocols).map(k => [k, []]));
+    this.streak = 0; this.rewarded = 0; this.trainUpdates = 0; this.skipFlag = false; this.done = false;
+    this.stats = this.phases.map(() => ({ metrics: [], rewarded: 0, updates: 0, artifacts: 0, seconds: 0 }));
+    this.baseline = []; this.training = [];
+    this.primary = Object.keys(program.protocols)[0];
+    this.total = this.phases.reduce((s, p) => s + p.minutes * 60, 0);
+  }
+  get phase() { return this.phases[this.idx]; }
+  advance(t) {
+    this.t = t;
+    while (!this.done && (this.skipFlag || t - this.phaseStart >= this.phase.minutes * 60)) {
+      this.skipFlag = false; this.stats[this.idx].seconds = t - this.phaseStart;
+      this.phaseStart = t; this.idx++; this.streak = 0;
+      if (this.idx >= this.phases.length) this.done = true;
+    }
+  }
+  displayProto() {
+    const order = [...Array(this.phases.length).keys()].slice(this.idx).concat([...Array(this.idx).keys()].reverse());
+    for (const i of order) if (this.phases[i].protocol_name) return this.phases[i].protocol_name;
+    return this.primary;
+  }
+  tick(t, abs, names, artifact) {
+    this.advance(t);
+    if (this.done) return null;
+    const ph = this.phase, kind = ph.kind;
+    const active = kind === "training" ? ph.protocol_name : null;
+    const shown = active || this.displayProto();
+    const metrics = Object.fromEntries(Object.entries(this.program.protocols).map(([k, s]) => [k, protoMetric(s, abs, names)]));
+    const m = metrics[shown]; const spec = this.program.protocols[shown];
+    const dir = spec.direction === "down" ? -1 : 1;
+    const hist = this.hist[shown];
+    const rate = kind === "training" ? ph.reward_rate : 0.6;
+    const thr = hist.length > 8 ? quantile(hist, dir > 0 ? 1 - rate : rate) : NaN;
+    const pass = !artifact && Number.isFinite(thr) && (dir > 0 ? m > thr : m < thr);
+    this.streak = pass && active ? this.streak + 1 : 0;
+    const reward = !!active && this.streak >= 2;
+    const ps = this.stats[this.idx]; ps.updates++;
+    if (artifact) ps.artifacts++;
+    else {
+      const keep = (k, v) => { if (Number.isFinite(v)) { this.hist[k].push(v); if (this.hist[k].length > 120) this.hist[k].shift(); } };
+      if (kind === "baseline") for (const [k, v] of Object.entries(metrics)) keep(k, v);
+      else if (active) keep(shown, m);
+      if (Number.isFinite(m)) ps.metrics.push(m);
+      if (kind === "baseline" && Number.isFinite(metrics[this.primary])) this.baseline.push(metrics[this.primary]);
+      else if (active === this.primary && Number.isFinite(m)) this.training.push(m);
+    }
+    if (kind === "training") { this.trainUpdates++; this.rewarded += reward; ps.rewarded += reward; }
+    const avg = meanOf(hist) ?? 0;
+    const sd = hist.length > 2 ? Math.sqrt(hist.reduce((s, v) => s + (v - avg) ** 2, 0) / hist.length) : 0;
+    const scale = sd || Math.abs(thr) || 1;
+    const intensity = artifact || !Number.isFinite(thr) ? 0 : clamp(0.5 + dir * (m - thr) / (2 * scale), 0, 1);
+    return {
+      t, phase: kind, phase_name: ph.name, phase_index: this.idx, phase_count: this.phases.length,
+      phase_elapsed: t - this.phaseStart, phase_duration: ph.minutes * 60, session_duration: this.total,
+      guidance: ph.guidance, binaural: ph.binaural ?? null, protocol: shown, metric_label: spec.label, direction: dir,
+      metric: m, threshold: thr, reward, intensity, artifact, inhibited: [],
+      reward_fraction: this.trainUpdates ? this.rewarded / this.trainUpdates : 0, stim_on: ph.binaural != null,
+    };
+  }
+  summary(aborted) {
+    if (!this.done) this.stats[this.idx].seconds = this.t - this.phaseStart;
+    const b = meanOf(this.baseline), tr = meanOf(this.training);
+    const ups = this.stats.reduce((s, p) => s + p.updates, 0);
+    return {
+      program: this.program.name, protocol: this.primary, device: "Demo signal", duration_sec: this.t, aborted,
+      baseline_metric: b, training_metric: tr, change: b != null && tr != null && b !== 0 ? (tr - b) / Math.abs(b) : null,
+      reward_fraction: this.trainUpdates ? this.rewarded / this.trainUpdates : 0,
+      artifact_fraction: this.stats.reduce((s, p) => s + p.artifacts, 0) / Math.max(1, ups), log_path: null,
+      phases: this.phases.map((p, i) => ({ name: p.name, kind: p.kind, protocol: p.protocol_name, seconds: this.stats[i].seconds,
+        metric: meanOf(this.stats[i].metrics), reward_fraction: this.stats[i].updates ? this.stats[i].rewarded / this.stats[i].updates : 0, used: this.stats[i].updates || this.stats[i].seconds }))
+        .filter(p => p.used),
+    };
+  }
+}
+
+/* =====================================================================
+   Soundscapes (Web Audio). Every track is synthesized live: detuned pads
+   through a long generated reverb, a drone, a noise texture, bell chimes,
+   and a shimmer layer that blooms when the brain meets its target.
+   ===================================================================== */
+const N = (root, semis) => root * Math.pow(2, semis / 12);
+const PRESETS = {
+  aurora: { name: "Aurora", root: 174.61, chords: [[0, 7, 16, 23], [2, 9, 18, 23], [4, 11, 19, 26], [-3, 4, 12, 23]],
+    wave: "triangle", cutoff: 950, bright: 3400, reverb: 8, chordSec: 24, wet: 0.95,
+    tex: { type: "bandpass", freq: 3200, q: 0.5, level: 0.035, wave: 0.05, depth: 0.5 },
+    chime: { kind: "glass", every: 6.5, oct: 2, decay: 4.5 }, drone: 0.07 },
+  ocean: { name: "Deep Ocean", root: 146.83, chords: [[0, 7, 15, 22], [-2, 5, 14, 21], [3, 10, 17, 24], [-5, 2, 12, 19]],
+    wave: "sine", cutoff: 700, bright: 2200, reverb: 9, chordSec: 30, wet: 1.0,
+    tex: { type: "lowpass", freq: 480, q: 0.4, level: 0.16, wave: 0.075, depth: 0.85 },
+    chime: { kind: "bell", every: 9, oct: 1, decay: 7 }, drone: 0.1 },
+  celestial: { name: "Celestial", root: 220, chords: [[0, 7, 14, 16], [-3, 4, 9, 16], [2, 9, 16, 21], [5, 12, 16, 24]],
+    wave: "triangle", cutoff: 1300, bright: 4200, reverb: 7, chordSec: 20, wet: 0.9,
+    tex: { type: "bandpass", freq: 5200, q: 0.6, level: 0.02, wave: 0.04, depth: 0.4 },
+    chime: { kind: "bell", every: 4.5, oct: 2, decay: 5 }, drone: 0.06 },
+  rain: { name: "Forest Rain", root: 196, chords: [[0, 7, 14, 16], [5, 12, 16, 21], [-2, 5, 14, 19], [-3, 4, 12, 19]],
+    wave: "triangle", cutoff: 900, bright: 2800, reverb: 6, chordSec: 26, wet: 0.8,
+    tex: { type: "highpass", freq: 2600, q: 0.3, level: 0.075, wave: 0.6, depth: 0.25 },
+    chime: { kind: "wood", every: 5, oct: 2, decay: 1.1 }, drone: 0.07 },
+  nebula: { name: "Nebula", root: 164.81, chords: [[0, 7, 15, 22], [-4, 3, 12, 19], [-2, 5, 14, 17], [-7, 0, 10, 17]],
+    wave: "sawtooth", cutoff: 420, bright: 1600, reverb: 10, chordSec: 34, wet: 1.0,
+    tex: { type: "lowpass", freq: 320, q: 0.5, level: 0.07, wave: 0.03, depth: 0.6 },
+    chime: { kind: "glass", every: 11, oct: 1, decay: 8 }, drone: 0.11 },
+  dawn: { name: "Dawn", root: 130.81, chords: [[0, 7, 16, 19], [5, 12, 16, 21], [7, 14, 19, 23], [9, 16, 19, 24]],
+    wave: "sawtooth", cutoff: 760, bright: 2700, reverb: 7, chordSec: 22, wet: 0.9,
+    tex: { type: "bandpass", freq: 1400, q: 0.4, level: 0.03, wave: 0.05, depth: 0.5 },
+    chime: { kind: "glass", every: 6, oct: 2, decay: 4 }, drone: 0.08 },
+};
+// Which pad voices sound in each phase kind (root, fifth, third, colour tone), and layer balance.
+const VOICING = { baseline: [1, 1, 1, 0.4], training: [1, 1, 1, 1], rest: [1, 1, 0.3, 0], cooldown: [1, 1, 0.7, 0.2], idle: [1, 1, 1, 0.6] };
+const LAYERS = { baseline: { pad: 0.9, drone: 1, tex: 1 }, training: { pad: 1, drone: 0.8, tex: 0.75 }, rest: { pad: 0.7, drone: 1, tex: 1.2 }, cooldown: { pad: 0.8, drone: 1, tex: 0.9 }, idle: { pad: 1, drone: 1, tex: 1 } };
+
+function makeImpulse(ctx, seconds) {
+  const rate = ctx.sampleRate, len = Math.floor(rate * seconds), buf = ctx.createBuffer(2, len, rate);
+  const pre = Math.floor(rate * 0.03), tau = seconds / 6.9;
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch); let lp = 0;
+    for (let i = pre; i < len; i++) {
+      const t = (i - pre) / rate; const k = 0.25 + 0.7 * Math.exp(-t / (tau * 0.7)); // the tail darkens as it decays
+      lp += k * ((Math.random() * 2 - 1) - lp);
+      d[i] = lp * Math.exp(-t / tau);
+    }
+  }
+  return buf;
+}
+function makeNoise(ctx, seconds = 6) {
+  const len = Math.floor(ctx.sampleRate * seconds), buf = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch); let b0 = 0, b1 = 0, b2 = 0;
+    for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1;
+      b0 = 0.99765 * b0 + w * 0.099046; b1 = 0.963 * b1 + w * 0.2965164; b2 = 0.57 * b2 + w * 1.0526913;
+      d[i] = (b0 + b1 + b2 + w * 0.1848) * 0.2; }
+  }
+  return buf;
+}
+
+class Scape {
+  constructor(engine, id) {
+    const ctx = engine.ctx, p = PRESETS[id]; this.ctx = ctx; this.p = p; this.id = id; this.nodes = [];
+    const G = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
+    this.out = G(0); this.out.connect(engine.bus);
+    this.dry = G(0.5); this.dry.connect(this.out);
+    this.wet = G(p.wet); this.wet.connect(this.out);
+    this.verb = ctx.createConvolver(); this.verb.buffer = makeImpulse(ctx, p.reverb); this.verb.connect(this.wet);
+    this.send = G(1); this.send.connect(this.verb);
+    const now = ctx.currentTime;
+    const osc = (type, f) => { const o = ctx.createOscillator(); o.type = type; o.frequency.value = f; o.start(now); this.nodes.push(o); return o; };
+
+    // Pad: four chord voices of detuned oscillators into a slowly moving low-pass filter.
+    this.padFilter = ctx.createBiquadFilter(); this.padFilter.type = "lowpass"; this.padFilter.frequency.value = p.cutoff; this.padFilter.Q.value = 0.6;
+    this.padAmp = G(0); this.padFilter.connect(this.padAmp); this.padAmp.connect(this.dry); this.padAmp.connect(this.send);
+    const fLfo = osc("sine", 0.031); const fDepth = G(p.cutoff * 0.18); fLfo.connect(fDepth); fDepth.connect(this.padFilter.frequency);
+    this.breath = osc("sine", 0.1); this.breathDepth = G(0); this.breath.connect(this.breathDepth); this.breathDepth.connect(this.padAmp.gain);
+    this.chordIdx = Math.floor(rand() * p.chords.length);
+    this.voices = p.chords[this.chordIdx].map((semi, v) => {
+      const g = G(0); g.connect(this.padFilter);
+      const f = N(p.root, semi);
+      const oscs = [osc(p.wave, f), osc(p.wave, f), osc("sine", f / 2)];
+      oscs[0].detune.value = -7; oscs[1].detune.value = 7;
+      const mix = [0.5, 0.5, v === 0 ? 0.6 : 0.15].map(G);
+      oscs.forEach((o, i) => { o.connect(mix[i]); mix[i].connect(g); });
+      const vib = osc("sine", 0.12 + v * 0.037); const vd = G(2.5); vib.connect(vd); oscs.forEach(o => vd.connect(o.detune));
+      return { g, oscs, semi };
+    });
+
+    // Shimmer: the chord two octaves up, mostly into the reverb. This is the reward bloom.
+    this.shimFilter = ctx.createBiquadFilter(); this.shimFilter.type = "highpass"; this.shimFilter.frequency.value = 700;
+    this.shimAmp = G(0); this.shimFilter.connect(this.shimAmp); this.shimAmp.connect(this.send);
+    const shimDry = G(0.15); this.shimAmp.connect(shimDry); shimDry.connect(this.dry);
+    this.shim = this.voices.map((v, i) => { const o = osc(i % 2 ? "triangle" : "sine", N(p.root, v.semi + 24)); const g = G(0.22); o.connect(g); g.connect(this.shimFilter); return o; });
+
+    // Drone: root and fifth an octave down.
+    this.droneAmp = G(0); this.droneAmp.connect(this.dry); this.droneAmp.connect(this.send);
+    [0, 7].forEach((s, i) => { const o = osc("sine", N(p.root, s - 12)); const g = G(i ? 0.5 : 1); o.connect(g); g.connect(this.droneAmp); });
+
+    // Texture: looping pink noise shaped into air, waves or rain, swelling on a slow cycle.
+    const src = ctx.createBufferSource(); src.buffer = engine.noise; src.loop = true; src.start(now, rand() * 5); this.nodes.push(src);
+    const tf = ctx.createBiquadFilter(); tf.type = p.tex.type; tf.frequency.value = p.tex.freq; tf.Q.value = p.tex.q;
+    this.texAmp = G(0); const swell = G(1 - p.tex.depth / 2);
+    const tl = osc("sine", p.tex.wave); const td = G(p.tex.depth / 2); tl.connect(td); td.connect(swell.gain);
+    src.connect(tf); tf.connect(swell); swell.connect(this.texAmp); this.texAmp.connect(this.dry);
+    const ts = G(0.4); this.texAmp.connect(ts); ts.connect(this.send);
+
+    this.kind = "idle"; this.bloom = 0;
+    this.chordTimer = setInterval(() => this.nextChord(), p.chordSec * 1000);
+    this.setKind("idle", true);
+  }
+  nextChord() {
+    const p = this.p; this.chordIdx = (this.chordIdx + 1) % p.chords.length;
+    const t = this.ctx.currentTime, chord = p.chords[this.chordIdx];
+    this.voices.forEach((v, i) => {
+      v.semi = chord[i]; const f = N(p.root, chord[i]);
+      v.oscs[0].frequency.setTargetAtTime(f, t, 2.2); v.oscs[1].frequency.setTargetAtTime(f, t, 2.2); v.oscs[2].frequency.setTargetAtTime(f / 2, t, 2.2);
+      this.shim[i].frequency.setTargetAtTime(N(p.root, chord[i] + 24), t, 2.2);
+    });
+  }
+  setKind(kind, instant = false) {
+    if (kind === this.kind && !instant) return;
+    const changed = kind !== this.kind; this.kind = kind;
+    const t = this.ctx.currentTime, tau = instant ? 0.01 : 3;
+    const L = LAYERS[kind] || LAYERS.idle, V = VOICING[kind] || VOICING.idle;
+    this.voices.forEach((v, i) => v.g.gain.setTargetAtTime(0.11 * V[i], t, tau));
+    this.padAmp.gain.setTargetAtTime(0.9 * L.pad, t, tau);
+    this.droneAmp.gain.setTargetAtTime(this.p.drone * L.drone, t, tau);
+    this.texAmp.gain.setTargetAtTime(this.p.tex.level * 4 * L.tex, t, tau);
+    this.breathDepth.gain.setTargetAtTime(kind === "rest" ? 0.45 : 0, t, tau);
+    if (changed && !instant) this.nextChord(); // each new phase opens on a new chord
+  }
+  setBloom(b, artifact) {
+    const t = this.ctx.currentTime, up = b > this.bloom; this.bloom = b;
+    const p = this.p, tau = up ? 0.45 : 1.3;
+    this.shimAmp.gain.setTargetAtTime(0.5 * b, t, tau);
+    this.padFilter.frequency.setTargetAtTime(Math.max(180, lerp(p.cutoff, p.bright, b) * (artifact ? 0.55 : 1)), t, tau);
+  }
+  chime(level = 1) {
+    const ctx = this.ctx, p = this.p, c = p.chime, t = ctx.currentTime + 0.02;
+    const chord = p.chords[this.chordIdx]; const semi = chord[Math.floor(rand() * chord.length)] + 12 * c.oct + (rand() < 0.3 ? 12 : 0);
+    const f = N(p.root, semi);
+    const ratios = c.kind === "bell" ? [1, 2.0, 2.76, 5.4] : c.kind === "wood" ? [1, 3.93, 9.2] : [1, 2.01, 3.03, 4.2];
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.06 * level, t + (c.kind === "wood" ? 0.003 : 0.012));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + c.decay);
+    let tail = g;
+    if (ctx.createStereoPanner) { const pan = ctx.createStereoPanner(); pan.pan.value = (rand() - 0.5) * 1.4; g.connect(pan); tail = pan; }
+    tail.connect(this.send);
+    const dry = ctx.createGain(); dry.gain.value = 0.35; tail.connect(dry); dry.connect(this.dry);
+    ratios.forEach((r, i) => {
+      const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = f * r;
+      const og = ctx.createGain(); og.gain.value = 1 / (1 + i * 1.8); o.connect(og); og.connect(g);
+      o.start(t); o.stop(t + c.decay + 0.1);
+    });
+  }
+  fade(to, seconds) { const t = this.ctx.currentTime; this.out.gain.cancelScheduledValues(t); this.out.gain.setTargetAtTime(to, t, seconds / 3); }
+  dispose() { clearInterval(this.chordTimer); this.nodes.forEach(n => { try { n.stop(); } catch {} }); setTimeout(() => this.out.disconnect(), 200); }
+}
+
+const audio = {
+  ctx: null, scape: null, volume: 0.7, env: 0, lastReward: false, quiet: 0, chimeTimer: null, state: null,
+  async ensure() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+      this.ctx = new AC();
+      this.master = this.ctx.createGain(); this.master.gain.value = 0;
+      const comp = this.ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 3; comp.attack.value = 0.05; comp.release.value = 0.6;
+      this.bus = this.ctx.createGain(); this.bus.connect(comp); comp.connect(this.master); this.master.connect(this.ctx.destination);
+      this.noise = makeNoise(this.ctx);
+      // The binaural layer bypasses the reverb so each ear keeps its own tone.
+      this.binL = this.ctx.createOscillator(); this.binR = this.ctx.createOscillator();
+      const merge = this.ctx.createChannelMerger(2); this.binAmp = this.ctx.createGain(); this.binAmp.gain.value = 0;
+      this.binL.connect(merge, 0, 0); this.binR.connect(merge, 0, 1); merge.connect(this.binAmp); this.binAmp.connect(this.master);
+      this.binL.start(); this.binR.start();
+    }
+    if (this.ctx.state === "suspended") await this.ctx.resume();
+    return true;
+  },
+  async play(id) {
+    if (!(await this.ensure())) return;
+    clearTimeout(this.previewTimer);
+    if (this.scape && this.scape.id === id) return;
+    const old = this.scape; this.scape = new Scape(this, id); this.scape.fade(1, 6);
+    if (old) { old.fade(0, 6); setTimeout(() => old.dispose(), 8000); }
+    this.scheduleChime();
+  },
+  setVolume(v) { this.volume = v; this.applyMaster(); },
+  applyMaster(tau = 1.2) { if (this.ctx) this.master.gain.setTargetAtTime(this.volume * this.env, this.ctx.currentTime, tau); },
+  setEnvelope(e, tau) { this.env = e; this.applyMaster(tau); },
+  update(u) {
+    if (!this.scape) return;
+    this.state = u;
+    const kind = u.phase;
+    // Ease in over the first minute; ease out across the closing phase.
+    let env = smooth(u.t / 60);
+    if (kind === "cooldown") env *= 1 - 0.88 * smooth(u.phase_elapsed / Math.max(u.phase_duration, 1));
+    this.setEnvelope(env);
+    this.scape.setKind(kind);
+    let bloom;
+    if (kind === "training") bloom = u.artifact ? 0 : u.reward ? 0.45 + 0.55 * (u.intensity ?? 0.5) : 0.06 + 0.14 * (u.intensity ?? 0);
+    else if (kind === "baseline") bloom = 0.22;
+    else if (kind === "rest") bloom = 0.3;
+    else bloom = 0.28 * (1 - smooth(u.phase_elapsed / Math.max(u.phase_duration, 1)));
+    this.scape.setBloom(bloom, u.artifact);
+    // A soft chime marks a reward arriving after a quiet stretch.
+    if (u.reward && !this.lastReward && this.quiet >= 8) this.scape.chime(0.9);
+    this.quiet = u.reward ? 0 : this.quiet + 1; this.lastReward = u.reward;
+    const t = this.ctx.currentTime;
+    if (u.binaural) {
+      const carrier = this.scape.p.root; this.binL.frequency.setTargetAtTime(carrier, t, 0.5); this.binR.frequency.setTargetAtTime(carrier + u.binaural, t, 0.5);
+      this.binAmp.gain.setTargetAtTime(0.05, t, 2);
+    } else this.binAmp.gain.setTargetAtTime(0, t, 2);
+  },
+  scheduleChime() {
+    clearTimeout(this.chimeTimer);
+    const s = this.scape; if (!s) return;
+    const u = this.state; let factor = 1.2;
+    if (u) {
+      if (u.phase === "training") factor = u.reward ? 0.45 : 1.7;
+      else if (u.phase === "cooldown") factor = 2.2;
+      else if (u.phase === "rest") factor = 1.4;
+    }
+    const wait = s.p.chime.every * factor * (0.6 + rand() * 0.8);
+    this.chimeTimer = setTimeout(() => { if (this.scape && this.env > 0.05) this.scape.chime(u && u.reward ? 1 : 0.7); this.scheduleChime(); }, wait * 1000);
+  },
+  stop(seconds = 5) {
+    clearTimeout(this.chimeTimer); this.chimeTimer = null; clearTimeout(this.previewTimer);
+    if (!this.ctx) return;
+    this.setEnvelope(0, seconds / 3);
+    const s = this.scape; this.scape = null; this.state = null;
+    if (s) setTimeout(() => s.dispose(), seconds * 1000 + 500);
+    if (this.binAmp) this.binAmp.gain.setTargetAtTime(0, this.ctx.currentTime, 1);
+  },
+  async preview(id, seconds = 15) {
+    await this.play(id); if (!this.scape) return;
+    this.scape.setKind("training"); this.scape.setBloom(0.5, false); this.setEnvelope(1, 1.5);
+    setTimeout(() => this.scape && this.scape.chime(1), 2500);
+    this.previewTimer = setTimeout(() => { if (!app.session) this.stop(4); }, seconds * 1000);
+  },
+};
+
+/* =====================================================================
+   App state
+   ===================================================================== */
 const app = {
-  mode: "sim", fs: 128, names: SIM_CHANNELS.slice(), pos: [], rings: [],
-  paused: false, sim: null, scenario: "tour", protocol: "alpha", mapBand: "alpha",
-  rel: [], display: [], spectrum: null, df: 1, iaf: NaN,
-  hist: { metric: [], thr: [], reward: [], artifact: [] },
-  idx: { calm: [], focus: [], drowsy: [], tension: [] },
-  t: 0, phase: "training", reward: false, artifact: false, rewardFrac: 0, threshold: NaN, metric: NaN,
-  counts: { updates: 0, rewarded: 0, artifacts: 0 }, streak: 0, device: "",
-  metricLabel: "rel. alpha", liveDirection: 1, stimOn: false,
+  // "preview": no engine on this computer, demo sessions only; "app": engine runs sessions with a headset;
+  // "monitor": engine running a session started from the terminal.
+  mode: "preview",
+  programs: [], soundscapes: {}, selected: null, length: 1, scape: null, category: "condition",
+  session: null, runner: null, demo: null,
+  fs: 128, names: DEMO_CHANNELS.slice(), pos: [], rings: [], rel: [], abs: [], display: [], traceIdx: [],
+  mapBand: "alpha", spectrum: null, df: 1, iaf: NaN, ptp: 0,
+  hist: { metric: [], thr: [], reward: [], artifact: [] }, idx: { calm: [], focus: [], drowsy: [], tension: [] },
+  u: null, faa: undefined,
 };
 function resetChannels(names, fs) {
   app.names = names; app.fs = fs;
   app.pos = names.map((n, i) => positionFor(n, i, names.length));
   app.rings = names.map(() => new Ring(Math.round(fs * 8)));
   app.rel = names.map(() => Object.fromEntries(BANDS.map(b => [b.key, 0])));
+  app.abs = names.map(() => Object.fromEntries(BANDS.map(b => [b.key, 0]).concat([["total", 0]])));
   app.display = names.map(() => 0);
-  app.traceIdx = pickTraces(names);
-}
-function pickTraces(names) {
   const chosen = TRACE_PREF.map(n => names.indexOf(n)).filter(i => i >= 0);
   for (let i = 0; chosen.length < Math.min(8, names.length) && i < names.length; i++) if (!chosen.includes(i)) chosen.push(i);
-  return chosen.slice(0, 8);
+  app.traceIdx = chosen.slice(0, 8);
+  app.hist = { metric: [], thr: [], reward: [], artifact: [] }; app.idx = { calm: [], focus: [], drowsy: [], tension: [] };
+  app.faa = undefined; app.spectrum = null;
 }
-
-const PROTOCOLS = {
-  alpha: { label: "rel. alpha", sites: ["Pz", "O1", "O2", "P3", "P4"], dir: 1, metric: r => r.alpha },
-  smr: { label: "rel. SMR", sites: ["C3", "Cz", "C4"], dir: 1, metric: r => r.smr },
-  "theta-beta": { label: "theta/beta", sites: ["Fz", "Cz"], dir: -1, metric: r => r.theta / Math.max(r.beta, 1e-6) },
-};
-function siteMean(sites, fn) {
-  const idx = sites.map(s => app.names.indexOf(s)).filter(i => i >= 0);
-  const use = idx.length ? idx : app.names.map((_, i) => i);
-  return use.reduce((s, i) => s + fn(app.rel[i]), 0) / use.length;
-}
-function quantile(arr, q) { const a = arr.slice().sort((x, y) => x - y); const p = (a.length - 1) * q; const lo = Math.floor(p); return a[lo] + (a[Math.min(lo + 1, a.length - 1)] - a[lo]) * (p - lo); }
+function pushHist(arr, v) { arr.push(v); if (arr.length > HISTORY) arr.shift(); }
 
 function analyse() {
   const fs = app.fs; const nseg = fs >= 200 ? 256 : 128; const need = Math.round(fs * 2);
   if (!app.rings.length || app.rings[0].count < Math.max(nseg, need * 0.75)) return false;
   app.df = fs / nseg;
-  const mean = new Float64Array(nseg / 2 + 1);
-  let maxPtp = 0;
+  const mean = new Float64Array(nseg / 2 + 1); let maxPtp = 0;
   app.names.forEach((_, c) => {
     const x = app.rings[c].last(need);
     let mn = Infinity, mx = -Infinity; for (const v of x) { if (v < mn) mn = v; if (v > mx) mx = v; }
@@ -495,44 +949,24 @@ function analyse() {
     const psd = welch(x, fs, nseg);
     for (let k = 0; k < mean.length; k++) mean[k] += psd[k] / app.names.length;
     const total = bandSum(psd, app.df, 1, 45) || 1;
-    for (const b of BANDS) app.rel[c][b.key] = bandSum(psd, app.df, b.lo, b.hi) / total;
+    for (const b of BANDS) { const p = bandSum(psd, app.df, b.lo, b.hi); app.abs[c][b.key] = p; app.rel[c][b.key] = p / total; }
+    app.abs[c].total = bandSum(psd, app.df, 1, 40);
   });
-  app.spectrum = mean;
-  // Individual alpha peak from the mean spectrum, 7-13 Hz.
+  app.spectrum = mean; app.ptp = maxPtp;
   let best = -1, bestK = 0; for (let k = Math.ceil(7 / app.df); k * app.df <= 13; k++) if (mean[k] > best) { best = mean[k]; bestK = k; }
   app.iaf = bestK * app.df;
-  const near40 = bandSum(mean, app.df, 39, 41.5), around = (bandSum(mean, app.df, 35, 38.5) + bandSum(mean, app.df, 42, 45)) / 2;
-  app.assr = around > 0 ? near40 / around : NaN;
-
-  if (app.mode === "sim") {
-    const p = PROTOCOLS[app.protocol];
-    app.metricLabel = p.label;
-    app.artifact = maxPtp > 200;
-    const m = siteMean(p.sites, p.metric);
-    app.metric = m;
-    if (!app.artifact) app.hist._raw = (app.hist._raw || []).concat(m).slice(-120);
-    const raw = app.hist._raw || [];
-    app.threshold = raw.length > 8 ? quantile(raw, p.dir > 0 ? 0.4 : 0.6) : NaN;
-    const pass = !app.artifact && Number.isFinite(app.threshold) && (p.dir > 0 ? m > app.threshold : m < app.threshold);
-    app.streak = pass ? app.streak + 1 : 0;
-    app.reward = app.streak >= 2;
-    app.counts.updates++; app.counts.rewarded += app.reward; app.counts.artifacts += app.artifact;
-    app.rewardFrac = app.counts.rewarded / app.counts.updates;
-    app.t = app.sim.t; app.phase = "training"; app.liveDirection = p.dir;
-  }
-  pushHist(app.hist.metric, app.metric); pushHist(app.hist.thr, app.threshold);
-  pushHist(app.hist.reward, app.reward ? 1 : 0); pushHist(app.hist.artifact, app.artifact ? 1 : 0);
-
   const avg = key => app.rel.reduce((s, r) => s + r[key], 0) / app.rel.length;
-  pushHist(app.idx.calm, siteMean(["Pz", "O1", "O2", "P3", "P4", "TP9", "TP10"], r => r.alpha) * 100);
+  const siteMean = (sites, key) => { let idx = sites.map(s => app.names.indexOf(s)).filter(i => i >= 0); if (!idx.length) idx = app.names.map((_, i) => i); return idx.reduce((s, i) => s + app.rel[i][key], 0) / idx.length; };
+  pushHist(app.idx.calm, siteMean(["Pz", "O1", "O2", "P3", "P4", "TP9", "TP10"], "alpha") * 100);
   pushHist(app.idx.focus, avg("beta") / Math.max(avg("alpha") + avg("theta"), 1e-6));
   pushHist(app.idx.drowsy, avg("theta") / Math.max(avg("beta"), 1e-6));
   pushHist(app.idx.tension, (avg("hibeta") + avg("gamma")) * 100);
   return true;
 }
-function pushHist(arr, v) { arr.push(v); if (arr.length > HISTORY) arr.shift(); }
 
-/* ---------- Canvas plumbing ---------- */
+/* =====================================================================
+   Canvas drawing
+   ===================================================================== */
 const canvases = {};
 function bindCanvas(id) {
   const el = $(id); const ctx = el.getContext("2d"); const c = { el, ctx, w: 0, h: 0 };
@@ -542,31 +976,69 @@ function bindCanvas(id) {
   new ResizeObserver(fit).observe(el); fit(); canvases[id] = c; return c;
 }
 const INK = "#dce6f7", MUTED = "#7b8bab", FAINT = "#44557a", LINE = "rgba(68,85,122,0.35)";
+const MONO = '500 10px "IBM Plex Mono", ui-monospace, monospace';
 
-/* ---------- Brain rendering ---------- */
-// Each hemisphere is a squared-off ellipse; posterior a touch wider, frontal pole tapered.
+/* Session arc: phases along time, with the sound's intensity envelope drawn over them. */
+function arcEnvelope(kind, f) {
+  switch (kind) {
+    case "baseline": return 0.12 + 0.38 * smooth(f * 1.6);
+    case "training": return 0.62 + 0.18 * Math.sin(Math.PI * f);
+    case "rest": return 0.42 - 0.08 * Math.sin(Math.PI * f);
+    case "cooldown": return 0.5 * (1 - smooth(f));
+  }
+  return 0.4;
+}
+function drawArc(c, phases, progressT) {
+  const { ctx, w, h } = c; if (!w || !phases) return;
+  ctx.clearRect(0, 0, w, h);
+  const total = phases.reduce((s, p) => s + p.minutes * 60, 0); const top = 6, base = h - 22;
+  const X = t => (t / total) * w;
+  let t0 = 0;
+  phases.forEach(p => { const d = p.minutes * 60; ctx.fillStyle = KIND_COLOR[p.kind] + "16"; ctx.fillRect(X(t0) + 1, top, X(t0 + d) - X(t0) - 2, base - top); t0 += d; });
+  const pts = []; t0 = 0;
+  phases.forEach(p => { const d = p.minutes * 60; for (let i = 0; i <= 24; i++) { const f = i / 24; pts.push([t0 + f * d, arcEnvelope(p.kind, f)]); } t0 += d; });
+  const sm = pts.map((p, i) => { let s = 0, n = 0; for (let j = Math.max(0, i - 6); j <= Math.min(pts.length - 1, i + 6); j++) { s += pts[j][1]; n++; } return [p[0], s / n]; });
+  sm[0][1] = 0.02; sm[sm.length - 1][1] = 0.02;
+  const Y = v => base - v * (base - top);
+  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  t0 = 0; phases.forEach(p => { const d = p.minutes * 60; grad.addColorStop(clamp((t0 + d / 2) / total, 0, 1), KIND_COLOR[p.kind]); t0 += d; });
+  ctx.beginPath(); sm.forEach(([t, v], i) => (i ? ctx.lineTo(X(t), Y(v)) : ctx.moveTo(X(t), Y(v))));
+  ctx.lineTo(w, base); ctx.lineTo(0, base); ctx.closePath();
+  ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = grad; ctx.fill(); ctx.restore();
+  ctx.beginPath(); sm.forEach(([t, v], i) => (i ? ctx.lineTo(X(t), Y(v)) : ctx.moveTo(X(t), Y(v)))); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
+  ctx.font = MONO; ctx.textBaseline = "top"; ctx.textAlign = "left"; t0 = 0;
+  phases.forEach(p => { const d = p.minutes * 60; const x0 = X(t0), x1 = X(t0 + d);
+    ctx.fillStyle = MUTED;
+    if (ctx.measureText(p.name).width < x1 - x0 - 6) ctx.fillText(p.name, x0 + 3, base + 6);
+    else if (ctx.measureText(p.name[0]).width < x1 - x0 - 4) ctx.fillText(p.name[0], x0 + 3, base + 6);
+    t0 += d; });
+  if (progressT != null) {
+    const x = X(clamp(progressT, 0, total));
+    ctx.fillStyle = "rgba(5,8,15,0.5)"; ctx.fillRect(0, top, x, base - top);
+    ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(x, top - 2); ctx.lineTo(x, base + 2); ctx.stroke();
+    const near = sm.reduce((b, p) => Math.abs(p[0] - progressT) < Math.abs(b[0] - progressT) ? p : b);
+    ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x, Y(near[1]), 4, 0, Math.PI * 2); ctx.fill();
+  }
+}
+
+/* Brain */
 function hemiPoints(side) {
   const pts = [];
   for (let i = 0; i < 160; i++) {
     const t = (i / 160) * Math.PI * 2; const u = Math.cos(t), v = Math.sin(t);
-    const n = 2.5; const su = Math.sign(u) * Math.abs(u) ** (2 / n), sv = Math.sign(v) * Math.abs(v) ** (2 / 2.2);
+    const su = Math.sign(u) * Math.abs(u) ** (2 / 2.5), sv = Math.sign(v) * Math.abs(v) ** (2 / 2.2);
     const taper = 1 - 0.16 * Math.max(sv, 0) ** 2 + 0.05 * Math.max(-sv, 0);
     pts.push([side * (0.5 + 0.465 * su * taper), sv * (sv > 0 ? 1.0 : 1.03)]);
   }
   return pts;
 }
 const HEMIS = [hemiPoints(-1), hemiPoints(1)];
-function insideHemi(x, y, side) {
-  const cx = side * 0.5; const u = (x - cx) / 0.465, v = y / 1.02;
-  return Math.abs(u) ** 2.5 + Math.abs(v) ** 2.2 <= 1;
-}
-// Procedural gyri: smooth random walks confined to each hemisphere, plus central and lateral sulci.
+function insideHemi(x, y, side) { const u = (x - side * 0.5) / 0.465, v = y / 1.02; return Math.abs(u) ** 2.5 + Math.abs(v) ** 2.2 <= 1; }
 const SULCI = (() => {
   const r = mulberry32(7); const lines = [];
   for (const side of [-1, 1]) {
     for (let i = 0; i < 90; i++) {
       let x, y; do { x = side * (0.06 + r() * 0.88); y = -0.95 + r() * 1.9; } while (!insideHemi(x, y, side));
-      // Gyri run mostly front-to-back near the midline and sweep laterally toward the sides.
       let a = Math.PI / 2 + (r() - 0.5) * 1.2 + side * Math.abs(x) * 0.9; const pts = [[x, y]]; const steps = 5 + Math.floor(r() * 8);
       let turn = (r() - 0.5) * 0.5;
       for (let s = 0; s < steps; s++) {
@@ -585,27 +1057,21 @@ const SULCI = (() => {
 const heat = document.createElement("canvas"); heat.width = 132; heat.height = 140;
 const heatCtx = heat.getContext("2d"); const heatImg = heatCtx.createImageData(heat.width, heat.height);
 let mapRange = [0, 1];
-
 function drawBrain(now) {
   const c = canvases.brain; const { ctx, w, h } = c; if (!w) return;
   ctx.clearRect(0, 0, w, h);
   const s = Math.min(w / 2.25, h / 2.35), cx = w / 2, cy = h / 2 + s * 0.02;
   const X = x => cx + x * s, Y = y => cy - y * s;
-
-  // Values for the selected band, smoothed per frame toward the latest analysis.
   const key = app.mapBand;
   app.names.forEach((_, i) => { app.display[i] = lerp(app.display[i], app.rel[i]?.[key] ?? 0, reduceMotion ? 1 : 0.12); });
   const vals = app.display; const lo = Math.min(...vals), hi = Math.max(...vals);
   const span = Math.max(hi - lo, (lo + hi) * 0.15, 1e-4);
   mapRange = [lerp(mapRange[0], lo, 0.1), lerp(mapRange[1], lo + span, 0.1)];
-
-  // Inverse-distance interpolation into a small offscreen bitmap.
   const W = heat.width, H = heat.height, d = heatImg.data;
   for (let py = 0; py < H; py++) {
     const y = 1.12 - (py / (H - 1)) * 2.24;
     for (let px = 0; px < W; px++) {
-      const x = -1.06 + (px / (W - 1)) * 2.12;
-      let num = 0, den = 0, exact = -1;
+      const x = -1.06 + (px / (W - 1)) * 2.12; let num = 0, den = 0, exact = -1;
       for (let i = 0; i < vals.length; i++) {
         const [ex, ey] = app.pos[i]; const dx = x - ex * 0.9, dy = y - ey * 0.94; const d2 = dx * dx + dy * dy;
         if (d2 < 1e-6) { exact = i; break; }
@@ -618,15 +1084,19 @@ function drawBrain(now) {
     }
   }
   heatCtx.putImageData(heatImg, 0, 0);
-
-  // Reward halo.
-  const glow = app.reward ? 1 : 0; c.glow = lerp(c.glow || 0, glow, reduceMotion ? 1 : 0.08);
+  const u = app.u;
+  c.glow = lerp(c.glow || 0, u && u.reward ? 1 : 0, reduceMotion ? 1 : 0.08);
   if (c.glow > 0.02) {
     const g = ctx.createRadialGradient(cx, cy, s * 0.6, cx, cy, s * 1.25);
     g.addColorStop(0, `rgba(62,230,212,${0.22 * c.glow})`); g.addColorStop(1, "rgba(62,230,212,0)");
     ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
   }
-
+  // Breathing guide during interludes: a ring swelling at six breaths per minute, in time with the pad.
+  if (u && u.phase === "rest") {
+    const br = reduceMotion ? 0.5 : (1 - Math.cos(2 * Math.PI * now / 10000)) / 2;
+    ctx.beginPath(); ctx.arc(cx, cy, s * (0.95 + 0.22 * br), 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(157,140,255,${0.25 + 0.35 * br})`; ctx.lineWidth = 2 + 6 * br; ctx.stroke();
+  }
   for (const pts of HEMIS) {
     ctx.save();
     ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
@@ -634,23 +1104,17 @@ function drawBrain(now) {
     ctx.clip();
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = "high";
     ctx.drawImage(heat, X(-1.06), Y(1.12), 2.12 * s, 2.24 * s);
-    // Depth shading: darker toward the rim, a soft specular from the front-left.
-    const shade = ctx.createRadialGradient(X(pts === HEMIS[0] ? -0.45 : 0.55), Y(0.25), s * 0.1, X(pts === HEMIS[0] ? -0.5 : 0.5), Y(0), s * 1.05);
+    const left = pts === HEMIS[0];
+    const shade = ctx.createRadialGradient(X(left ? -0.45 : 0.55), Y(0.25), s * 0.1, X(left ? -0.5 : 0.5), Y(0), s * 1.05);
     shade.addColorStop(0, "rgba(255,255,255,0.10)"); shade.addColorStop(0.55, "rgba(0,0,0,0)"); shade.addColorStop(1, "rgba(0,0,0,0.55)");
     ctx.fillStyle = shade; ctx.fillRect(0, 0, w, h);
     ctx.lineCap = "round"; ctx.lineJoin = "round";
     for (const { pts: L, w: lw } of SULCI) {
-      // Smooth through segment midpoints so folds read as curves, not zigzags.
       ctx.beginPath(); ctx.moveTo(X(L[0][0]), Y(L[0][1]));
-      for (let i = 1; i < L.length - 1; i++) {
-        const mx = (L[i][0] + L[i + 1][0]) / 2, my = (L[i][1] + L[i + 1][1]) / 2;
-        ctx.quadraticCurveTo(X(L[i][0]), Y(L[i][1]), X(mx), Y(my));
-      }
+      for (let i = 1; i < L.length - 1; i++) { const mx = (L[i][0] + L[i + 1][0]) / 2, my = (L[i][1] + L[i + 1][1]) / 2; ctx.quadraticCurveTo(X(L[i][0]), Y(L[i][1]), X(mx), Y(my)); }
       ctx.lineTo(X(L[L.length - 1][0]), Y(L[L.length - 1][1]));
       ctx.strokeStyle = "rgba(3,6,14,0.30)"; ctx.lineWidth = Math.max(1.2, s * 0.011) * lw; ctx.stroke();
-      ctx.save(); ctx.translate(-0.8, -0.8);
-      ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.lineWidth = Math.max(0.5, s * 0.0035) * lw; ctx.stroke();
-      ctx.restore();
+      ctx.save(); ctx.translate(-0.8, -0.8); ctx.strokeStyle = "rgba(255,255,255,0.09)"; ctx.lineWidth = Math.max(0.5, s * 0.0035) * lw; ctx.stroke(); ctx.restore();
     }
     ctx.restore();
     ctx.beginPath(); pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y)))); ctx.closePath();
@@ -658,8 +1122,6 @@ function drawBrain(now) {
     rim.addColorStop(0, `rgba(62,230,212,${0.45 + 0.4 * c.glow})`); rim.addColorStop(1, `rgba(255,93,143,${0.35 + 0.3 * c.glow})`);
     ctx.strokeStyle = rim; ctx.lineWidth = 1.5; ctx.stroke();
   }
-
-  // Nose marker and electrodes.
   ctx.strokeStyle = FAINT; ctx.lineWidth = 1.2; ctx.beginPath();
   ctx.moveTo(X(-0.07), Y(1.05)); ctx.lineTo(X(0), Y(1.13)); ctx.lineTo(X(0.07), Y(1.05)); ctx.stroke();
   const pulse = reduceMotion ? 0 : (Math.sin(now / 420) + 1) / 2;
@@ -673,12 +1135,9 @@ function drawBrain(now) {
     ctx.lineWidth = 1.4; ctx.strokeStyle = `rgba(220,230,247,${0.55 + 0.45 * t})`; ctx.stroke();
     ctx.fillStyle = "rgba(220,230,247,0.82)"; ctx.fillText(app.names[i], x, y + 7);
   });
-
   $("legendLo").textContent = (mapRange[0] * 100).toFixed(1) + "%";
   $("legendHi").textContent = (mapRange[1] * 100).toFixed(1) + "%";
 }
-
-/* ---------- Traces ---------- */
 function drawTraces() {
   const c = canvases.traces; const { ctx, w, h } = c; if (!w || !app.rings.length) return;
   ctx.clearRect(0, 0, w, h);
@@ -691,18 +1150,13 @@ function drawTraces() {
   idx.forEach((ci, k) => {
     const y0 = lane * (k + 0.5); const x = app.rings[ci].last(n);
     ctx.fillStyle = MUTED; ctx.fillText(app.names[ci], 0, y0);
-    const scale = (lane * 0.45) / 60; // ±60 µV fills the lane
+    const scale = (lane * 0.45) / 60;
     ctx.beginPath();
-    for (let i = 0; i < x.length; i++) {
-      const px = left + (w - left) * (i + n - x.length) / n; const py = y0 - clamp(x[i], -130, 130) * scale;
-      i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
-    }
+    for (let i = 0; i < x.length; i++) { const px = left + (w - left) * (i + n - x.length) / n; const py = y0 - clamp(x[i], -130, 130) * scale; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
     ctx.strokeStyle = grad; ctx.lineWidth = 1.2; ctx.stroke();
   });
-  if (app.artifact) { ctx.fillStyle = "rgba(255,93,108,0.08)"; ctx.fillRect(w - (w - left) / 3, 0, (w - left) / 3, h); }
+  if (app.u && app.u.artifact) { ctx.fillStyle = "rgba(255,93,108,0.08)"; ctx.fillRect(w - (w - left) / 3, 0, (w - left) / 3, h); }
 }
-
-/* ---------- Spectrum ---------- */
 function drawSpectrum() {
   const c = canvases.spectrum; const { ctx, w, h } = c; if (!w || !app.spectrum) return;
   ctx.clearRect(0, 0, w, h);
@@ -712,7 +1166,7 @@ function drawSpectrum() {
   const lo = Math.min(...logs.map(p => p[1])) - 0.2, hi = Math.max(...logs.map(p => p[1])) + 0.2;
   const fy = v => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
   for (const b of BANDS) { ctx.fillStyle = b.color + "12"; ctx.fillRect(fx(b.lo), pad.t, fx(b.hi) - fx(b.lo), h - pad.t - pad.b); }
-  ctx.font = '500 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillStyle = FAINT; ctx.textAlign = "center"; ctx.textBaseline = "top";
+  ctx.font = MONO; ctx.fillStyle = FAINT; ctx.textAlign = "center"; ctx.textBaseline = "top";
   for (const f of [1, 4, 8, 12, 15, 22, 30, 40, 45]) ctx.fillText(String(f), fx(f), h - pad.b + 5);
   ctx.textAlign = "right"; ctx.textBaseline = "middle";
   for (let v = Math.ceil(lo); v <= hi; v++) { ctx.fillStyle = FAINT; ctx.fillText(`1e${v}`, pad.l - 4, fy(v)); ctx.strokeStyle = LINE; ctx.beginPath(); ctx.moveTo(pad.l, fy(v)); ctx.lineTo(w - pad.r, fy(v)); ctx.stroke(); }
@@ -727,34 +1181,34 @@ function drawSpectrum() {
   if (Number.isFinite(app.iaf)) {
     const k = Math.round(app.iaf / df); const x = fx(app.iaf), y = fy(Math.log10(psd[k] + 1e-6));
     ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillStyle = INK; ctx.fillText(`IAF ${app.iaf.toFixed(1)} Hz`, x + 6, y - 2);
+    ctx.textAlign = "left"; ctx.textBaseline = "bottom"; ctx.fillText(`IAF ${app.iaf.toFixed(1)} Hz`, x + 6, y - 2);
   }
 }
-
-/* ---------- Training timeline ---------- */
 function drawTimeline() {
   const c = canvases.timeline; const { ctx, w, h } = c; if (!w) return;
   ctx.clearRect(0, 0, w, h);
   const m = app.hist.metric, th = app.hist.thr; if (m.length < 2) return;
-  const pad = { l: 40, r: 6, t: 8, b: 16 };
+  const pad = { l: 44, r: 6, t: 8, b: 16 };
   const vals = m.concat(th).filter(Number.isFinite); if (!vals.length) return;
   let lo = Math.min(...vals), hi = Math.max(...vals); const sp = (hi - lo) || 0.01; lo -= sp * 0.1; hi += sp * 0.1;
   const fx = i => pad.l + (w - pad.l - pad.r) * i / (HISTORY - 1); const off = HISTORY - m.length;
   const fy = v => pad.t + (h - pad.t - pad.b) * (1 - (v - lo) / (hi - lo));
   app.hist.reward.forEach((r, i) => { if (r) { ctx.fillStyle = "rgba(62,230,212,0.10)"; ctx.fillRect(fx(i + off), pad.t, fx(1) - fx(0) + 0.5, h - pad.t - pad.b); } });
   app.hist.artifact.forEach((a, i) => { if (a) { ctx.fillStyle = "rgba(255,93,108,0.16)"; ctx.fillRect(fx(i + off), pad.t, fx(1) - fx(0) + 0.5, h - pad.t - pad.b); } });
-  ctx.font = '500 10px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillStyle = FAINT; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  ctx.font = MONO; ctx.fillStyle = FAINT; ctx.textAlign = "right"; ctx.textBaseline = "middle";
   [lo + sp * 0.1, hi - sp * 0.1].forEach(v => ctx.fillText(v.toFixed(3), pad.l - 4, fy(v)));
   ctx.textAlign = "center"; ctx.textBaseline = "top";
   [["-60 s", 0], ["-30 s", HISTORY / 2], ["now", HISTORY - 1]].forEach(([t, i]) => ctx.fillText(t, clamp(fx(i), pad.l + 14, w - 16), h - pad.b + 3));
-  ctx.setLineDash([4, 4]); ctx.strokeStyle = "rgba(255,181,71,0.85)"; ctx.lineWidth = 1.2; ctx.beginPath();
-  let started = false; th.forEach((v, i) => { if (!Number.isFinite(v)) return; const X = fx(i + off), Y = fy(v); started ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); started = true; }); ctx.stroke(); ctx.setLineDash([]);
+  const line = (arr, style, width, dash) => {
+    ctx.setLineDash(dash); ctx.strokeStyle = style; ctx.lineWidth = width; ctx.beginPath(); let on = false;
+    arr.forEach((v, i) => { if (!Number.isFinite(v)) { on = false; return; } on ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v)); on = true; });
+    ctx.stroke(); ctx.setLineDash([]);
+  };
+  line(th, "rgba(255,181,71,0.85)", 1.2, [4, 4]);
   const grad = ctx.createLinearGradient(0, pad.t, 0, h - pad.b); grad.addColorStop(0, "#3ee6d4"); grad.addColorStop(1, "#6b74ff");
-  ctx.beginPath(); m.forEach((v, i) => (i ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v)))); ctx.strokeStyle = grad; ctx.lineWidth = 2; ctx.stroke();
-  const lx = fx(HISTORY - 1), ly = fy(m[m.length - 1]); ctx.fillStyle = "#3ee6d4"; ctx.beginPath(); ctx.arc(lx - 2, ly, 3.5, 0, Math.PI * 2); ctx.fill();
+  line(m, grad, 2, []);
+  const lastV = m[m.length - 1]; if (Number.isFinite(lastV)) { ctx.fillStyle = "#3ee6d4"; ctx.beginPath(); ctx.arc(fx(HISTORY - 1) - 2, fy(lastV), 3.5, 0, Math.PI * 2); ctx.fill(); }
 }
-
-/* ---------- Hemispheric balance ---------- */
 function drawBalance() {
   const c = canvases.balance; const { ctx, w, h } = c; if (!w || !app.rel.length) return;
   ctx.clearRect(0, 0, w, h);
@@ -770,48 +1224,39 @@ function drawBalance() {
     const gl = ctx.createLinearGradient(mid, 0, mid - half, 0); gl.addColorStop(0, b.color + "33"); gl.addColorStop(1, b.color);
     const gr = ctx.createLinearGradient(mid, 0, mid + half, 0); gr.addColorStop(0, b.color + "33"); gr.addColorStop(1, b.color);
     const lw = half * L / max, rw = half * R / max;
-    ctx.fillStyle = gl; ctx.fillRect(mid - 26 - lw, y - bh / 2, lw, bh);
-    ctx.fillStyle = gr; ctx.fillRect(mid + 26, y - bh / 2, rw, bh);
+    ctx.fillStyle = gl; ctx.fillRect(mid - 30 - lw, y - bh / 2, lw, bh);
+    ctx.fillStyle = gr; ctx.fillRect(mid + 30, y - bh / 2, rw, bh);
     ctx.fillStyle = MUTED; ctx.textAlign = "center"; ctx.fillText(b.name, mid, y);
-    ctx.fillStyle = INK; ctx.textAlign = "right"; ctx.fillText((L * 100).toFixed(0) + "%", Math.max(28, mid - 30 - lw), y);
-    ctx.textAlign = "left"; ctx.fillText((R * 100).toFixed(0) + "%", Math.min(w - 28, mid + 30 + rw), y);
+    ctx.fillStyle = INK; ctx.textAlign = "right"; ctx.fillText((L * 100).toFixed(0) + "%", Math.max(28, mid - 34 - lw), y);
+    ctx.textAlign = "left"; ctx.fillText((R * 100).toFixed(0) + "%", Math.min(w - 28, mid + 34 + rw), y);
   });
-  // Frontal alpha asymmetry: ln(right alpha) - ln(left alpha) at the best available frontal pair.
-  const pairs = [["F3", "F4"], ["AF7", "AF8"], ["Fp1", "Fp2"], ["F7", "F8"]];
-  const pair = pairs.find(([a, b]) => app.names.includes(a) && app.names.includes(b));
+  const pair = FRONTAL_PAIRS.find(([a, b]) => app.names.includes(a) && app.names.includes(b));
   if (pair) {
-    const L = app.rel[app.names.indexOf(pair[0])].alpha, R = app.rel[app.names.indexOf(pair[1])].alpha;
+    const L = app.abs[app.names.indexOf(pair[0])].alpha, R = app.abs[app.names.indexOf(pair[1])].alpha;
     const faa = Math.log(R + 1e-9) - Math.log(L + 1e-9);
     app.faa = lerp(app.faa ?? faa, faa, 0.25);
     $("faa").textContent = (app.faa >= 0 ? "+" : "") + app.faa.toFixed(3);
     $("faaWhich").textContent = `ln α ${pair[1]} − ln α ${pair[0]}`;
     $("faaMark").style.left = `${clamp(50 + app.faa * 120, 2, 98)}%`;
   } else {
-    $("faa").textContent = "--";
-    $("faaWhich").textContent = "Needs a left/right frontal pair such as F3/F4 or AF7/AF8";
-    $("faaMark").style.left = "50%";
+    $("faa").textContent = "--"; $("faaWhich").textContent = "Needs a left/right frontal pair such as F3/F4 or AF7/AF8"; $("faaMark").style.left = "50%";
   }
 }
-
-/* ---------- Index cards ---------- */
 const INDEX_DEFS = [
-  { key: "calm", name: "Calm", unit: "% α", fmt: v => v.toFixed(1), color: "#3ee6d4", desc: "Posterior relative alpha. Rises with relaxed, eyes-closed wakefulness." },
+  { key: "calm", name: "Calm", unit: "% α", fmt: v => v.toFixed(1), color: "#3ee6d4", desc: "Posterior relative alpha. Rises with relaxed wakefulness." },
   { key: "focus", name: "Engagement", unit: "β/(α+θ)", fmt: v => v.toFixed(2), color: "#ffd05a", desc: "Beta over alpha plus theta, a common attention index." },
   { key: "drowsy", name: "Drowsiness", unit: "θ/β", fmt: v => v.toFixed(2), color: "#4fb8ff", desc: "Theta to beta ratio. Climbs as vigilance drops." },
   { key: "tension", name: "Muscle tension", unit: "% >22 Hz", fmt: v => v.toFixed(1), color: "#ff5d8f", desc: "High-frequency power, mostly scalp and jaw muscle." },
 ];
 function buildIndices() {
-  $("indices").innerHTML = INDEX_DEFS.map(d => `
-    <div class="index"><div class="name"><span>${d.name}</span><span>${d.unit}</span></div>
-    <div class="val" id="v-${d.key}" style="color:${d.color}">--</div>
-    <canvas id="s-${d.key}" aria-hidden="true"></canvas><div class="desc">${d.desc}</div></div>`).join("");
+  $("indices").innerHTML = INDEX_DEFS.map(d => `<div class="index"><div class="name"><span>${d.name}</span><span>${d.unit}</span></div>
+    <div class="val" id="v-${d.key}" style="color:${d.color}">--</div><canvas id="s-${d.key}" aria-hidden="true"></canvas><div class="desc">${d.desc}</div></div>`).join("");
   INDEX_DEFS.forEach(d => bindCanvas(`s-${d.key}`));
 }
 function drawIndices() {
   INDEX_DEFS.forEach(d => {
     const arr = app.idx[d.key]; if (!arr.length) return;
-    const recent = arr.slice(-8); const v = recent.reduce((a, b) => a + b, 0) / recent.length;
-    $(`v-${d.key}`).textContent = d.fmt(v);
+    const recent = arr.slice(-8); $(`v-${d.key}`).textContent = d.fmt(recent.reduce((a, b) => a + b, 0) / recent.length);
     const c = canvases[`s-${d.key}`]; const { ctx, w, h } = c; if (!w) return;
     ctx.clearRect(0, 0, w, h); if (arr.length < 2) return;
     const lo = Math.min(...arr), hi = Math.max(...arr), sp = (hi - lo) || 1;
@@ -820,113 +1265,328 @@ function drawIndices() {
     ctx.lineTo(fx(HISTORY - 1), h); ctx.lineTo(fx(off), h); ctx.closePath();
     const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, d.color + "55"); g.addColorStop(1, d.color + "00"); ctx.fillStyle = g; ctx.fill();
     ctx.beginPath(); arr.forEach((v, i) => (i ? ctx.lineTo(fx(i + off), fy(v)) : ctx.moveTo(fx(i + off), fy(v)))); ctx.strokeStyle = d.color; ctx.lineWidth = 1.5; ctx.stroke();
-    ctx.fillStyle = d.color; ctx.beginPath(); ctx.arc(fx(HISTORY - 1), fy(arr[arr.length - 1]), 2.5, 0, Math.PI * 2); ctx.fill();
   });
 }
+function redrawPanels() {
+  drawSpectrum(); drawTimeline(); drawBalance(); drawIndices();
+  if (app.session) drawArc(canvases.sessionArc, app.session.program.phases, plannedTime());
+}
+// Position on the planned arc: start of the current phase plus time spent in it (skips jump ahead).
+function plannedTime() {
+  const u = app.u; if (!u || !app.session) return 0;
+  const phases = app.session.program.phases;
+  let t = 0; for (let i = 0; i < Math.min(u.phase_index, phases.length); i++) t += phases[i].minutes * 60;
+  return t + Math.min(u.phase_elapsed, u.phase_duration);
+}
 
-/* ---------- Status text ---------- */
-function updateStatus() {
-  $("clock").textContent = fmtTime(app.t);
-  $("phaseText").textContent = app.phase === "baseline" ? "Calibrating" : "Training";
+/* =====================================================================
+   Session flow
+   ===================================================================== */
+function onUpdate(u) {
+  if (u.samples) u.samples.forEach((ch, c) => { const r = app.rings[c]; if (r) for (const v of ch) r.push(v); });
+  const prev = app.u; app.u = u;
+  const ok = u.samples ? analyse() : true; // demo sessions analyse before ticking
+  if (!prev || prev.phase_index !== u.phase_index) showPhase(u);
+  pushHist(app.hist.metric, u.metric ?? NaN); pushHist(app.hist.thr, u.threshold ?? NaN);
+  pushHist(app.hist.reward, u.reward ? 1 : 0); pushHist(app.hist.artifact, u.artifact ? 1 : 0);
+  audio.update(u);
+  if (ok) redrawPanels();
+  $("clock").textContent = `${fmtTime(u.t)} / ${fmtTime(u.session_duration)}`;
   const rd = $("rewardDot"), rt = $("rewardText");
-  if (app.artifact) { rd.className = "dot artifact"; rt.textContent = "Artifact"; }
-  else if (app.reward) { rd.className = "dot reward"; rt.textContent = "Reward"; }
-  else { rd.className = "dot"; rt.textContent = app.phase === "baseline" ? "Calibrating" : "Below target"; }
-  $("metricBig").textContent = Number.isFinite(app.metric) ? app.metric.toFixed(3) : "--";
-  $("metricLabel").textContent = app.metricLabel;
-  $("thrVal").textContent = Number.isFinite(app.threshold) ? app.threshold.toFixed(3) : "--";
-  $("rewardPct").textContent = (app.rewardFrac * 100).toFixed(1) + "%";
+  if (u.artifact) { rd.className = "dot artifact"; rt.textContent = "Movement"; }
+  else if (u.reward) { rd.className = "dot reward"; rt.textContent = "On target"; }
+  else { rd.className = "dot"; rt.textContent = { baseline: "Calibrating", rest: "Breathe", cooldown: "Integrating" }[u.phase] || "Searching"; }
+  $("metricBig").textContent = Number.isFinite(u.metric) ? u.metric.toFixed(3) : "--";
+  $("metricLabel").textContent = `${u.metric_label || ""} ${u.direction > 0 ? "↑" : "↓"}`;
+  $("thrVal").textContent = Number.isFinite(u.threshold) ? u.threshold.toFixed(3) : "--";
+  $("rewardPct").textContent = (u.reward_fraction * 100).toFixed(1) + "%";
   const ups = app.hist.artifact.length; $("artPct").textContent = ups ? (100 * app.hist.artifact.reduce((a, b) => a + b, 0) / ups).toFixed(1) + "%" : "--";
   $("iaf").textContent = Number.isFinite(app.iaf) ? app.iaf.toFixed(1) + " Hz" : "--";
-  $("assr").textContent = Number.isFinite(app.assr) ? `${app.assr.toFixed(1)}× neighbours` : "--";
-  if (app.mode === "sim") $("srcText").textContent = `Simulation · ${STATES[app.sim.state].label}`;
+  $("binText").textContent = u.binaural ? `${u.binaural} Hz beat` : "off";
+  $("phaseSub").textContent = `Phase ${u.phase_index + 1} of ${u.phase_count} · ${fmtTime(u.phase_duration - u.phase_elapsed)} left`;
+}
+function showPhase(u) {
+  $("phaseName").textContent = u.phase_name;
+  const g = $("guidance");
+  if (reduceMotion) { g.textContent = u.guidance || ""; }
+  else { g.classList.add("fading"); setTimeout(() => { g.textContent = u.guidance || ""; g.classList.remove("fading"); }, 700); }
+  // Break the training line where the protocol may change.
+  pushHist(app.hist.metric, NaN); pushHist(app.hist.thr, NaN); pushHist(app.hist.reward, 0); pushHist(app.hist.artifact, 0);
+}
+function enterSession(program, deviceLabel, dotClass) {
+  app.session = { program };
+  $("setupView").hidden = true; $("sessionView").hidden = false; $("clockPill").hidden = false; $("rewardPill").hidden = false;
+  $("summaryOverlay").hidden = true; $("connectOverlay").hidden = true;
+  $("phaseName").textContent = program.phases[0].name; $("guidance").textContent = program.phases[0].guidance || "";
+  $("srcText").textContent = deviceLabel; $("srcDot").className = `dot ${dotClass}`;
+  $("scapeSwitch").value = app.scape || program.soundscape;
+  $("skipBtn").hidden = app.mode === "monitor"; $("endBtn").hidden = app.mode === "monitor";
+  Object.values(canvases).forEach(c => (c.dirty = true));
+  window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
+}
+function leaveSession() {
+  app.session = null; app.runner = null; app.demo = null; app.u = null;
+  $("setupView").hidden = false; $("sessionView").hidden = true; $("clockPill").hidden = true; $("rewardPill").hidden = true;
+  setSource();
+  Object.values(canvases).forEach(c => (c.dirty = true));
+}
+function showSummary(s) {
+  audio.stop(6);
+  const pct = v => v == null ? "--" : (v * 100).toFixed(0) + "%";
+  const num = v => v == null ? "--" : Number(v).toFixed(3);
+  $("sumTitle").textContent = s.aborted ? "Session ended early" : "Session complete";
+  $("sumWhen").textContent = `${s.program || ""} · ${fmtTime(s.duration_sec)}`;
+  $("sumStats").innerHTML = [
+    [pct(s.reward_fraction), "Time on target"],
+    [s.change == null ? "--" : (s.change >= 0 ? "+" : "") + (s.change * 100).toFixed(1) + "%", "Change vs your baseline"],
+    [num(s.training_metric), `Training ${esc(s.protocol)}`],
+    [pct(s.artifact_fraction), "Movement"],
+  ].map(([v, l]) => `<div><b>${v}</b><span>${l}</span></div>`).join("");
+  $("sumTable").innerHTML = `<thead><tr><th>Phase</th><th>Time</th><th>Metric</th><th>On target</th></tr></thead><tbody>` +
+    (s.phases || []).map(p => `<tr><td>${esc(p.name)}</td><td>${fmtTime(p.seconds)}</td><td>${num(p.metric)}</td><td>${p.kind === "training" ? pct(p.reward_fraction) : "–"}</td></tr>`).join("") + "</tbody>";
+  $("sumNote").textContent = s.log_path ? `Session log saved to ${s.log_path}` : "Demo sessions aren't saved. Sessions with a headset are logged on your computer.";
+  $("summaryOverlay").hidden = false; $("sumDone").focus();
 }
 
-/* ---------- Controls ---------- */
-function buildBandChips() {
-  $("bandChips").innerHTML = BANDS.map(b => `<button type="button" class="chip" style="--c:${b.color}" data-band="${b.key}" aria-pressed="${b.key === app.mapBand}">${b.name}<span>${b.lo}-${b.hi}</span></button>`).join("");
-  $("bandChips").addEventListener("click", e => {
-    const btn = e.target.closest("[data-band]"); if (!btn) return;
-    app.mapBand = btn.dataset.band;
-    document.querySelectorAll("#bandChips .chip").forEach(c => c.setAttribute("aria-pressed", String(c === btn)));
-    $("mapHint").textContent = `Relative ${BAND[app.mapBand].name.toLowerCase()} power, viewed from above`;
-    try { localStorage.setItem("nova.band", app.mapBand); } catch {}
-  });
+/* Demo sessions run entirely in this page. */
+function startDemo(program) {
+  resetChannels(DEMO_CHANNELS, 128);
+  app.demo = new DemoSignal(DEMO_CHANNELS, 128);
+  app.runner = new DemoRunner(program);
+  for (let i = 0; i < 8; i++) { const chunk = app.demo.generate(32); chunk.forEach((ch, c) => ch.forEach(v => app.rings[c].push(v))); }
+  app.demoT = 0; app.demoAcc = 0; app.demoSince = 0;
+  enterSession(program, "Demo signal", "demo");
 }
-function wireControls() {
-  $("scenario").addEventListener("change", e => { app.scenario = e.target.value; });
-  $("protocol").addEventListener("change", e => {
-    app.protocol = e.target.value; app.hist._raw = []; app.counts = { updates: 0, rewarded: 0, artifacts: 0 };
-    app.hist.metric.length = app.hist.thr.length = app.hist.reward.length = app.hist.artifact.length = 0;
-  });
-  const toggle = (id, fn) => $(id).addEventListener("click", e => { const on = e.currentTarget.getAttribute("aria-pressed") !== "true"; e.currentTarget.setAttribute("aria-pressed", String(on)); fn(on); });
-  toggle("stimBtn", on => { app.sim.stim = on; });
-  toggle("blinkBtn", on => { app.sim.blinks = on; });
-  $("pauseBtn").addEventListener("click", () => { app.paused = !app.paused; $("pauseBtn").textContent = app.paused ? "Resume" : "Pause"; });
-}
-function setMode(mode) {
-  app.mode = mode;
-  document.querySelectorAll(".sim-only").forEach(el => { el.hidden = mode !== "sim"; });
-  $("srcDot").className = `dot ${mode === "live" ? "live" : "sim"}`;
+function demoFrame(dt) {
+  if (!app.runner) return;
+  app.demoAcc += dt * app.fs; const n = Math.floor(app.demoAcc); app.demoAcc -= n;
+  if (n > 0) { const chunk = app.demo.generate(n); chunk.forEach((ch, c) => { for (const v of ch) app.rings[c].push(v); }); }
+  app.demoT += dt; app.demoSince += dt * 1000;
+  if (app.demoSince >= UPDATE_MS) {
+    app.demoSince = 0;
+    if (!analyse()) return;
+    const u = app.runner.tick(app.demoT, app.abs, app.names, app.ptp > 200);
+    if (!u) { const s = app.runner.summary(false); app.runner = null; showSummary(s); return; }
+    onUpdate(u);
+  }
 }
 
-/* ---------- Live data from `nova run --feedback dashboard` ---------- */
-function connectLive() {
-  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-  if (!local || !window.EventSource) return;
+/* =====================================================================
+   Engine connection (nova app, or nova run --feedback dashboard)
+   ===================================================================== */
+async function api(path, body) {
+  const res = await fetch(path, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : {});
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+}
+async function detectEngine() {
+  if (!/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)) return null;
+  try { return await api("/api/status"); } catch { return null; }
+}
+function connectStream() {
   const es = new EventSource("/stream");
   es.addEventListener("meta", e => {
     const m = JSON.parse(e.data);
-    setMode("live"); resetChannels(m.channels, m.sampling_rate);
-    app.device = m.device; app.metricLabel = m.metric_label; app.liveDirection = m.direction;
-    app.hist = { metric: [], thr: [], reward: [], artifact: [] }; app.faa = undefined;
-    app.idx = { calm: [], focus: [], drowsy: [], tension: [] };
-    $("srcText").textContent = `Live · ${m.device}`;
+    resetChannels(m.channels, m.sampling_rate);
+    const program = m.program;
+    if (!app.session || app.runner) {
+      app.runner = null;
+      audio.play(app.scape || program.soundscape);
+      enterSession(program, `Live · ${m.device}`, "live");
+    }
   });
-  es.addEventListener("update", e => {
-    if (app.mode !== "live" || app.paused) return;
-    const u = JSON.parse(e.data);
-    u.samples.forEach((ch, c) => { const r = app.rings[c]; if (r) for (const v of ch) r.push(v); });
-    Object.assign(app, { t: u.t, phase: u.phase, metric: u.metric ?? NaN, threshold: u.threshold ?? NaN, reward: u.reward,
-      artifact: u.artifact, rewardFrac: u.reward_fraction, stimOn: u.stim_on });
-    if (analyse()) { drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); }
-    updateStatus();
+  es.addEventListener("update", e => { if (app.session && !app.runner) onUpdate(JSON.parse(e.data)); });
+  es.addEventListener("summary", e => showSummary(JSON.parse(e.data)));
+  es.addEventListener("status", e => {
+    const s = JSON.parse(e.data);
+    $("connectOverlay").hidden = s.state !== "connecting";
+    if (s.state === "error") { audio.stop(2); if (app.session) leaveSession(); $("startError").textContent = s.error; }
   });
-  es.addEventListener("end", () => { $("srcText").textContent = `Session ended · ${app.device}`; $("srcDot").className = "dot"; es.close(); });
 }
 
-/* ---------- Main loop ---------- */
-function start() {
-  ["brain", "traces", "spectrum", "timeline", "balance"].forEach(bindCanvas);
-  buildIndices(); buildBandChips(); wireControls();
-  try { const b = localStorage.getItem("nova.band"); if (b && BAND[b]) document.querySelector(`[data-band="${b}"]`)?.click(); } catch {}
-  resetChannels(SIM_CHANNELS, 128);
-  app.sim = new Simulator(SIM_CHANNELS, 128);
-  setMode("sim");
-  // Warm up 40 s of history so the first frame is a working view, not an empty one.
-  for (let i = 0; i < 160; i++) {
-    const chunk = app.sim.generate(32, app.scenario); chunk.forEach((ch, c) => ch.forEach(v => app.rings[c].push(v)));
-    analyse();
-  }
-  drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); updateStatus();
-  connectLive();
+/* =====================================================================
+   Setup view
+   ===================================================================== */
+const BADGE = { "Most studied": "most", "Emerging": "emerging", "Limited": "limited" };
+function renderCards() {
+  const list = app.programs.filter(p => p.category === app.category);
+  $("cards").innerHTML = list.length ? list.map(p => `
+    <button type="button" class="card" data-id="${esc(p.id)}" aria-pressed="${!!app.selected && app.selected.id === p.id}">
+      <span class="target">${esc(p.target)}</span>
+      <span class="name">${esc(p.name)}</span>
+      <span class="meta">${Math.round(p.minutes)} min · ${esc(PRESETS[p.soundscape]?.name || p.soundscape)} · eyes ${esc(p.eyes)}</span>
+      ${p.evidence ? `<span class="badge ${BADGE[p.evidence] || ""}">${esc(p.evidence)}</span>` : `<span class="badge custom">Custom</span>`}
+    </button>`).join("") : `<p class="note">No saved programs yet. Build one below and it will appear here.</p>`;
+}
+function setCategory(cat) {
+  app.category = cat;
+  document.querySelectorAll("#catTabs .chip").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.cat === cat)));
+  renderCards();
+}
+function selectProgram(p) {
+  if (!p) return;
+  app.selected = p; app.scape = p.soundscape;
+  document.querySelectorAll("#cards .card").forEach(c => c.setAttribute("aria-pressed", String(c.dataset.id === p.id)));
+  $("dName").textContent = p.name; $("dSummary").textContent = p.summary;
+  const b = $("dBadge"); b.textContent = p.evidence || "Custom"; b.className = `badge ${BADGE[p.evidence] || "custom"}`;
+  $("dEvidence").textContent = p.evidence_note || "A program you built. Results depend on placing sensors at the sites you chose.";
+  $("dCaution").hidden = !p.caution; $("dCaution").textContent = p.caution || "";
+  renderScapes(); renderDetailMeta(); drawArc(canvases.arc, scaledPhases(p), null);
+  try { localStorage.setItem("nova.program", p.id); } catch {}
+}
+function scaledPhases(p) { return p.phases.map(ph => ph.kind === "training" ? { ...ph, minutes: Math.round(ph.minutes * app.length * 100) / 100 } : ph); }
+function renderDetailMeta() {
+  const p = app.selected; if (!p) return;
+  const mins = scaledPhases(p).reduce((s, ph) => s + ph.minutes, 0);
+  const sites = (p.sites || []).join(", ");
+  $("dMeta").textContent = `${Math.round(mins)} min · eyes ${p.eyes}${sites ? ` · sensors ${sites}` : ""}`;
+}
+function renderScapes() {
+  $("scapes").innerHTML = Object.entries(PRESETS).map(([id, ps]) => `<button type="button" class="scape" data-scape="${id}" aria-pressed="${id === app.scape}">
+    <b>${esc(ps.name)}</b><span>${esc((app.soundscapes[id] || "").split(": ")[1] || "")}</span></button>`).join("");
+}
+function renderDevices(devices, enabled) {
+  $("device").innerHTML = devices.map(d => `<option value="${esc(d.id)}" data-connect="${esc(d.connect)}" ${enabled || d.id === "demo" ? "" : "disabled"}>${esc(d.label)}</option>`).join("");
+  onDeviceChange();
+}
+function onDeviceChange() {
+  const opt = $("device").selectedOptions[0]; const how = opt ? opt.dataset.connect : "none";
+  $("fPort").hidden = how !== "serial"; $("fSerial").hidden = !(how === "bluetooth" || how === "serial_number"); $("fLsl").hidden = how !== "lsl";
+  const notes = {
+    none: app.mode === "app" ? "Generated EEG, for trying programs without a headset." : "This page runs demo sessions with generated EEG. To train with a headset, run nova app on the computer your headset connects to.",
+    bluetooth: "Turn the headset on and keep it close. Leave the name blank to connect to the first one found.",
+    serial: "Plug in the USB dongle. On a Mac the port looks like /dev/cu.usbserial-XXXX; on Windows, COM3.",
+    serial_number: "Enter the device ID from the Neurosity app.",
+    lsl: "Start the stream from your headset's app first (for Muse: muselsl stream).",
+  };
+  $("deviceNote").innerHTML = esc(notes[how] || "").replace("nova app", "<code>nova app</code>").replace("muselsl stream", "<code>muselsl stream</code>");
+}
+async function startSession() {
+  const p = app.selected; if (!p) return;
+  $("startError").textContent = "";
+  await audio.play(app.scape || p.soundscape);
+  const program = { ...p, soundscape: app.scape || p.soundscape, phases: scaledPhases(p) };
+  if (app.mode !== "app") { startDemo(program); return; }
+  try {
+    const dev = { id: $("device").value, serial_port: $("port").value.trim(), serial_number: $("serial").value.trim(), lsl_name: $("lslName").value.trim() };
+    $("connText").textContent = dev.id === "demo" ? "Starting the demo signal." : "Connecting to your headset. Bluetooth headsets can take up to 20 seconds.";
+    $("connectOverlay").hidden = false;
+    await api("/api/session/start", { program: p.id, length: app.length, device: dev, line_freq: Number($("mains").value) });
+  } catch (e) { $("connectOverlay").hidden = true; audio.stop(1); $("startError").textContent = e.message; }
+}
+function setSource() {
+  const t = { preview: ["Demo mode", "demo"], app: ["Engine connected", "live"], monitor: ["Waiting for session", "wait"] }[app.mode];
+  $("srcText").textContent = t[0]; $("srcDot").className = `dot ${t[1]}`;
+}
 
-  let last = performance.now(), acc = 0, sinceAnalysis = 0;
+/* Custom programs in demo mode mirror nova.programs.build_custom. */
+function buildCustomLocal(b) {
+  const sites = b.sites.map(s => s.trim()).filter(Boolean);
+  const name = `${b.reward}${b.ratio_over ? "/" + b.ratio_over : ""}-${b.direction}`;
+  const label = b.ratio_over ? `${b.reward}/${b.ratio_over}` : `rel. ${b.reward}`;
+  const spec = { name, reward: b.reward, ratio_over: b.ratio_over, direction: b.direction, inhibits: ["delta", "hibeta"], sites, kind: b.ratio_over ? "ratio" : "power", label };
+  const blocks = Math.max(1, b.blocks), blockMin = Math.max(1, (b.minutes - 6 - (blocks - 1)) / blocks);
+  const bin = b.binaural ? Number(b.binaural) : null;
+  const ph = (n, kind, m, extra = {}) => ({ name: n, kind, minutes: m, protocol: null, protocol_name: null, reward_rate: 0.6, guidance: "", binaural: null, ...extra });
+  const tr = (n, m, r, g) => ph(n, "training", m, { protocol: name, protocol_name: name, reward_rate: r, guidance: g, binaural: bin });
+  const phases = [
+    ph("Arrive", "baseline", 2, { binaural: bin, guidance: b.eyes === "closed" ? "Close your eyes and settle. Let your breath slow while NOVA learns your resting levels." : "Sit comfortably with a soft gaze. Let your breath slow while NOVA learns your resting levels." }),
+    tr("Warm-up", 2, 0.75, "Rewards come easily at first while you find the target."),
+  ];
+  for (let i = 0; i < blocks; i++) {
+    if (i) phases.push(ph("Breathe", "rest", 1, { guidance: "Pause. Follow the swell of the sound: in as it rises, out as it falls." }));
+    phases.push(tr(`Block ${i + 1}`, Math.round(blockMin * 100) / 100, b.reward_rate, "Relax and let the sound guide you. It brightens when you're on target."));
+  }
+  phases.push(ph("Integrate", "cooldown", 2, { guidance: "Let the effort go. Notice how you feel now, and stay with it as the sound fades." }));
+  const id = "custom-" + (b.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "program");
+  return { id, name: b.name, category: "custom", target: `${label} ${b.direction}`, summary: "Custom program", phases, soundscape: b.soundscape, eyes: b.eyes,
+    evidence: "", evidence_note: "", sites, caution: "", minutes: phases.reduce((s, p) => s + p.minutes, 0), protocols: { [name]: spec } };
+}
+function saveLocalCustom() { try { localStorage.setItem("nova.custom", JSON.stringify(app.programs.filter(p => p.category === "custom"))); } catch {} }
+function loadLocalCustom() { try { return JSON.parse(localStorage.getItem("nova.custom") || "[]"); } catch { return []; } }
+
+function wire() {
+  $("catTabs").addEventListener("click", e => { const b = e.target.closest("[data-cat]"); if (b) setCategory(b.dataset.cat); });
+  $("cards").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) selectProgram(app.programs.find(p => p.id === c.dataset.id)); });
+  $("scapes").addEventListener("click", e => { const b = e.target.closest("[data-scape]"); if (!b) return; app.scape = b.dataset.scape; renderScapes();
+    if (audio.scape) audio.preview(app.scape); });
+  $("lengthSeg").addEventListener("click", e => { const b = e.target.closest("[data-len]"); if (!b) return; app.length = Number(b.dataset.len);
+    document.querySelectorAll("#lengthSeg button").forEach(x => x.setAttribute("aria-pressed", String(x === b))); renderDetailMeta(); drawArc(canvases.arc, scaledPhases(app.selected), null); });
+  $("listenBtn").addEventListener("click", () => audio.preview(app.scape || app.selected.soundscape));
+  $("device").addEventListener("change", onDeviceChange);
+  $("startBtn").addEventListener("click", startSession);
+  $("volume").addEventListener("input", e => audio.setVolume(Number(e.target.value)));
+  $("scapeSwitch").innerHTML = Object.entries(PRESETS).map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
+  $("scapeSwitch").addEventListener("change", e => { app.scape = e.target.value; audio.play(app.scape); });
+  $("skipBtn").addEventListener("click", () => { if (app.runner) app.runner.skipFlag = true; else api("/api/session/skip", {}).catch(() => {}); });
+  $("endBtn").addEventListener("click", () => {
+    if (app.runner) { const s = app.runner.summary(true); app.runner = null; showSummary(s); }
+    else api("/api/session/stop", {}).catch(() => {});
+  });
+  $("connCancel").addEventListener("click", () => { api("/api/session/stop", {}).catch(() => {}); $("connectOverlay").hidden = true; audio.stop(1); });
+  $("sumDone").addEventListener("click", () => { $("summaryOverlay").hidden = true; leaveSession(); });
+  $("bScape").innerHTML = Object.entries(PRESETS).map(([id, p]) => `<option value="${id}">${esc(p.name)}</option>`).join("");
+  $("builderForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const body = { name: $("bName").value.trim() || "Custom program", reward: $("bBand").value, direction: $("bDir").value,
+      ratio_over: $("bRatio").value || null, sites: $("bSites").value.split(","), minutes: Number($("bMinutes").value),
+      blocks: Number($("bBlocks").value), reward_rate: Number($("bRate").value), soundscape: $("bScape").value,
+      eyes: $("bEyes").value, binaural: $("bBinaural").value || null };
+    try {
+      const program = app.mode === "app" ? await api("/api/programs", body) : buildCustomLocal(body);
+      app.programs = app.programs.filter(p => p.id !== program.id).concat(program);
+      if (app.mode !== "app") saveLocalCustom();
+      setCategory("custom"); selectProgram(program);
+      $("builderNote").textContent = app.mode === "app" ? `Saved "${program.name}" to My programs.` : `Saved "${program.name}" to My programs in this browser.`;
+    } catch (err) { $("builderNote").textContent = err.message; }
+  });
+  $("bandChips").innerHTML = BANDS.map(b => `<button type="button" class="chip" style="--c:${b.color}" data-band="${b.key}" aria-pressed="${b.key === app.mapBand}">${b.name}<span>${b.lo}-${b.hi}</span></button>`).join("");
+  $("bandChips").addEventListener("click", e => { const btn = e.target.closest("[data-band]"); if (!btn) return; app.mapBand = btn.dataset.band;
+    document.querySelectorAll("#bandChips .chip").forEach(c => c.setAttribute("aria-pressed", String(c === btn)));
+    $("mapHint").textContent = `Relative ${BAND[app.mapBand].name.toLowerCase()} power, viewed from above`; });
+}
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+async function boot() {
+  ["brain", "traces", "spectrum", "timeline", "balance", "arc", "sessionArc"].forEach(bindCanvas);
+  buildIndices(); wire();
+  let embedded = {}; try { embedded = JSON.parse($("nova-programs").textContent || "{}"); } catch {}
+  app.programs = embedded.programs || []; app.soundscapes = embedded.soundscapes || {};
+  let devices = [
+    { id: "demo", label: "Demo signal (no headset)", connect: "none" }, { id: "muse_2", label: "Muse 2", connect: "bluetooth" },
+    { id: "muse_s", label: "Muse S", connect: "bluetooth" }, { id: "cyton", label: "OpenBCI Cyton", connect: "serial" },
+    { id: "lsl", label: "Lab Streaming Layer stream", connect: "lsl" }];
+  const engine = await detectEngine();
+  if (engine && engine.app) {
+    app.mode = "app";
+    try { const data = await api("/api/programs"); app.programs = data.programs; app.soundscapes = data.soundscapes; } catch {}
+    try { const d = await api("/api/devices"); devices = d.devices.concat(d.other || []); } catch {}
+    connectStream();
+  } else if (engine) {
+    app.mode = "monitor"; connectStream();
+  } else {
+    app.programs = app.programs.concat(loadLocalCustom());
+  }
+  setSource();
+  renderDevices(devices, app.mode === "app");
+  let first = app.programs[0];
+  try { const id = localStorage.getItem("nova.program"); first = app.programs.find(p => p.id === id) || first; } catch {}
+  if (first) { setCategory(first.category); selectProgram(first); } else renderCards();
+
+  let last = performance.now();
   function frame(now) {
     const dt = Math.min((now - last) / 1000, 0.1); last = now;
-    if (app.mode === "sim" && !app.paused) {
-      acc += dt * app.fs; const n = Math.floor(acc); acc -= n;
-      if (n > 0) { const chunk = app.sim.generate(n, app.scenario); chunk.forEach((ch, c) => { for (const v of ch) app.rings[c].push(v); }); }
-      sinceAnalysis += dt * 1000;
-      if (sinceAnalysis >= UPDATE_MS) { sinceAnalysis = 0; analyse(); drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); updateStatus(); }
-    }
-    for (const c of Object.values(canvases)) if (c.dirty) { c.dirty = false; drawSpectrum(); drawTimeline(); drawBalance(); drawIndices(); break; }
-    drawBrain(now);
-    if (!app.paused) drawTraces();
+    if (app.runner) demoFrame(dt);
+    let dirty = false; for (const c of Object.values(canvases)) if (c.dirty) { c.dirty = false; dirty = true; }
+    if (dirty) { if (app.session) redrawPanels(); else if (app.selected) drawArc(canvases.arc, scaledPhases(app.selected), null); }
+    if (app.session) { drawBrain(now); drawTraces(); }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }
-start();
+boot();
 })();
 </script>

@@ -26,6 +26,19 @@ class AdaptiveThreshold:
         if self.frozen or not np.isfinite(x):
             return
         self._history.append(x)
+        self._recompute()
+
+    def set_target(self, target_rate: float) -> None:
+        """Change how often the threshold should be met, e.g. easier during warm-up."""
+        if not 0.0 < target_rate < 1.0:
+            raise ValueError("target_rate must be between 0 and 1")
+        self.target_rate = target_rate
+        if not self.frozen:
+            self._recompute()
+
+    def _recompute(self) -> None:
+        if not self._history:
+            return
         q = 1.0 - self.target_rate if self.direction > 0 else self.target_rate
         self._value = float(np.quantile(self._history, q))
 

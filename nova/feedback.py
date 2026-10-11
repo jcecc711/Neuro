@@ -28,6 +28,17 @@ class FeedbackState:
     band_powers: dict[str, float] = field(default_factory=dict)  # relative to 1-40 Hz
     stim_on: bool = False
     samples: np.ndarray | None = None  # filtered µV received since the previous update
+    phase_name: str = ""
+    phase_index: int = 0
+    phase_count: int = 1
+    phase_elapsed: float = 0.0
+    phase_duration: float = 0.0
+    session_duration: float = 0.0
+    guidance: str = ""
+    binaural: float | None = None
+    protocol: str = ""
+    metric_label: str = ""
+    direction: int = 1
 
 
 class FeedbackSink:
@@ -39,6 +50,9 @@ class FeedbackSink:
 
     def update(self, state: FeedbackState) -> None:
         raise NotImplementedError
+
+    def finish(self, summary) -> None:
+        """Called with the SessionSummary when the session ends, before close()."""
 
     def close(self) -> None:
         pass
@@ -52,8 +66,8 @@ class ConsoleFeedback(FeedbackSink):
     def update(self, s: FeedbackState) -> None:
         filled = int(round(s.intensity * self.width))
         bar = "#" * filled + "-" * (self.width - filled)
-        if s.phase == "baseline":
-            status = "calibrating"
+        if s.phase in ("baseline", "rest", "cooldown"):
+            status = {"baseline": "calibrating", "rest": "breathe", "cooldown": "integrate"}[s.phase]
         elif s.artifact:
             status = "ARTIFACT"
         elif s.inhibited:
@@ -63,7 +77,7 @@ class ConsoleFeedback(FeedbackSink):
         if s.stim_on:
             status = ("~ " + status).strip()
         line = (
-            f"\r{s.t:6.1f}s {s.phase:<8} [{bar}] metric={s.metric:.3f} "
+            f"\r{s.t:6.1f}s {(s.phase_name or s.phase)[:16]:<16} [{bar}] metric={s.metric:.3f} "
             f"thr={s.threshold:.3f} rewarded={s.reward_fraction:5.1%} {status:<16}"
         )
         self.stream.write(line)

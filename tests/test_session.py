@@ -82,14 +82,14 @@ def test_console_feedback_renders():
     cfg = SessionConfig(baseline_sec=3, training_sec=3)
     Session(fast_device(), get_protocol("theta-beta"), cfg, [ConsoleFeedback(out)]).run()
     text = out.getvalue()
-    assert "calibrating" in text and "training" in text
+    assert "calibrating" in text and "Training" in text
 
 
 def test_cli_lists(capsys):
     assert main(["protocols"]) == 0
     assert "theta-beta" in capsys.readouterr().out
     assert main(["devices"]) == 0
-    assert "sim" in capsys.readouterr().out
+    assert "demo" in capsys.readouterr().out
 
 
 def test_cli_unknown_board(capsys):

@@ -67,11 +67,48 @@ def test_theta_beta_ratio_trains_down():
 
 def test_all_protocols_produce_finite_metrics():
     freqs, psd = _psd_of([(6, 5), (10, 5), (13, 5), (18, 5), (25, 5)])
+    psd2 = np.vstack([psd, psd])
+    names = ["F3", "F4"]
     for p in PROTOCOLS.values():
-        assert np.isfinite(p.metric(freqs, psd))
-        assert set(p.inhibit_powers(freqs, psd)) == set(p.inhibits)
+        assert np.isfinite(p.metric(freqs, psd2, names))
+        assert set(p.inhibit_powers(freqs, psd2, names)) == set(p.inhibits)
 
 
 def test_unknown_protocol():
     with pytest.raises(ValueError):
         get_protocol("nope")
+
+
+def test_protocol_uses_its_sites():
+    p = get_protocol("alpha")
+    t = np.arange(int(4 * FS)) / FS
+    rng = np.random.default_rng(0)
+    strong = 10 * np.sin(2 * np.pi * 10 * t) + rng.standard_normal(t.size)
+    weak = 1 * np.sin(2 * np.pi * 10 * t) + rng.standard_normal(t.size)
+    freqs, psd = power_spectrum(np.vstack([weak, strong]), FS)
+    at_pz = p.metric(freqs, psd, ["Fz", "Pz"])  # only Pz is an alpha site
+    everywhere = p.metric(freqs, psd, ["X1", "X2"])  # no known sites: all channels
+    assert at_pz > everywhere
+
+
+def test_asymmetry_metric_sign_and_channel_check():
+    p = get_protocol("alpha-asymmetry")
+    t = np.arange(int(4 * FS)) / FS
+    left = 4 * np.sin(2 * np.pi * 10 * t)
+    right = 8 * np.sin(2 * np.pi * 10 * t)
+    freqs, psd = power_spectrum(np.vstack([left, right]), FS)
+    assert p.metric(freqs, psd, ["F3", "F4"]) == pytest.approx(np.log(4), rel=0.05)
+    assert p.check_channels(["F3", "F4"]) is None
+    assert p.check_channels(["AF7", "AF8"]) is None  # Muse pair
+    assert "left/right" in p.check_channels(["Cz", "Pz"])
+
+
+def test_custom_protocol_spec_roundtrip():
+    from nova.protocols import Protocol
+
+    p = Protocol.from_spec({"reward": "smr", "direction": "up", "sites": ["C4"]})
+    assert p.direction == 1 and p.sites == ("C4",)
+    q = Protocol.from_spec(p.to_spec())
+    assert q.reward == "smr" and q.sites == ("C4",)
+    with pytest.raises(ValueError):
+        Protocol.from_spec({"reward": "kappa"})

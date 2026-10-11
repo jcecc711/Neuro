@@ -42,6 +42,7 @@ def test_server_serves_page_and_streams_session():
         SessionConfig(baseline_sec=3, training_sec=3),
         [_Forward(sink)],
     )
+    server.start()
     sink.configure(session)
     sink.open()
     events, ready = [], threading.Event()
@@ -58,7 +59,8 @@ def test_server_serves_page_and_streams_session():
         session.run()
     finally:
         sink.close()
-    reader.join(10)
+        reader.join(10)
+        server.stop()
 
     kinds = [k for k, _ in events]
     assert kinds[0] == "meta"
@@ -67,6 +69,7 @@ def test_server_serves_page_and_streams_session():
     assert updates, kinds
     assert all(len(u["samples"]) == 4 for u in updates)
     assert sum(len(u["samples"][0]) for u in updates) > 0
+    assert "summary" in kinds
     assert kinds[-1] == "end"
 
 
@@ -84,6 +87,9 @@ class _Forward:
 
     def update(self, state):
         self.sink.update(state)
+
+    def finish(self, summary):
+        self.sink.finish(summary)
 
     def close(self):
         pass

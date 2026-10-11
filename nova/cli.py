@@ -10,7 +10,16 @@ from pathlib import Path
 
 import numpy as np
 
-from .devices import BrainFlowDevice, Device, DeviceError, LSLDevice, SimulatedDevice, brainflow_board_names
+from .devices import (
+    DEMO_MONTAGE,
+    BrainFlowDevice,
+    Device,
+    DeviceError,
+    LSLDevice,
+    SimulatedDevice,
+    brainflow_board_names,
+)
+from .programs import all_programs, get_program
 from .dsp import StreamingFilter, band_power, power_spectrum
 from .audio import AudioEngine
 from .feedback import FEEDBACK_KINDS, make_sinks
@@ -24,7 +33,7 @@ def add_device_args(p: argparse.ArgumentParser) -> None:
     g.add_argument(
         "--device",
         default="sim",
-        help="'sim' (built-in simulator), 'lsl', or a BrainFlow board name such as "
+        help="'demo' (demo signal, no headset), 'lsl', or a BrainFlow board name such as "
         "cyton, ganglion, muse_2, synthetic (default: sim)",
     )
     g.add_argument("--serial-port", default="", help="e.g. /dev/ttyUSB0 or COM3 (OpenBCI dongle)")
@@ -40,8 +49,8 @@ def add_device_args(p: argparse.ArgumentParser) -> None:
 
 def open_device(args: argparse.Namespace) -> Device:
     name = args.device.lower()
-    if name in ("sim", "simulator"):
-        return SimulatedDevice(line_freq=args.line_freq or 60.0)
+    if name in ("sim", "simulator", "demo"):
+        return SimulatedDevice(montage=DEMO_MONTAGE, line_freq=args.line_freq or 60.0)
     if name == "lsl":
         return LSLDevice(stream_name=args.lsl_name)
     return BrainFlowDevice(
@@ -57,7 +66,7 @@ def open_device(args: argparse.Namespace) -> Device:
 
 
 def cmd_devices(_args: argparse.Namespace) -> int:
-    print("Built-in:\n  sim        simulated EEG, no hardware required\n  lsl        any Lab Streaming Layer EEG stream")
+    print("Built-in:\n  demo       demo signal, no headset required\n  lsl        any Lab Streaming Layer EEG stream")
     names = brainflow_board_names()
     if names:
         print("\nBrainFlow boards (use with --device):")
@@ -75,6 +84,19 @@ def cmd_protocols(_args: argparse.Namespace) -> int:
         print(f"{p.name}\n  {p.description}")
         print(f"  trains {p.metric_label} {direction}; inhibits: {bands}")
         print(f"  suggested sites: {', '.join(p.suggested_sites)}\n")
+    return 0
+
+
+def cmd_programs(_args: argparse.Namespace) -> int:
+    for p in all_programs():
+        badge = f"  [{p.evidence}]" if p.evidence else ""
+        print(f"{p.id}  {p.name}: {p.target}  ({p.minutes:g} min, {p.soundscape}, eyes {p.eyes}){badge}")
+        print(f"  {p.summary}")
+        for ph in p.phases:
+            proto = f"  {ph.resolved_protocol().metric_label}" if ph.protocol else ""
+            print(f"    {ph.minutes:4.1f} min  {ph.name:<24}{proto}")
+        print()
+    print("NOVA is not a medical device. Programs follow research protocols; they don't treat conditions.")
     return 0
 
 
@@ -179,6 +201,7 @@ def write_stim_wav(stim: Stimulus, seconds: float, path: str, fade_sec: float = 
 
 
 def cmd_run(args: argparse.Namespace) -> int:
+    program = get_program(args.program).scaled(args.length) if args.program else None
     protocol = get_protocol(args.protocol)
     spec = stim_spec(args, args.stim_schedule, args.stim_block) if args.stim else None
     # Keep the stimulation frequency inside the analysed band so its EEG response is visible.
@@ -197,31 +220,38 @@ def cmd_run(args: argparse.Namespace) -> int:
     log_path = None
     if not args.no_log:
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        log_path = Path(args.log_dir) / f"{stamp}-{protocol.name}.csv"
+        log_path = Path(args.log_dir) / f"{stamp}-{program.id if program else protocol.name}.csv"
 
     device = open_device(args)
     engine = AudioEngine()
     sinks = make_sinks(args.feedback.split(","), engine, dashboard_port=args.dashboard_port)
     stimulus = Stimulus(spec, engine) if spec else None
-    session = Session(device, protocol, config, sinks, log_path, stimulus)
+    session = Session(device, protocol, config, sinks, log_path, stimulus, program=program)
     print(f"{device.description}")
-    print(f"Protocol '{protocol.name}': {protocol.description}")
+    if program:
+        print(f"Program '{program.name}' ({program.minutes:g} min): {program.summary}")
+    else:
+        print(f"Protocol '{protocol.name}': {protocol.description}")
     print(f"Channels: {', '.join(session.channel_names)}")
     if spec:
         print(f"Stimulus: {spec.description}")
-    print(f"Baseline {config.baseline_sec:g}s, then training {config.training_sec:g}s. Ctrl-C to stop.\n")
+    if not program:
+        print(f"Baseline {config.baseline_sec:g}s, then training {config.training_sec:g}s.")
+    print("Ctrl-C to stop.\n")
     summary = session.run()
     print("\n" + summary.format())
     return 0
 
 
-def cmd_dashboard(args: argparse.Namespace) -> int:
-    """Serve the NOVA dashboard on its own; the page runs its built-in simulation."""
-    from .live import DashboardServer
+def cmd_app(args: argparse.Namespace) -> int:
+    """Run the NOVA app: the session console in the browser, backed by this process."""
+    from .live import DashboardServer, SessionController
 
+    controller = SessionController(log_dir=args.log_dir)
     server = DashboardServer(port=args.port)
+    controller.attach(server)
     server.start()
-    print(f"NOVA dashboard (simulation): {server.url}  Ctrl-C to stop.")
+    print(f"NOVA is running at {server.url}  Ctrl-C to quit.")
     if not args.no_browser:
         import webbrowser
 
@@ -230,7 +260,8 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        pass
+        if controller.session:
+            controller.session.stop()
     finally:
         server.stop()
     return 0
@@ -250,6 +281,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("run", help="run a neurofeedback session")
     add_device_args(run)
+    run.add_argument("--program", default=None, help="program id or .json file; overrides --protocol/--baseline/--duration")
+    run.add_argument("--length", type=float, default=1.0, help="scale training blocks, e.g. 0.5 or 1.5")
     run.add_argument("--protocol", default="alpha", choices=list(PROTOCOLS))
     run.add_argument("--channels", default=None, help="comma-separated channel names (default: all)")
     run.add_argument("--baseline", type=float, default=60.0, help="calibration seconds (default 60)")
@@ -280,10 +313,13 @@ def build_parser() -> argparse.ArgumentParser:
     stim.add_argument("--out", default=None, help="write a .wav file instead of playing (e.g. to play on a phone)")
     stim.set_defaults(func=cmd_stim)
 
-    dash = sub.add_parser("dashboard", help="open the NOVA dashboard with its built-in simulation")
-    dash.add_argument("--port", type=int, default=8765)
-    dash.add_argument("--no-browser", action="store_true")
-    dash.set_defaults(func=cmd_dashboard)
+    app = sub.add_parser("app", aliases=["dashboard"], help="open the NOVA session console in your browser")
+    app.add_argument("--port", type=int, default=8765)
+    app.add_argument("--no-browser", action="store_true")
+    app.add_argument("--log-dir", default="sessions")
+    app.set_defaults(func=cmd_app)
+
+    sub.add_parser("programs", help="list session programs").set_defaults(func=cmd_programs)
     return parser
 
 
