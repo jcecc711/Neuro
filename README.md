@@ -66,6 +66,11 @@ address in Safari on the iPad, tap Share > **Add to Home Screen**, and NOVA open
 landscape from its icon, even offline. To turn it on: repository **Settings > Pages > Source:
 GitHub Actions** (Pages on a private repository needs a paid GitHub plan).
 
+**On a Mac.** Open the same address in Safari and choose **File > Add to Dock** (macOS Sonoma or
+later): NOVA gets its own Dock icon and window; press the green window button or Ctrl-Cmd-F for
+full screen. On large displays the session spreads across the full width. Use headphones for the
+3D sound and the rhythm cue.
+
 ### Learn and the training plan
 
 The **Learn** section explains what's different in the ADHD brain, what EEG shows (and doesn't),

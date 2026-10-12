@@ -630,6 +630,11 @@ details.builder summary::marker { color: var(--link); }
 }
 /* Fullscreen and Home Screen app: drop the page gutter so the session is edge to edge. */
 :fullscreen .shell, :-webkit-full-screen .shell { max-width: none; }
+/* Large desktop displays (Mac mini, iMac, Studio Display): a session uses the whole width. */
+.shell:has(#sessionView:not([hidden])) { max-width: none; }
+@media (orientation: landscape) and (min-width: 1700px) {
+  .session { grid-template-columns: minmax(0, 1fr) clamp(380px, 24vw, 520px); }
+}
 @media (display-mode: fullscreen), (display-mode: standalone) {
   .nav { margin-top: 0; }
 }
