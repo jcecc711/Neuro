@@ -137,38 +137,55 @@ Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
 
 ## Soundscapes
 
-Every session plays like a slow song that builds and settles with the program, synthesized live
-in the browser so no two sessions sound the same. It's a **spatial sound bath**: each part sits at
-its own place around your head (3D HRTF panning), and several drift in slow orbits.
+Every session plays like a gentle, uplifting pop song, synthesized live in the browser and built
+from the traits that recur across popular songs: a major key, a classic four-chord loop, a steady
+4/4 backbeat at 72-96 BPM, and a short vocal hook that repeats. It's arranged as a **3D sound bath**:
+each instrument sits at its own place around your head (HRTF panning), and the backing vocals drift
+in slow orbits.
 
-- **Song structure:** a warm four-chord progression at 58-72 BPM, changing every two bars. The
-  arrangement follows the phases: pads, hum and bowls while NOVA calibrates; handpan and soft
-  frame drum enter as training begins (with a small hand-drum fill), the full groove plays during
-  training, the drums drop out for breathing breaks, and the parts leave one by one in the cooldown.
-- **Voices:** wordless female chant in call and response. The lead sings a short pentatonic
-  phrase, a second voice answers lower, and a third hums the chord. Natural vibrato, a breath at
-  each onset, no pitch swoops. Switch them off with **Voices**.
-- **Percussion:** frame drum, hand drum, shaker and a handpan ostinato that moves around the head.
-- **Feedback:** being on target fills the song out (groove, lead voice, handpan, shimmer); drifting
-  off thins it back. A reward after a quiet stretch plays a small handpan flourish.
-- **Targeting:** during training the lead voice and the rhythm cue move to the brain region being
-  trained: right of the crown for SMR at C4, the crown for theta/beta at Cz, behind for alpha at Pz,
-  front-left for asymmetry at F3, and front-centre for frontal theta at Fz.
-- **Soft by design:** no sawtooth tones, no filter sweeps, a gentle compressor and high shelf.
+- **Band:** fingerpicked acoustic guitar (front left), felt piano (front right), round bass, soft
+  kick, a backbeat snap on 2 and 4, light hi-hats, warm pads and a high shimmer.
+- **Voices:** wordless female vocals ("ooh", "oh", "ah") sing a four-bar hook that repeats, with a
+  harmony a third below and stacked "ooh" chords in the chorus. Switch them off with **Voices**.
+- **Song form follows the session:** verse while NOVA calibrates (guitar, bass, kick on one), a
+  snare pickup into the chorus as training starts, a stripped-back bridge for breathing breaks,
+  and an outro through the cooldown.
+- **Feedback:** being on target opens up the chorus (drums, piano, harmonies, shimmer); drifting off
+  settles it back to the verse. A reward after a quiet stretch plays a short piano run.
+- **Targeting:** during training the lead vocal and the rhythm cue move to the brain region being
+  trained: right of the crown for SMR at C4, the crown for theta/beta at Cz, behind for alpha at
+  Pz, front-left for asymmetry at F3, and front-centre for frontal theta at Fz.
 
 | Soundscape | Character |
 |---|---|
-| Aurora | 66 BPM, handpan, frame drum and a soft chanting choir in D |
-| Deep Ocean | 60 BPM, slow waves, warm pads and humming voices in C |
-| Celestial | 72 BPM, bright open chords, bowls and call-and-response chant in E |
-| Forest Rain | 68 BPM, gentle rain, shaker and hand drums in G |
-| Nebula | 58 BPM, floating chords, sparse percussion and distant voices in F |
-| Dawn | 70 BPM, warm rising chords and gentle singing in A |
+| Aurora | 84 BPM, I-V-vi-IV in D, fingerpicked guitar and an "ooh" vocal hook |
+| Deep Ocean | 76 BPM, vi-IV-I-V in C, gentle waves under guitar and piano |
+| Celestial | 92 BPM, I-vi-IV-V in E, bright piano and stacked harmonies |
+| Forest Rain | 88 BPM, IV-I-V-vi in G, soft rain and a warm groove |
+| Nebula | 72 BPM, I-iii-vi-IV in F, slow and dreamy |
+| Dawn | 96 BPM, the Canon progression in A, uplifting and bright |
 
 Use stereo headphones for the 3D effect. With AirPods, turn **Spatial Audio off** (Control Centre,
 press and hold the volume slider): NOVA does its own 3D placement, and Apple's would remix it.
-You can preview any soundscape before a session, and switch soundscape, volume, voices and the
-rhythm cue during one.
+
+### Adaptive entrainment
+
+NOVA steers the music toward the state being trained, closed-loop, from the live EEG:
+
+- **Pace and lead.** Each training block starts the rhythm at your brain's current dominant
+  frequency near the target (within 4 Hz), then glides it to the target, only as fast as your brain
+  follows (measured as time on target over the last 15 seconds). If you lose it for a minute, it
+  meets your brain where it is and leads again.
+- **Modulated music.** The whole song pulses gently in loudness at that frequency (amplitude
+  modulation), alongside the rhythm cue below. The depth grows slowly while your brain resists and
+  relaxes once it's there, capped at 30% for comfort.
+- **Tempo and energy suit the goal.** Calming targets (alpha, theta) slow the song by up to 6% and
+  keep the drums light; focus targets (SMR, beta) lift it slightly with the full groove.
+
+The readout shows the current rhythm and the target, e.g. "12.4 → 13.5 Hz". Switch all of it off
+with **Entrainment**. Honest limits: auditory entrainment and modulated music have some supportive
+studies but mixed evidence overall; they nudge rather than force a brain state. The feedback, being
+rewarded when your own brain gets there, remains the core of the training.
 
 ### Rhythm cue: the exact target frequency
 

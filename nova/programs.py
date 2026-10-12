@@ -24,12 +24,12 @@ from .protocols import PROTOCOLS, Protocol, resolve_protocol
 # Phase kinds. "baseline" calibrates; only "training" gives rewards.
 KINDS = ("baseline", "training", "rest", "cooldown")
 SOUNDSCAPES = {
-    "aurora": "Aurora: 66 BPM, handpan, frame drum and a soft chanting choir in D",
-    "ocean": "Deep Ocean: 60 BPM, slow waves, warm pads and humming voices in C",
-    "celestial": "Celestial: 72 BPM, bright open chords, bowls and call-and-response chant in E",
-    "rain": "Forest Rain: 68 BPM, gentle rain, shaker and hand drums in G",
-    "nebula": "Nebula: 58 BPM, floating chords, sparse percussion and distant voices in F",
-    "dawn": "Dawn: 70 BPM, warm rising chords and gentle singing in A",
+    "aurora": "Aurora: 84 BPM, I-V-vi-IV in D, fingerpicked guitar and an \"ooh\" vocal hook",
+    "ocean": "Deep Ocean: 76 BPM, vi-IV-I-V in C, gentle waves under guitar and piano",
+    "celestial": "Celestial: 92 BPM, I-vi-IV-V in E, bright piano and stacked harmonies",
+    "rain": "Forest Rain: 88 BPM, IV-I-V-vi in G, soft rain and a warm groove",
+    "nebula": "Nebula: 72 BPM, I-iii-vi-IV in F, slow and dreamy",
+    "dawn": "Dawn: 96 BPM, the Canon progression in A, uplifting and bright",
 }
 CUSTOM_DIR = Path.home() / ".nova" / "programs"
 
