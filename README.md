@@ -132,27 +132,36 @@ Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
 
 ## Soundscapes
 
-All sound is synthesized live in the browser and kept deliberately soft, so every session
-sounds slightly different:
+Every session plays like a slow song that builds and settles with the program, synthesized live
+in the browser so no two sessions sound the same. It's a **spatial sound bath**: each part sits at
+its own place around your head (3D HRTF panning), and several drift in slow orbits.
 
-- **Pads:** sine and triangle chords under a slowly moving low-pass, in a long, dark reverb.
-- **Bass:** a warm sub-bass line that follows the chord root (about 46-92 Hz) and swells like a breath.
-- **Voices:** a wordless female choir ("ooh", "oh", "aah"), two voices in harmony, each a small
-  ensemble with natural vibrato. It sings more when you're on target. Switch it off with **Voices**.
-- **Bells and textures:** slow-attack harmonic bells, rain, waves or air, all kept below 3 kHz.
-- **Master:** a gentle compressor, a high shelf (-7 dB above 3.2 kHz) and a 7 kHz roll-off.
-
-Each phase has its own voicing; each new phase opens on a new chord.
+- **Song structure:** a warm four-chord progression at 58-72 BPM, changing every two bars. The
+  arrangement follows the phases: pads, hum and bowls while NOVA calibrates; handpan and soft
+  frame drum enter as training begins (with a small hand-drum fill), the full groove plays during
+  training, the drums drop out for breathing breaks, and the parts leave one by one in the cooldown.
+- **Voices:** wordless female chant in call and response. The lead sings a short pentatonic
+  phrase, a second voice answers lower, and a third hums the chord. Natural vibrato, a breath at
+  each onset, no pitch swoops. Switch them off with **Voices**.
+- **Percussion:** frame drum, hand drum, shaker and a handpan ostinato that moves around the head.
+- **Feedback:** being on target fills the song out (groove, lead voice, handpan, shimmer); drifting
+  off thins it back. A reward after a quiet stretch plays a small handpan flourish.
+- **Targeting:** during training the lead voice and the rhythm cue move to the brain region being
+  trained: right of the crown for SMR at C4, the crown for theta/beta at Cz, behind for alpha at Pz,
+  front-left for asymmetry at F3, and front-centre for frontal theta at Fz.
+- **Soft by design:** no sawtooth tones, no filter sweeps, a gentle compressor and high shelf.
 
 | Soundscape | Character |
 |---|---|
-| Aurora | airy Lydian pads, soft glass bells and distant voices |
-| Deep Ocean | low swells, slow waves, a deep bass and humming voices |
-| Celestial | a floating major choir over warm bass |
-| Forest Rain | soft rain, warm pads, wooden chimes |
-| Nebula | dark, slow drones with a glowing upper layer |
-| Dawn | warm, rising major chords and gentle singing |
+| Aurora | 66 BPM, handpan, frame drum and a soft chanting choir in D |
+| Deep Ocean | 60 BPM, slow waves, warm pads and humming voices in C |
+| Celestial | 72 BPM, bright open chords, bowls and call-and-response chant in E |
+| Forest Rain | 68 BPM, gentle rain, shaker and hand drums in G |
+| Nebula | 58 BPM, floating chords, sparse percussion and distant voices in F |
+| Dawn | 70 BPM, warm rising chords and gentle singing in A |
 
+Use stereo headphones for the 3D effect. With AirPods, turn **Spatial Audio off** (Control Centre,
+press and hold the volume slider): NOVA does its own 3D placement, and Apple's would remix it.
 You can preview any soundscape before a session, and switch soundscape, volume, voices and the
 rhythm cue during one.
 
@@ -160,10 +169,9 @@ rhythm cue during one.
 
 During training, a quiet **rhythm cue** pulses at the exact frequency of the protocol you're
 training: a binaural pair whose ears differ by exactly that many Hz (the left ear on the
-soundscape's root note at 110-220 Hz, the right ear exactly the cue frequency above it), plus a
-soft low tone whose loudness pulses at the same rate. Because the left tone matches the pads'
-root, every beat in the mix lands on the cue frequency. It bypasses the reverb so the rhythm
-stays exact.
+soundscape's key note at 110-220 Hz, the right ear exactly the cue frequency above it), plus a
+soft tone whose loudness pulses at the same rate, placed at the trained region. It eases in over
+each training block's first 45 seconds and bypasses the reverb so the rhythm stays exact.
 
 | Protocol | Cue | Why |
 |---|---|---|
