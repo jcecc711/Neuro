@@ -767,7 +767,7 @@ details.builder summary::marker { color: var(--link); }
       <div class="view-band" id="viewBand">Colour: alpha</div>
       <div class="view-metric"><span class="lab">Training metric</span><span class="big" id="metricBig">--</span><span class="lab" id="metricLabel">--</span></div>
       <div class="gauge" aria-hidden="true"><span>Target</span><div class="gauge-track"><i id="gaugeThr"></i><b id="gaugePtr"></b></div><span>Search</span></div>
-      <p class="guidance" id="guidance"></p>
+      <p class="guidance" id="guidance" hidden></p>
       <div class="view-actions"><button type="button" class="glass-btn details-btn" id="detailsBtn" aria-expanded="false" aria-controls="consolePanel">Details</button><button type="button" class="glass-btn" id="skipBtn">Next phase</button><button type="button" class="glass-btn end" id="endBtn">End session</button></div>
       <aside class="target-card" aria-live="polite">
         <div class="ring" aria-hidden="true">
@@ -1445,7 +1445,7 @@ function tunedKey(key, tuning) {
   return key;
 }
 
-// Recorded instruments: notes rendered from Surge XT patches (harp, strings, violins, pad, choir,
+// Recorded instruments: notes rendered from Surge XT patches (harp, strings, pad, choir,
 // "ooh"), one every three semitones (see samples/CREDITS.txt). Each note loads the first time it is
 // needed and is pitched to the exact frequency; until it arrives, the built-in synthesis plays.
 const SAMPLES = {
@@ -1472,7 +1472,7 @@ const SAMPLES = {
 };
 SAMPLES.init();
 // Relative loudness of each recorded instrument in the mix.
-const SAMPLE_GAIN = { harp: 1.2, strings: 0.18, violins: 0.13, pad: 0.16, choir: 0.22, ooh: 0.3 };
+const SAMPLE_GAIN = { harp: 1.0, strings: 0.26, pad: 0.16, choir: 0.22, ooh: 0.3 };
 
 class Scape {
   constructor(engine, id) {
@@ -1536,7 +1536,7 @@ class Scape {
     if (!SAMPLES.manifest) { if (tries < 20) setTimeout(() => this.prefetch(tries + 1), 250); return; }
     this.p.prog.forEach((_, bar) => {
       const c = this.chordAt(bar * 8);
-      [fold(c[0], 98, 196), fold(c[2], 147, 294), fold(c[1], 220, 440), fold(c[3], 294, 588)].forEach((f, i) => { SAMPLES.pick("strings", f); if (i >= 2) SAMPLES.pick("violins", f * 2); });
+      [fold(c[0], 98, 196), fold(c[2], 147, 294), fold(c[1], 220, 440), fold(c[3], 294, 588)].forEach((f, i) => { SAMPLES.pick("strings", f); if (i >= 2) SAMPLES.pick("strings", f * 2); });
       c.slice(0, 3).forEach(f => { SAMPLES.pick("pad", f * 2); SAMPLES.pick("ooh", fold(f, 262, 523)); });
       [c[0], c[1], c[2], c[3], c[1] * 2, c[2] * 2, c[3] * 2].forEach(f => SAMPLES.pick("harp", fold(f, 130, 1100)));
     });
@@ -1624,21 +1624,26 @@ class Scape {
   chord(t, chord) {
     const len = 8 * this.spb * this.tempo / 2, end = t + len + 6, ctx = this.ctx;
     // String ensemble: open voicing over two octaves, three players per note, slow bow and gentle vibrato.
-    const voicing = [fold(chord[0], 98, 196), fold(chord[2], 147, 294), fold(chord[1], 220, 440), fold(chord[3], 294, 588)];
+    const voicing = this.voiceLead("low", chord, [fold(chord[0], 98, 196), fold(chord[2], 147, 294), fold(chord[1], 220, 440), fold(chord[3], 294, 588)], [[87, 220], [130, 330], [196, 494], [262, 660]]);
+    const upper = this.voiceLead("high", chord, [fold(chord[1], 440, 880), fold(chord[3], 588, 1176)], [[392, 988], [523, 1318]]);
+    const padV = this.voiceLead("pad", chord, chord.slice(0, 3).map(f => f * 2), [[196, 494], [247, 587], [294, 740]]);
     const vib = this.osc("sine", 5 + rand() * 0.4, t, end), vg = ctx.createGain(); vg.gain.value = 6; vib.connect(vg);
+    const low = this.legatoChord("low", "strings", t - 0.5, voicing, 0.9, i => this.strBus[i % 2], 1.4);
+    const high = this.legatoChord("high", "strings", t - 0.3, upper, 0.6, () => this.strHi, 1.8);
+    const pads = this.legatoChord("pad", "pad", t - 0.4, padV, 0.9, () => this.padBus, 1.6);
     voicing.forEach((f, i) => {
-      if (!this.sample("strings", t - 0.4, f, 0.9 + rand() * 0.1, this.strBus[i % 2], len + 0.4, 1.4, 2.5)) {
+      if (!low[i]) {
         const e = this.env(t - 0.4, 0.05, 1.8, len - 1.2, 3); e.connect(this.strBus[i % 2]);
         [-9, 0, 8].forEach(c => { const o = this.osc("sawtooth", f, t - 0.4, end); o.detune.value = c + (rand() - 0.5) * 4; vg.connect(o.detune); o.connect(e); });
       }
-      if (i >= 2 && this.sample("violins", t - 0.2, f * 2, 0.85, this.strHi, len + 0.2, 1.6, 2.5)) return;
-      if (i >= 2) { const h = this.env(t - 0.2, 0.028, 2.2, len - 1.4, 3); h.connect(this.strHi); [-6, 7].forEach(c => { const o = this.osc("sawtooth", f * 2, t - 0.2, end); o.detune.value = c; vg.connect(o.detune); o.connect(h); }); }
+      if (i >= 2 && high[i - 2]) return;
+      if (i >= 2) { const h = this.env(t - 0.2, 0.028, 2.2, len - 1.4, 3); h.connect(this.strHi); [-6, 7].forEach(c => { const o = this.osc("sawtooth", upper[i - 2], t - 0.2, end); o.detune.value = c; vg.connect(o.detune); o.connect(h); }); }
     });
     // Warm synth pad: soft triangles and sines an octave apart.
-    chord.slice(0, 3).forEach(f => {
-      if (!this.sample("pad", t - 0.3, f * 2, 0.9, this.padBus, len + 0.3, 1.5, 3)) {
+    chord.slice(0, 3).forEach((f, i) => {
+      if (!pads[i]) {
         const e = this.env(t - 0.3, 0.035, 2, len - 1.4, 3); e.connect(this.padBus);
-        [["triangle", f * 2, -4], ["sine", f * 2, 4], ["sine", f, 0]].forEach(([type, ff, c]) => { const o = this.osc(type, ff, t - 0.3, end); o.detune.value = c; o.connect(e); });
+        [["triangle", padV[i], -4], ["sine", padV[i], 4], ["sine", padV[i] / 2, 0]].forEach(([type, ff, c]) => { const o = this.osc(type, ff, t - 0.3, end); o.detune.value = c; o.connect(e); });
       }
       const se = this.env(t, 0.05, 2, len - 1.5, 2.5); se.connect(this.shimBus); this.osc("sine", f * 4, t, end).connect(se);
     });
@@ -1647,11 +1652,50 @@ class Scape {
         if (!this.sample("ooh", t + 0.1, ff, 0.9, this.harmBus[i % 2], len * 0.95, 0.9, 1.8)) this.voice(this.harmBus[i % 2], t + 0.1, ff, len * 0.95, "oo", 0.05, { attack: 0.9, release: 1.8, vib: 10, breath: false }); });
     }
   }
-  // Harp: a pure, round tone with a little shimmer of overtones; low strings ring longer.
+  // Voice-leading: each voice moves to the nearest note of the new chord (common tones stay put, the
+  // rest move by small steps), the chord's root and third are always present, and every voice stays
+  // in its own register.
+  voiceLead(key, chord, init, ranges) {
+    const vl = this.vl || (this.vl = {}), prev = vl[key];
+    if (!prev) return (vl[key] = init);
+    const near = (p, f) => f * Math.pow(2, Math.round(Math.log2(p / f)));
+    const pc = (a, b) => { const x = Math.abs(Math.log2(a / b)) % 1; return Math.min(x, 1 - x) < 0.01; };
+    const next = prev.map(p => chord.slice(0, 3).map(f => near(p, f)).reduce((a, b) => Math.abs(Math.log2(b / p)) < Math.abs(Math.log2(a / p)) ? b : a));
+    [0, 1].forEach(j => {                                                       // root, then third
+      if (next.some(n => pc(n, chord[j]))) return;
+      const counts = next.map(n => next.filter(m => pc(m, n)).length), k = j === 0 && key === "low" ? 0 : counts.indexOf(Math.max(...counts));
+      next[k] = near(prev[k], chord[j]);
+    });
+    return (vl[key] = next.map((f, i) => { const [lo, hi] = ranges[i]; while (f > hi) f /= 2; while (f < lo) f *= 2; return f; }));
+  }
+  // Legato lines: a note shared by the next chord keeps bowing through the change (whichever voice
+  // it moves to); notes that change fade over a few seconds while the new ones swell in, so the lines
+  // flow together. Returns which notes are playing from recordings (the rest fall back to synthesis).
+  legatoChord(key, inst, t, freqs, vel, busFor, attack) {
+    const lines = this.lines || (this.lines = {}), old = lines[key] || [], m = SAMPLES.manifest && SAMPLES.manifest[inst];
+    const bar = 8 * this.spb * this.tempo / 2, keep = new Set(), next = [], played = [];
+    freqs.forEach((f, i) => {
+      const v = old.find(o => !keep.has(o) && Math.abs(Math.log(o.f / f)) < 0.01 && t + bar + 1 - o.start < (m ? m.hold : 0) - 0.3);
+      if (v) { keep.add(v); next.push(v); played.push(true); return; }
+      const s = SAMPLES.pick(inst, f); if (!s) { played.push(false); return; }
+      const st = Math.max(t, this.ctx.currentTime), src = this.ctx.createBufferSource(); src.buffer = s.buf; src.playbackRate.value = s.rate;
+      const g = this.ctx.createGain(); g.gain.setValueAtTime(0, st); g.gain.linearRampToValueAtTime(SAMPLE_GAIN[inst] * vel, st + attack);
+      src.connect(g); g.connect(busFor(i)); src.start(st); src.stop(st + s.buf.duration / s.rate);
+      next.push({ f, src, g, start: st }); played.push(true);
+    });
+    old.forEach(v => { if (!keep.has(v)) this.release(v, t + 0.4); });
+    lines[key] = next; this.held = (this.held || 0) + keep.size;
+    return played;
+  }
+  release(v, t) {
+    t = Math.max(t, this.ctx.currentTime);
+    try { v.g.gain.cancelScheduledValues(t); v.g.gain.setTargetAtTime(0, t, 0.9); v.src.stop(t + 4); } catch {}
+  }
+  // Harp: the recorded pluck over a soft, long-ringing body, so arpeggios ring into each other.
   harp(t, f, vel) {
     t = Math.max(t, this.ctx.currentTime);
-    if (this.sample("harp", t, f, vel, this.harpBus)) return;
-    const tau = 1.5 * Math.sqrt(220 / f), end = t + tau * 5;
+    if (this.sample("harp", t, f, vel, this.harpBus)) vel *= 0.45;
+    const tau = 2 * Math.sqrt(220 / f), end = t + tau * 5;
     const e = this.ctx.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(0.11 * vel, t + 0.005); e.connect(this.harpBus);
     [[1, 1, 1], [2, 0.22, 0.5], [3.003, 0.06, 0.3]].forEach(([r, a, d]) => {
       const g = this.ctx.createGain(); g.gain.setValueAtTime(a, t); g.gain.setTargetAtTime(0, t + 0.005, tau * d); this.osc("sine", f * r, t, end).connect(g); g.connect(e); });
@@ -1692,7 +1736,7 @@ class Scape {
   sing(t, s0) {
     const e8 = this.spb * this.tempo / 2, v = this.p.vowels;
     this.hook.forEach(([step, len, d], k) => {
-      const at = this.human(t + step * e8, 20), dur = len * e8 * 0.95, vowel = v[k % v.length];
+      const at = this.human(t + step * e8, 20), dur = len * e8 * 1.08, vowel = v[k % v.length];  // slightly overlapping: legato
       const f1 = N(this.vkey, degSemi(d)), f2 = N(this.vkey, degSemi(d - 2));
       if (!this.sample("choir", at, f1, 0.85 + rand() * 0.15, this.leadBus, dur, k ? 0.08 : 0.15, 0.6)) this.voice(this.leadBus, at, f1, dur, vowel, 0.1, { attack: k ? 0.1 : 0.18 });
       if (this.level >= 2 && !this.sample("choir", at + 0.02, f2, 0.7, this.harmBus[k % 2], dur, 0.1, 0.6)) this.voice(this.harmBus[k % 2], at + 0.02, f2, dur, vowel, 0.08, { attack: 0.12, breath: false });

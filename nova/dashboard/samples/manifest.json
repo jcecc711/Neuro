@@ -41,29 +41,12 @@
    75,
    78,
    81,
-   84
+   84,
+   87,
+   90,
+   93
   ],
-  "hold": 5.0,
-  "patch": "Orion Strings",
-  "author": "Vincent Zauhar"
- },
- "violins": {
-  "notes": [
-   55,
-   58,
-   61,
-   64,
-   67,
-   70,
-   73,
-   76,
-   79,
-   82,
-   85,
-   88,
-   91
-  ],
-  "hold": 5.0,
+  "hold": 9.0,
   "patch": "Violin Section",
   "author": "John Valentine"
  },
@@ -87,7 +70,7 @@
    81,
    84
   ],
-  "hold": 5.0,
+  "hold": 9.0,
   "patch": "MKS-70 Warm Pad",
   "author": "Surge XT factory"
  },
