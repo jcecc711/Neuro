@@ -192,11 +192,16 @@ in time with the entrainment rhythm, during training only:
   photosensitive seizures, so these get a soft warm glow that pulses at the rhythm by under 4%,
   below the standard 10% flash threshold. It's gentle company for the sound, not strong entrainment.
 - **Full-screen journey:** choose "full-screen journey" when turning it on and NOVA goes full screen
-  with a slow glide through a neural universe: neurons drifting past like stars, filaments carrying
-  travelling signals, drifting violet-blue nebulae, tinted with the activity colour. The scene pulses
-  with the same rhythm (stepping bright/dim with the 40 Hz square wave, or breathing softly for
-  slower targets) and keeps flying through calibration and rests without pulsing. It lowers its
-  own detail whenever drawing would eat into the frame budget, so the flicker timing stays exact.
+  and tells a short story. It opens on the brain turning slowly, the camera dives in until the
+  cortex streams past, and it crosses into a neural universe: neurons drifting past like stars,
+  filaments carrying travelling signals, violet-blue nebulae. Every few seconds a synapse forms up
+  close: a glowing terminal carrying vesicles and a dendritic spine sprout filaments and drift
+  together, a burst of light marks the connection, and the new junction pulses at exactly the
+  session's rhythm (40 Hz in Gamma 40, in step with the clicks). It's an artistic visualization,
+  not a picture of your own brain. The whole scene steps bright/dim with the 40 Hz square wave, or
+  breathes softly for slower targets; connection flashes stay small and local to keep within
+  flash-safety limits. It lowers its own detail whenever drawing would eat into the frame budget,
+  so the flicker timing stays exact.
 - **Safety:** turning it on shows a seizure and migraine warning that must be accepted; a **Stop
   light** button stays on screen, and Esc, leaving the app or ending the session stops it at once.
   It's disabled when the device asks for reduced motion.

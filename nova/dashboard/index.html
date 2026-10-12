@@ -2033,8 +2033,83 @@ const journey = {
     this.nodes = nodes; this.edges = edges; this.pulses = []; this.r = r; this.built = true;
     this.px = new Float32Array(N); this.py = new Float32Array(N); this.pd = new Float32Array(N);
   },
-  draw(cv, dt, glow, accent, q = 2) {
+  reset() { this.t = 0; this.syn = []; this.nextSyn = 15; },
+  // Act 1: the brain itself, turning slowly, then the camera dives in until the cortex streams past.
+  drawBrain(ctx, w, h, dpr, alpha) {
+    const C = CLOUD, t = this.t, yaw = 0.35 + t * 0.22, cyw = Math.cos(yaw), syw = Math.sin(yaw), cp = Math.cos(0.22), sp = Math.sin(0.22);
+    const k = smooth((t - 5) / 9), dist = lerp(3.4, -0.6, k * k), F = Math.min(w, h) * 0.42 * 3.4, cx = w / 2, cy = h * 0.52;
+    const buckets = [[], [], []];
+    for (let i = 0; i < C.n; i++) {
+      const x = C.xs[i], y = C.ys[i], z = C.zs[i] + 0.2;
+      const X = x * cyw - y * syw, Yd = x * syw + y * cyw, Z = z * cp - Yd * sp, depth = dist + 1.2 + z * sp + Yd * cp;
+      if (depth < 0.06) continue;
+      const sc = F / depth / 3.4, sx = cx + X * sc * 3.4, sy = cy - Z * sc * 3.4;
+      if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) continue;
+      buckets[depth < 1.2 ? 0 : depth < 2.6 ? 1 : 2].push(sx, sy, Math.min(5, Math.max(1.1, 3.4 / depth)) * dpr);
+    }
+    buckets.forEach((b, j) => {
+      ctx.fillStyle = `rgba(232,216,186,${alpha * [1, 0.85, 0.6][j]})`;
+      for (let i = 0; i < b.length; i += 3) {
+        if (b[i + 2] < 2.5) ctx.fillRect(b[i] - b[i + 2] / 2, b[i + 1] - b[i + 2] / 2, b[i + 2], b[i + 2]);
+        else { ctx.beginPath(); ctx.arc(b[i], b[i + 1], b[i + 2] / 2, 0, Math.PI * 2); ctx.fill(); }
+      }
+    });
+  },
+  // Act 3: synapses forming up close. A glowing terminal carrying vesicles and a dendritic spine sprout
+  // toward each other; when they meet there's a burst, and the new junction pulses with the rhythm.
+  drawSynapses(ctx, w, h, dt, pulse, accent) {
+    const [ar, ag, ab] = hexRgb(accent), m = Math.min(w, h);
+    if (this.t > this.nextSyn && this.syn.length < 1) {
+      const r = this.r; this.nextSyn = this.t + 5 + r() * 4;
+      this.syn.push({ x: (0.3 + 0.4 * r()) * w, y: (0.32 + 0.36 * r()) * h, a: r() * Math.PI, size: (0.11 + 0.05 * r()) * m, p: 0, seed: r() * 10 });
+    }
+    ctx.globalCompositeOperation = "lighter";
+    this.syn = this.syn.filter(s => {
+      s.p += dt; if (s.p > 6) return false;
+      const fade = Math.min(1, s.p / 0.8) * Math.min(1, (6 - s.p) / 1.2), approach = smooth(Math.min(1, s.p / 2.6)), met = s.p >= 2.6;
+      const ux = Math.cos(s.a), uy = Math.sin(s.a), gap = s.size * (1.7 * (1 - approach) + 0.1);
+      const pre = [s.x - ux * (gap / 2 + s.size * 0.5), s.y - uy * (gap / 2 + s.size * 0.5)], post = [s.x + ux * (gap / 2 + s.size * 0.4), s.y + uy * (gap / 2 + s.size * 0.4)];
+      // Axon and dendrite trailing away, gently curved.
+      ctx.lineWidth = s.size * 0.12; ctx.lineCap = "round";
+      [[pre, -1, `rgba(${ar},${ag},${ab},${0.35 * fade})`], [post, 1, `rgba(170,150,255,${0.3 * fade})`]].forEach(([c, sgn, col]) => {
+        ctx.strokeStyle = col; ctx.beginPath(); ctx.moveTo(c[0], c[1]);
+        ctx.quadraticCurveTo(c[0] + sgn * ux * s.size * 2 - uy * s.size, c[1] + sgn * uy * s.size * 2 + ux * s.size, c[0] + sgn * ux * s.size * 4, c[1] + sgn * uy * s.size * 4); ctx.stroke();
+      });
+      // Fine filaments reaching across the gap.
+      ctx.lineWidth = Math.max(1, s.size * 0.025);
+      for (let k = 0; k < 4; k++) {
+        const off = (k - 1.5) * s.size * 0.18, reach = approach * gap * 0.6, wob = Math.sin(this.t * 2 + s.seed + k) * s.size * 0.06;
+        ctx.strokeStyle = `rgba(${ar},${ag},${ab},${0.4 * fade})`; ctx.beginPath();
+        ctx.moveTo(pre[0] + ux * s.size * 0.45 - uy * off, pre[1] + uy * s.size * 0.45 + ux * off);
+        ctx.lineTo(pre[0] + ux * (s.size * 0.45 + reach) - uy * (off + wob), pre[1] + uy * (s.size * 0.45 + reach) + ux * (off + wob)); ctx.stroke();
+        ctx.strokeStyle = `rgba(180,160,255,${0.35 * fade})`; ctx.beginPath();
+        ctx.moveTo(post[0] - ux * s.size * 0.35 - uy * off, post[1] - uy * s.size * 0.35 + ux * off);
+        ctx.lineTo(post[0] - ux * (s.size * 0.35 + reach) - uy * (off - wob), post[1] - uy * (s.size * 0.35 + reach) + ux * (off - wob)); ctx.stroke();
+      }
+      // The terminal bulb, its vesicles drifting toward the gap, and the spine head.
+      ctx.globalAlpha = 0.7 * fade; ctx.drawImage(this.halo, pre[0] - s.size, pre[1] - s.size, s.size * 2, s.size * 2);
+      ctx.globalAlpha = 1; ctx.fillStyle = `rgba(${ar},${ag},${ab},${0.35 * fade})`; ctx.beginPath(); ctx.arc(pre[0], pre[1], s.size * 0.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = `rgba(255,255,255,${0.7 * fade})`;
+      for (let v = 0; v < 7; v++) { const a = s.seed + v * 2.4, rr = s.size * (0.12 + 0.25 * ((v * 37 % 10) / 10)), dx = Math.cos(a) * rr + ux * s.size * 0.15 * approach, dy = Math.sin(a) * rr + uy * s.size * 0.15 * approach;
+        ctx.beginPath(); ctx.arc(pre[0] + dx, pre[1] + dy, Math.max(1, s.size * 0.045), 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = `rgba(170,150,255,${0.35 * fade})`; ctx.beginPath(); ctx.ellipse(post[0], post[1], s.size * 0.38, s.size * 0.32, s.a, 0, Math.PI * 2); ctx.fill();
+      if (met) {
+        // The connection: a burst of light, then the junction pulses with the session's rhythm. Kept small
+        // and local so it stays within flash-safety limits at any rate.
+        const since = s.p - 2.6, burst = Math.exp(-since * 2.5);
+        ctx.globalAlpha = Math.min(1, burst * 0.9 * fade); const R = s.size * (0.4 + since * 1.2);
+        ctx.drawImage(this.flash || this.halo, s.x - R, s.y - R, R * 2, R * 2);
+        ctx.globalAlpha = fade * (0.35 + 0.5 * pulse); const J = s.size * 0.45;
+        ctx.drawImage(this.flash || this.halo, s.x - J, s.y - J, J * 2, J * 2); ctx.globalAlpha = 1;
+      }
+      return true;
+    });
+    ctx.globalCompositeOperation = "source-over";
+  },
+  draw(cv, dt, glow, accent, q = 2, pulse = 0.5) {
     if (!this.built) this.build();
+    if (this.t === undefined) this.reset();
+    this.t += dt;
     const dpr = Math.min(window.devicePixelRatio || 1, q > 1 ? 1.5 : 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
     if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
     const ctx = cv.getContext("2d"), cx = w / 2, cy = h / 2, f = Math.min(w, h) * 0.55, D = this.D;
@@ -2059,6 +2134,8 @@ const journey = {
     if (this.haloFor !== accent) {
       const hc = this.halo = document.createElement("canvas"); hc.width = hc.height = 64; const c3 = hc.getContext("2d"), g3 = c3.createRadialGradient(32, 32, 0, 32, 32, 32);
       g3.addColorStop(0, `rgba(${ar},${ag},${ab},0.9)`); g3.addColorStop(1, "rgba(0,0,0,0)"); c3.fillStyle = g3; c3.fillRect(0, 0, 64, 64); this.haloFor = accent;
+      const fc = this.flash = document.createElement("canvas"); fc.width = fc.height = 64; const c4 = fc.getContext("2d"), g4 = c4.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g4.addColorStop(0, "rgba(255,255,250,1)"); g4.addColorStop(0.25, `rgba(${ar},${ag},${ab},0.7)`); g4.addColorStop(1, "rgba(0,0,0,0)"); c4.fillStyle = g4; c4.fillRect(0, 0, 64, 64);
     }
     ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.fillStyle = "#02030a"; ctx.fillRect(0, 0, w, h);
     ctx.globalCompositeOperation = "lighter";
@@ -2095,8 +2172,19 @@ const journey = {
         const hr = rad * 7; ctx.globalAlpha = 0.25 * near * (0.6 + 0.5 * glow); ctx.drawImage(this.halo, px[i] - hr, py[i] - hr, hr * 2, hr * 2); ctx.globalAlpha = 1;
       }
     }
+    this.finish = () => {
+      // Act 1 over Act 2: the neural space fades in as the camera passes into the brain.
+      const space = smooth((this.t - 10.5) / 4.5), brain = 1 - smooth((this.t - 12.5) / 2.5);
+      ctx.globalCompositeOperation = "source-over";
+      if (space < 1) { ctx.globalAlpha = 1 - space; ctx.fillStyle = "#02030a"; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
+      if (brain > 0) this.drawBrain(ctx, w, h, dpr, brain * Math.min(1, this.t / 1.5));
+      if (this.t > 14) {
+        if (this.syn.length) { ctx.globalAlpha = 0.25; ctx.fillStyle = "#02030a"; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }   // let the synapse stand out
+        this.drawSynapses(ctx, w, h, dt, pulse, accent);
+      }
+    };
     // Signals travelling along the filaments.
-    if (q < 2) { ctx.globalCompositeOperation = "source-over"; return; }
+    if (q < 2) { this.finish(); return; }
     if (this.pulses.length < 60 && this.r() < dt * 30) this.pulses.push({ e: edges[Math.floor(this.r() * edges.length)], p: 0 });
     ctx.fillStyle = `rgba(255,255,255,${0.5 + 0.4 * glow})`;
     this.pulses = this.pulses.filter(q => {
@@ -2105,6 +2193,7 @@ const journey = {
       const x = lerp(px[a], px[b], q.p), y = lerp(py[a], py[b], q.p), rr = (1 + 3 / ((pd[a] + pd[b]) / 2)) * dpr;
       ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); return true;
     });
+    this.finish();
     ctx.globalCompositeOperation = "source-over";
   },
 };
@@ -2119,7 +2208,7 @@ const light = {
   async start(style = "light") {
     this.style = style;
     if (style === "journey") {
-      $("journey").hidden = false; this.last = 0;
+      $("journey").hidden = false; this.last = 0; journey.reset();
       // Full screen (allowed here: this runs from the tap on the consent button).
       const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
       if (req && !(document.fullscreenElement || document.webkitFullscreenElement)) { try { const pr = req.call(el); this.ownFs = true; if (pr && pr.catch) pr.catch(() => {}); } catch {} }
@@ -2154,9 +2243,9 @@ const light = {
     // The journey always flies; its glow follows the same pulse as the light.
     const dt = this.last ? Math.min(0.1, (now - this.last) / 1000) : 1 / 60; this.last = now;
     // The journey adapts its detail so drawing never eats into the frame budget the flicker relies on.
-    const glowAt = g => {
+    const glowAt = (g, pulse = 0.3) => {
       if (!jr || (this.q === 0 && this.frame % 6)) return;
-      const t0 = performance.now(); journey.draw($("journey"), this.q === 0 ? dt * 6 : dt, g, CLOUD_ACCENT, this.q);
+      const t0 = performance.now(); journey.draw($("journey"), this.q === 0 ? dt * 6 : dt, g, CLOUD_ACCENT, this.q, pulse);
       const ms = performance.now() - t0, budget = 450 / this.hz; this.ema = 0.9 * (this.ema ?? ms) + 0.1 * ms;
       if (this.ema > budget && this.q > 0) { this.q--; this.ema = budget * 0.7; }
       else if (this.ema < budget * 0.3 && this.q < 2 && this.frame % 240 === 0) this.q++;
@@ -2173,12 +2262,12 @@ const light = {
       }
       const lit = ((this.frame + this.k) % N) < on;
       // In the journey the veil is lighter so the scene stays visible; the scene itself also steps bright/dim with it.
-      el.className = "square"; el.style.opacity = lit ? (this.level * Math.min(1, gate) * (jr ? 0.6 : 1)).toFixed(3) : 0; glowAt(lit ? 1 : 0.15);
+      el.className = "square"; el.style.opacity = lit ? (this.level * Math.min(1, gate) * (jr ? 0.6 : 1)).toFixed(3) : 0; glowAt(lit ? 1 : 0.15, lit ? 1 : 0);
       this.say(`${f} Hz square wave · ${Math.round(100 * on / N)}% duty · ${Math.round(this.hz)} Hz display`);
     } else {
       const ph = this.audioTime(now) * f;
       const breathe = 0.022 * Math.sin(2 * Math.PI * ph);  // ±4% peak to trough: under the 10% flash limit
-      el.className = "soft"; el.style.opacity = (this.level * Math.min(1, gate) * (jr ? 0.5 : 1) * (0.55 + breathe)).toFixed(3); glowAt(0.5 + breathe);
+      el.className = "soft"; el.style.opacity = (this.level * Math.min(1, gate) * (jr ? 0.5 : 1) * (0.55 + breathe)).toFixed(3); glowAt(0.5 + breathe, 0.5 + 0.5 * Math.sin(2 * Math.PI * ph));
       this.say(`Soft glow at ${f.toFixed(1)} Hz (below flash-safety limits)`);
     }
   },
