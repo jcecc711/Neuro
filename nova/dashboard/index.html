@@ -2185,10 +2185,10 @@ const audio = {
 //     toward the orange area.
 //  2. Through the orange light into a wormhole that never ends: its walls are a fine web of fibres and
 //     glowing points, folded like cortex, turning slowly like a galaxy around a warm spiral at the far
-//     end. New pathways keep connecting across it, orange arcs that flash as they form, then cool to blue.
+//     end, with small orange flashes sparkling all over its outer walls.
 // The orange flashpoints all blink with the session rhythm (on 40 Hz programs, locked to the 40 Hz
 // click train), so they strobe at 40 Hz. Following the music: each new chord swells a soft light and
-// bends the tunnel; notes, chimes and rewards set off bursts of new connections; the voices bring a
+// bends the tunnel; notes, chimes and rewards set off bursts of flashes; the voices bring a
 // wide aurora; the flight speeds up and brightens as the music swells; and with the brain massage a soft
 // white light travels across the screen with the pops (left ear on the left).
 // The light engine sets the overall glow on each frame (the 40 Hz square wave, or a soft breath).
@@ -2352,8 +2352,8 @@ const journey = {
 
   /* ---------- act 2: the endless flight through a tunnel of pathways ---------- */
   // A wormhole whose walls are a fine web of fibres and glowing points, gently folded like cortex
-  // (the same texture as the brain at the moment of the dive), turning slowly like a galaxy. New
-  // pathways keep connecting across it: bright orange arcs that flash as they form, then cool to blue.
+  // (the same texture as the brain at the moment of the dive), turning slowly like a galaxy, with
+  // small orange flashpoints sparkling across its outer walls.
   ZMAX: 7,
   buildTunnel() {
     const r = this.r, Z = this.ZMAX, n = 7000, T = this.tun = { n, x: new Float32Array(n), y: new Float32Array(n), z: new Float32Array(n), th: new Float32Array(n) };
@@ -2374,7 +2374,6 @@ const journey = {
       if (b1 >= 0) seg.push(i, b1); if (b2 >= 0) seg.push(i, b2);
     }
     T.seg = Int32Array.from(seg); T.px = new Float32Array(n); T.py = new Float32Array(n); T.zr = new Float32Array(n);
-    T.arcs = [];
   },
   drawTunnel(ctx, w, h, dt, dpr, alpha, glow, pulse, q) {
     if (!this.tun) this.buildTunnel();
@@ -2411,28 +2410,17 @@ const journey = {
     // Glowing points on the web.
     for (let i = 0; i < T.n; i += 6) { const x = T.px[i]; if (x !== x) continue; const zr = T.zr[i], s = Math.min(12, 2.6 / zr + 0.6) * dpr;
       ctx.globalAlpha = Math.min(1, (Z - zr) / 2) * 0.6 * alpha; ctx.drawImage(dot, x - s, T.py[i] - s, s * 2, s * 2); }
-    // New pathways connecting across the tunnel: a steady stream, and bursts with the music.
-    const spawn = (10 + 14 * E) * dt + Math.min(this.burst, 30 * dt); this.burst = Math.max(0, this.burst - 30 * dt);
-    for (let n = Math.floor(spawn + r()); n > 0; n--) {
-      const i = Math.floor(r() * T.n), z = T.z[i];
-      let best = -1; for (let t = 0; t < 40; t++) { const j = Math.floor(r() * T.n); let dz = Math.abs(T.z[j] - z); dz = Math.min(dz, Z - dz);
-        const da = Math.abs(((T.th[j] - T.th[i]) % 6.283 + 9.425) % 6.283 - 3.142); if (dz < 0.6 && da > 0.8) { best = j; break; } }
-      if (best >= 0 && ((z - this.tz) % Z + Z) % Z > 2.5) T.arcs.push({ i, j: best, age: 0 });
+    // Small orange flashpoints on the outer walls of the wormhole, blinking with the rhythm: a steady
+    // sparkle, with bursts when the music moves (notes, chords, chimes, rewards).
+    const wall = Math.floor(T.n * 0.93), want = (150 + 110 * E) * dt + Math.min(this.burst * 6, 240 * dt); this.burst = Math.max(0, this.burst - 40 * dt);
+    for (let n = Math.floor(want + r()); n > 0; n--) {
+      for (let t = 0; t < 12; t++) {       // a point on the walls, on screen and toward the edges of the view
+        const i = Math.floor(r() * wall), zr = T.zr[i], x = T.px[i], y = T.py[i];
+        if (zr > 0.9 && zr < 4 && x > 0 && x < w && y > 0 && y < h) { this.tflash.push({ i, age: 0, life: 0.2 + 0.4 * r() }); break; }
+      }
     }
-    const warm = [], cool = [];
-    T.arcs = T.arcs.filter(A => { A.age += dt; const xa = T.px[A.i], xb = T.px[A.j]; if (xa !== xa || xb !== xb || Math.abs(T.zr[A.i] - T.zr[A.j]) > 2) return false;
-      const zr = (T.zr[A.i] + T.zr[A.j]) / 2, ox = cx + offX(zr) * F / zr, oy = cy + offY(zr) * F / zr, mx = (xa + xb) / 2, my = (ya => ya)((T.py[A.i] + T.py[A.j]) / 2);
-      (A.age < 0.5 ? warm : cool).push(xa, T.py[A.i], mx + (ox - mx) * 0.45, my + (oy - my) * 0.45, xb, T.py[A.j]); return true; });
-    const curves = (list, style, lw) => { if (!list.length) return; ctx.strokeStyle = style; ctx.lineWidth = lw; ctx.beginPath();
-      for (let i = 0; i < list.length; i += 6) { ctx.moveTo(list[i], list[i + 1]); ctx.quadraticCurveTo(list[i + 2], list[i + 3], list[i + 4], list[i + 5]); } ctx.stroke(); };
-    ctx.globalAlpha = 1;
-    curves(cool, `rgba(120,200,255,${0.3 * alpha})`, 1.2 * dpr);
-    curves(warm, `rgba(255,165,75,${(0.55 + 0.45 * pulse) * alpha})`, 2 * dpr);
-    for (let i = 0; i < warm.length; i += 6) { const s = 5 * dpr; ctx.globalAlpha = (0.3 + 0.7 * pulse) * alpha; ctx.drawImage(ember, warm[i] - s, warm[i + 1] - s, s * 2, s * 2); ctx.drawImage(ember, warm[i + 4] - s, warm[i + 5] - s, s * 2, s * 2); }
-    // Tiny orange flashpoints all over the walls, blinking with the rhythm.
-    for (let n = Math.floor((40 + 40 * E) * dt + r()); n > 0; n--) this.tflash.push({ i: Math.floor(r() * T.n), age: 0, life: 0.2 + 0.4 * r() });
     this.tflash = this.tflash.filter(f => { f.age += dt; const x = T.px[f.i]; if (f.age > f.life || x !== x) return false;
-      const s = Math.min(9, 1.3 + 3 / T.zr[f.i]) * dpr; ctx.globalAlpha = Math.sin(Math.PI * f.age / f.life) * (0.15 + 0.85 * pulse) * alpha; ctx.drawImage(ember, x - s, T.py[f.i] - s, s * 2, s * 2); return true; });
+      const s = Math.min(7, 1.6 + 2.5 / T.zr[f.i]) * dpr; ctx.globalAlpha = Math.sin(Math.PI * f.age / f.life) * (0.3 + 0.7 * pulse) * alpha; ctx.drawImage(ember, x - s, T.py[f.i] - s, s * 2, s * 2); return true; });
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   },
 
