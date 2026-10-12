@@ -137,39 +137,40 @@ Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
 
 ## Soundscapes
 
-Every session plays like a gentle, uplifting pop song, synthesized live in the browser and built
-from the traits that recur across popular songs: a major key, a classic four-chord loop, a steady
-4/4 pulse at 66-84 BPM, and a short vocal hook that repeats. It's arranged as a **3D sound bath**:
-each instrument sits at its own place around your head (HRTF panning), and the backing vocals drift
-in slow orbits.
+Every session plays layered, flowing chamber music, composed live so it never repeats, in a
+**3D sound bath** where each instrument sits at its own place around your head (HRTF panning).
 
-- **Ensemble:** flowing harp arpeggios (front left), a lush string section spread wide on both
-  sides, warm synth pads and a high shimmer above, a round bass, and only a soft heartbeat kick
-  and brushes for rhythm. Every note is humanized in timing and touch, so it never sounds
-  mechanical.
-- **Voices:** wordless female vocals ("ooh", "oh", "ah") sing a four-bar hook that repeats, with a
-  harmony a third below and stacked "ooh" chords in the chorus. Switch them off with **Voices**.
-- **Song form follows the session:** verse while NOVA calibrates (harp, strings, bass), a harp
-  glissando into the chorus as training starts, a stripped-back bridge for breathing breaks,
-  and an outro through the cooldown.
-- **Feedback:** being on target opens up the chorus (upper strings, heartbeat and brushes, harmonies, shimmer); drifting off
-  settles it back to the verse. A reward after a quiet stretch plays a rising harp glissando.
-- **Targeting:** during training the lead vocal and the rhythm cue move to the brain region being
-  trained: right of the crown for SMR at C4, the crown for theta/beta at Cz, behind for alpha at
-  Pz, front-left for asymmetry at F3, and front-centre for frontal theta at Fz.
+- **Harmony:** each soundscape has its own mode (Lydian, Dorian, Mixolydian, Aeolian or major) and
+  a chord walk that never loops: chords last one to three bars and move mostly by fourths, fifths
+  and steps, with added sevenths and ninths for colour.
+- **String quartet:** legato inner voices that voice-lead (shared notes hold through chord changes,
+  the rest move by step), a bowed cello line with passing notes, and upper strings that open up when
+  you're on target.
+- **Winds and solo violin:** melodies pass between flute, clarinet, oboe and solo violin, a fresh
+  arching phrase every time with breathing space between. On target, a slower counter-melody from
+  horn or clarinet joins underneath.
+- **Voices, sparingly:** about once a minute a few long, wordless "ooh" notes swell in from above and
+  drift away. Switch them off with **Voices**.
+- **Harp:** only an occasional rolled chord, and a rising glissando when a reward arrives after a
+  quiet stretch. No drums.
+- **Feedback:** being on target opens the music (upper strings, counter-melody, shimmer, a fuller
+  melody); drifting off thins it back.
+- **Targeting:** during training the melody and the rhythm cue move to the brain region being
+  trained.
 
 | Soundscape | Character |
 |---|---|
-| Aurora | 76 BPM, I-V-vi-IV in D, harp, strings and an "ooh" vocal hook |
-| Deep Ocean | 68 BPM, vi-IV-I-V in C, gentle waves under harp and warm pads |
-| Celestial | 82 BPM, I-vi-IV-V in E, soaring strings and stacked harmonies |
-| Forest Rain | 78 BPM, IV-I-V-vi in G, soft rain, harp and brushes |
-| Nebula | 66 BPM, I-iii-vi-IV in F, slow, dreamy synth pads |
-| Dawn | 84 BPM, the Canon progression in A, uplifting strings and harp |
+| Aurora | Lydian, flute and solo violin over a string quartet, 66 BPM |
+| Deep Ocean | Dorian, clarinet and flute over quartet and slow waves, 60 BPM |
+| Celestial | bright, solo violin and oboe over a string quartet, 70 BPM |
+| Forest Rain | Mixolydian, oboe and flute over quartet and soft rain, 64 BPM |
+| Nebula | Aeolian, clarinet and violin, dark and floating, 56 BPM |
+| Dawn | warm and rising, flute and oboe over a string quartet, 72 BPM |
 
-**Recorded instruments (Surge XT).** The harp, strings, warm pad and voices are real
+**Recorded instruments (Surge XT).** The strings, winds, harp, warm pad and voices are real
 renders from [Surge XT](https://surge-synthesizer.github.io/), the free, open-source synthesizer
-(GPL-3.0): "Orchestral Harp For Runs" and "Violin Section" by John Valentine, and the factory "MKS-70 Warm Pad", "Synth Choir MW O-Ah" and "Ooh". One note every
+(GPL-3.0): "Orchestral Harp For Runs", "Violin Section", "Solo Violin", "String Cello", "Oboe", "French Horn"
+and "Breathy Ooh" by John Valentine, and the factory "Flute 1", "Clarinet", "MKS-70 Warm Pad", "Synth Choir MW O-Ah" and "Ooh". One note every
 three semitones is stored in `nova/dashboard/samples/` (about 3.5 MB of MP3); NOVA pitches each to
 the exact frequency it needs, loads notes the first time they're used, and plays its built-in
 synthesis until they arrive (or when offline before they've been cached). Strings and pads play legato:
@@ -192,16 +193,16 @@ in time with the entrainment rhythm, during training only:
   photosensitive seizures, so these get a soft warm glow that pulses at the rhythm by under 4%,
   below the standard 10% flash threshold. It's gentle company for the sound, not strong entrainment.
 - **Full-screen journey:** choose "full-screen journey" when turning it on and NOVA goes full screen
-  and tells a short story. It opens on the brain turning slowly, the camera dives in until the
-  cortex streams past, and it crosses into a neural universe: neurons drifting past like stars,
-  filaments carrying travelling signals, violet-blue nebulae. Every few seconds a synapse forms up
-  close: a glowing terminal carrying vesicles and a dendritic spine sprout filaments and drift
-  together, a burst of light marks the connection, and the new junction pulses at exactly the
-  session's rhythm (40 Hz in Gamma 40, in step with the clicks). It's an artistic visualization,
-  not a picture of your own brain. The whole scene steps bright/dim with the 40 Hz square wave, or
-  breathes softly for slower targets; connection flashes stay small and local to keep within
-  flash-safety limits. It lowers its own detail whenever drawing would eat into the frame budget,
-  so the flicker timing stays exact.
+  with a short film drawn live. It opens on the brain side-on, made of flowing blue-cyan fibre
+  strands with an orange network glowing inside and blue and orange bokeh behind; the camera dives
+  in until the fibres stream past, into a field of blue neurons at several depths. Inspired by
+  growth-cone research (Christine Holt and colleagues), axons grow across the scene, each led by a
+  growth cone whose filopodia feel the way, and settle onto real dendrites in small orange terminals
+  whose bright cleft glows with the rhythm; tiny orange points across the field pulse at the session
+  frequency, barely visible. It's an artistic visualization, not a picture of your own brain. The
+  whole scene steps bright/dim with the 40 Hz square wave, or breathes softly for slower targets,
+  and lowers its own detail whenever drawing would eat into the frame budget, so the flicker
+  timing stays exact.
 - **Safety:** turning it on shows a seizure and migraine warning that must be accepted; a **Stop
   light** button stays on screen, and Esc, leaving the app or ending the session stops it at once.
   It's disabled when the device asks for reduced motion.

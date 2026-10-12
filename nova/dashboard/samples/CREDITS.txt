@@ -10,6 +10,13 @@ contributed libraries:
   pad      "MKS-70 Warm Pad" (Surge XT factory)
   choir    "Synth Choir MW O-Ah" (Surge XT factory)
   ooh      "Ooh" (Surge XT factory)
+  flute    "Flute 1" (Surge XT factory)
+  clarinet "Clarinet" (Surge XT factory)
+  oboe     "Oboe" by John Valentine
+  horn     "French Horn" by John Valentine
+  violin   "Solo Violin" by John Valentine
+  cello    "String Cello" by John Valentine
+  angel    "Breathy Ooh" by John Valentine
 
 One note every three semitones, mono, 24 kHz MP3. NOVA pitches each sample to
 the nearest note it needs.
