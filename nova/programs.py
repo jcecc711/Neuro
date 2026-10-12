@@ -24,12 +24,12 @@ from .protocols import PROTOCOLS, Protocol, resolve_protocol
 # Phase kinds. "baseline" calibrates; only "training" gives rewards.
 KINDS = ("baseline", "training", "rest", "cooldown")
 SOUNDSCAPES = {
-    "aurora": "Aurora: 84 BPM, I-V-vi-IV in D, fingerpicked guitar and an \"ooh\" vocal hook",
-    "ocean": "Deep Ocean: 76 BPM, vi-IV-I-V in C, gentle waves under guitar and piano",
-    "celestial": "Celestial: 92 BPM, I-vi-IV-V in E, bright piano and stacked harmonies",
-    "rain": "Forest Rain: 88 BPM, IV-I-V-vi in G, soft rain and a warm groove",
-    "nebula": "Nebula: 72 BPM, I-iii-vi-IV in F, slow and dreamy",
-    "dawn": "Dawn: 96 BPM, the Canon progression in A, uplifting and bright",
+    "aurora": "Aurora: 76 BPM, I-V-vi-IV in D, harp, strings and an \"ooh\" vocal hook",
+    "ocean": "Deep Ocean: 68 BPM, vi-IV-I-V in C, gentle waves under harp and warm pads",
+    "celestial": "Celestial: 82 BPM, I-vi-IV-V in E, soaring strings and stacked harmonies",
+    "rain": "Forest Rain: 78 BPM, IV-I-V-vi in G, soft rain, harp and brushes",
+    "nebula": "Nebula: 66 BPM, I-iii-vi-IV in F, slow, dreamy synth pads",
+    "dawn": "Dawn: 84 BPM, the Canon progression in A, uplifting strings and harp",
 }
 CUSTOM_DIR = Path.home() / ".nova" / "programs"
 
@@ -338,6 +338,34 @@ BUILTIN: tuple[Program, ...] = (
             ],
             warmup=("beta", 2, "Take three energizing breaths, then watch the sound come alive."),
             integrate=2.0,
+        ),
+    ),
+    Program(
+        id="clear-mind",
+        name="Clear Mind",
+        category="state",
+        target="Brain fog and mental clarity",
+        summary="Alertness training (more beta, less slow theta) while the soundtrack and rhythm cue pulse "
+        "at 40 Hz, the gamma rhythm used in sensory-stimulation research.",
+        soundscape="celestial",
+        eyes="open",
+        evidence="Emerging",
+        evidence_note="40 Hz light and sound stimulation (GENUS) comes from MIT research, mostly in mouse "
+        "models of Alzheimer's with small early human trials. Its effect on everyday brain fog is not yet "
+        "studied; reports are anecdotal. Beta training for alertness has limited evidence. The 40 Hz "
+        "pulse plays only during training, so calibration measures your unstimulated brain.",
+        sites=("Cz", "Fz"),
+        phases=tuple(
+            replace(ph, binaural=None) if ph.kind == "baseline" else ph
+            for ph in _arc(
+                [
+                    ("Lift the fog", "beta", 5, 0.6, "Eyes open, posture tall. Let the quick shimmer in the sound sharpen your attention."),
+                    ("Clear and steady", "theta-beta", 5, 0.6, "Keep your mind lightly busy: follow each new phrase of the melody."),
+                    ("Bright and clear", "beta", 5, 0.55, "Hold that crisp, easy clarity. Nothing to force."),
+                ],
+                warmup=("beta", 2, "Take three full breaths, then rest your attention on the sound."),
+                binaural=40.0,
+            )
         ),
     ),
     Program(

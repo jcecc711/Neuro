@@ -139,31 +139,33 @@ Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
 
 Every session plays like a gentle, uplifting pop song, synthesized live in the browser and built
 from the traits that recur across popular songs: a major key, a classic four-chord loop, a steady
-4/4 backbeat at 72-96 BPM, and a short vocal hook that repeats. It's arranged as a **3D sound bath**:
+4/4 pulse at 66-84 BPM, and a short vocal hook that repeats. It's arranged as a **3D sound bath**:
 each instrument sits at its own place around your head (HRTF panning), and the backing vocals drift
 in slow orbits.
 
-- **Band:** fingerpicked acoustic guitar (front left), felt piano (front right), round bass, soft
-  kick, a backbeat snap on 2 and 4, light hi-hats, warm pads and a high shimmer.
+- **Ensemble:** flowing harp arpeggios (front left), a lush string section spread wide on both
+  sides, warm synth pads and a high shimmer above, a round bass, and only a soft heartbeat kick
+  and brushes for rhythm. Every note is humanized in timing and touch, so it never sounds
+  mechanical.
 - **Voices:** wordless female vocals ("ooh", "oh", "ah") sing a four-bar hook that repeats, with a
   harmony a third below and stacked "ooh" chords in the chorus. Switch them off with **Voices**.
-- **Song form follows the session:** verse while NOVA calibrates (guitar, bass, kick on one), a
-  snare pickup into the chorus as training starts, a stripped-back bridge for breathing breaks,
+- **Song form follows the session:** verse while NOVA calibrates (harp, strings, bass), a harp
+  glissando into the chorus as training starts, a stripped-back bridge for breathing breaks,
   and an outro through the cooldown.
-- **Feedback:** being on target opens up the chorus (drums, piano, harmonies, shimmer); drifting off
-  settles it back to the verse. A reward after a quiet stretch plays a short piano run.
+- **Feedback:** being on target opens up the chorus (upper strings, heartbeat and brushes, harmonies, shimmer); drifting off
+  settles it back to the verse. A reward after a quiet stretch plays a rising harp glissando.
 - **Targeting:** during training the lead vocal and the rhythm cue move to the brain region being
   trained: right of the crown for SMR at C4, the crown for theta/beta at Cz, behind for alpha at
   Pz, front-left for asymmetry at F3, and front-centre for frontal theta at Fz.
 
 | Soundscape | Character |
 |---|---|
-| Aurora | 84 BPM, I-V-vi-IV in D, fingerpicked guitar and an "ooh" vocal hook |
-| Deep Ocean | 76 BPM, vi-IV-I-V in C, gentle waves under guitar and piano |
-| Celestial | 92 BPM, I-vi-IV-V in E, bright piano and stacked harmonies |
-| Forest Rain | 88 BPM, IV-I-V-vi in G, soft rain and a warm groove |
-| Nebula | 72 BPM, I-iii-vi-IV in F, slow and dreamy |
-| Dawn | 96 BPM, the Canon progression in A, uplifting and bright |
+| Aurora | 76 BPM, I-V-vi-IV in D, harp, strings and an "ooh" vocal hook |
+| Deep Ocean | 68 BPM, vi-IV-I-V in C, gentle waves under harp and warm pads |
+| Celestial | 82 BPM, I-vi-IV-V in E, soaring strings and stacked harmonies |
+| Forest Rain | 78 BPM, IV-I-V-vi in G, soft rain, harp and brushes |
+| Nebula | 66 BPM, I-iii-vi-IV in F, slow, dreamy synth pads |
+| Dawn | 84 BPM, the Canon progression in A, uplifting strings and harp |
 
 Use stereo headphones for the 3D effect. With AirPods, turn **Spatial Audio off** (Control Centre,
 press and hold the volume slider): NOVA does its own 3D placement, and Apple's would remix it.
@@ -181,6 +183,11 @@ NOVA steers the music toward the state being trained, closed-loop, from the live
   relaxes once it's there, capped at 30% for comfort.
 - **Tempo and energy suit the goal.** Calming targets (alpha, theta) slow the song by up to 6% and
   keep the drums light; focus targets (SMR, beta) lift it slightly with the full groove.
+
+**40 Hz (Clear Mind).** The Clear Mind program pairs alertness training with the soundtrack and
+rhythm cue pulsing at exactly 40 Hz during training, the gamma rhythm used in MIT's GENUS sensory
+stimulation research. That work is mostly in mouse models of Alzheimer's with small early human
+trials; effects on everyday brain fog are anecdotal so far. Calibration is left unstimulated.
 
 The readout shows the current rhythm and the target, e.g. "12.4 → 13.5 Hz". Switch all of it off
 with **Entrainment**. Honest limits: auditory entrainment and modulated music have some supportive
