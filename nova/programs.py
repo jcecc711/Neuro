@@ -24,14 +24,13 @@ from .protocols import PROTOCOLS, Protocol, resolve_protocol
 # Phase kinds. "baseline" calibrates; only "training" gives rewards.
 KINDS = ("baseline", "training", "rest", "cooldown")
 SOUNDSCAPES = {
-    "aurora": "Aurora: Lydian, flute and solo violin over a string quartet, 66 BPM",
-    "ocean": "Deep Ocean: Dorian, clarinet and flute over quartet and slow waves, 60 BPM",
-    "celestial": "Celestial: bright, solo violin and oboe over a string quartet, 70 BPM",
-    "rain": "Forest Rain: Mixolydian, oboe and flute over quartet and soft rain, 64 BPM",
-    "nebula": "Nebula: Aeolian, clarinet and violin, dark and floating, 56 BPM",
-    "dawn": "Dawn: warm and rising, flute and oboe over a string quartet, 72 BPM",
-    "crystal": "Crystal Bath: crystal singing bowls and handpan over a phasing binaural pad, "
-    "with soft pops massaging around the head, 92 BPM",
+    "aurora": "Aurora: Lydian sound bath, bowls, handpan, chimes and chant, 80 BPM",
+    "ocean": "Deep Ocean: Mixolydian sound bath over slow waves, 72 BPM",
+    "celestial": "Celestial: bright major sound bath, 84 BPM",
+    "rain": "Forest Rain: Mixolydian sound bath over soft rain, 78 BPM",
+    "nebula": "Nebula: Dorian, slow and floating, 70 BPM",
+    "dawn": "Dawn: warm and rising, 88 BPM",
+    "crystal": "Crystal Bath: crystal singing bowls and handpan, upbeat, 92 BPM",
 }
 CUSTOM_DIR = Path.home() / ".nova" / "programs"
 

@@ -137,65 +137,44 @@ Programs are saved to `~/.nova/programs/` as JSON, which you can edit or share.
 
 ## Soundscapes
 
-Every session plays layered, flowing chamber music, composed live so it never repeats, in a
-**3D sound bath** where each instrument sits at its own place around your head (HRTF panning).
-
-- **Harmony:** each soundscape has its own mode (Lydian, Dorian, Mixolydian, Aeolian or major) and
-  a chord walk that never loops: chords last one to three bars and move mostly by fourths, fifths
-  and steps, with added sevenths and ninths for colour.
-- **String quartet:** legato inner voices that voice-lead (shared notes hold through chord changes,
-  the rest move by step), a bowed cello line with passing notes, and upper strings that open up when
-  you're on target.
-- **Winds and solo violin:** melodies pass between flute, clarinet, oboe and solo violin, a fresh
-  arching phrase every time with breathing space between. On target, a slower counter-melody from
-  horn or clarinet joins underneath.
-- **Voices, sparingly:** about once a minute a few long, wordless "ooh" notes swell in from above and
-  drift away. Switch them off with **Voices**.
-- **Harp:** only an occasional rolled chord, and a rising glissando when a reward arrives after a
-  quiet stretch. No drums.
-- **Feedback:** being on target opens the music (upper strings, counter-melody, shimmer, a fuller
-  melody); drifting off thins it back.
-- **Targeting:** during training the melody and the rhythm cue move to the brain region being
-  trained.
-
-| Soundscape | Character |
-|---|---|
-| Aurora | Lydian, flute and solo violin over a string quartet, 66 BPM |
-| Deep Ocean | Dorian, clarinet and flute over quartet and slow waves, 60 BPM |
-| Celestial | bright, solo violin and oboe over a string quartet, 70 BPM |
-| Forest Rain | Mixolydian, oboe and flute over quartet and soft rain, 64 BPM |
-| Nebula | Aeolian, clarinet and violin, dark and floating, 56 BPM |
-| Dawn | warm and rising, flute and oboe over a string quartet, 72 BPM |
-| Crystal Bath | crystal singing bowls and handpan over a phasing binaural pad, with the brain massage, 92 BPM (Positive Action's soundscape) |
-
-**Crystal Bath (trial, on Positive Action).** A sound bath with no orchestral instruments, all
-synthesized live:
+Every session plays a live **sound bath**, composed as it plays so it never repeats, in 3D around
+your head (HRTF panning). Everything is synthesized except the voices.
 
 - **Phasing binaural pad:** the harmony is held like a ring of singing bowls. Every note is a pair of
   soft tones in each ear a fraction of a hertz apart (a slow, breathing sweep), and the right ear sits
   exactly the entrainment frequency above the left, so the whole chord carries the binaural beat
   (up to 20 Hz; it's off during calibration). A slow phaser drifts through it, and shared notes hold
-  through chord changes.
+  through chord changes. Chords move by a walk that never loops.
 - **Crystal singing bowls:** struck softly at six points around your head, ringing for twenty seconds
   or more; a large low bowl marks each chord, and more are struck as you find the target.
 - **Handpan:** an upbeat groove just in front of you, chosen fresh each bar: a low "ding" on the
-  downbeats, a wandering melody from the chord, and soft finger taps; it fills in when you're on target.
+  downbeats, deep bass notes, a wandering melody from the chord, and soft finger taps. It fills in
+  when you're on target and turns toward the brain region being trained.
+- **Wind chimes:** little gusts of soft bell tones ring out overhead every so often.
+- **Chanting voices:** short, wordless phrases from female voices every half minute or so, and long
+  held notes from above about once a minute. Switch them off with **Voices**.
 - **Brain massage:** soft crackling pops at exactly the entrainment rate travel around your head
   (ear to ear over the top, front to back, circles and figure-eights), in the style of the moving
   click tracks used with 40 Hz stimulation. At 40 Hz the GENUS click train itself travels. Switch it
   off with **Brain massage** under Details.
-- Shimmer, a deep sub and the occasional ethereal voice, as in the other soundscapes.
+- **Underneath:** a warm bass, shimmer, a distant crackle and, on some soundscapes, ocean or rain.
+- **Feedback:** being on target opens the sound (brighter pad, more bowls, fuller groove, more
+  chimes); drifting off thins it back.
 
-**Recorded instruments (Surge XT).** The strings, winds, harp, warm pad and voices are real
-renders from [Surge XT](https://surge-synthesizer.github.io/), the free, open-source synthesizer
-(GPL-3.0): "Orchestral Harp For Runs", "Violin Section", "Solo Violin", "String Cello", "Oboe", "French Horn"
-and "Breathy Ooh" by John Valentine, and the factory "Flute 1", "Clarinet", "MKS-70 Warm Pad", "Synth Choir MW O-Ah" and "Ooh". One note every
-three semitones is stored in `nova/dashboard/samples/` (about 7.5 MB of MP3); NOVA pitches each to
-the exact frequency it needs, loads notes the first time they're used, and plays its built-in
-synthesis until they arrive (or when offline before they've been cached). Strings and pads play legato:
-a voice keeps bowing through a chord change when its note stays the same, and otherwise the old
-note fades over a few seconds while the new one swells in. The harp's recorded pluck rings into a
-soft, long-sustaining body so its arpeggios flow together.
+| Soundscape | Character |
+|---|---|
+| Aurora | Lydian, 80 BPM |
+| Deep Ocean | Mixolydian over slow waves, 72 BPM |
+| Celestial | bright major, 84 BPM |
+| Forest Rain | Mixolydian over soft rain, 78 BPM |
+| Nebula | Dorian, slow and floating, 70 BPM |
+| Dawn | warm and rising, 88 BPM |
+| Crystal Bath | upbeat, 92 BPM (Positive Action) |
+
+**Recorded voices (Surge XT).** The voices are renders from [Surge XT](https://surge-synthesizer.github.io/),
+the free, open-source synthesizer (GPL-3.0): "Breathy Ooh" by John Valentine and the factory "Ooh".
+One note every three semitones is stored in `nova/dashboard/samples/` (about 1 MB of MP3); NOVA
+pitches each to the exact frequency it needs and sings with built-in synthesis until they load.
 
 **Light sync (optional, off by default).** The **☼ Light sync** button in the session view (also under
 **Details**) adds full-screen light
@@ -212,15 +191,15 @@ in time with the entrainment rhythm, during training only:
   photosensitive seizures, so these get a soft warm glow that pulses at the rhythm by under 4%,
   below the standard 10% flash threshold. It's gentle company for the sound, not strong entrainment.
 - **Full-screen journey:** choose "full-screen journey" when turning it on and NOVA goes full screen
-  with a short film drawn live that follows the music. It opens on the brain side-on, soft blue
-  fibres and glowing points with an orange network inside and blue and orange bokeh behind; the
-  camera dives in, into a field of blue neurons at several depths. Inspired by growth-cone research
-  (Christine Holt and colleagues), axons grow toward real dendrites, each tipped with a soft white
-  glow, and connect on the notes of the music, warming to orange and forming small terminals that
-  glow with the rhythm. Each new chord swells a soft light and turns the camera; melody notes send
-  warm signals down the connections; the voices bring a wide aurora; the scene brightens and drifts
-  faster as the music swells; and with the brain massage a soft white light travels across the
-  screen with the pops (left ear on the left), leaving tiny orange sparks in time with the rhythm. It's an artistic visualization, not a picture of your own brain. The
+  with a film drawn live that follows the music. It opens on the brain side-on, soft blue fibres and
+  glowing points around one bright orange area, with tiny orange flashes sparking all over it, a few
+  at first and then faster and faster as the camera dives into the orange light. From there it flies
+  through a wormhole that never ends: walls made of a fine web of fibres, folded like cortex and
+  turning like a galaxy around a warm spiral at the far end, with new pathways connecting across it
+  as orange arcs. The orange flashpoints blink with the session rhythm (at 40 Hz on 40 Hz programs,
+  locked to the click train). New chords bend the tunnel; notes, chimes and rewards set off bursts of
+  new connections; the flight speeds up as the music swells; and with the brain massage a soft white
+  light travels across the screen with the pops. It's an artistic visualization, not a picture of your own brain. The
   whole scene steps bright/dim with the 40 Hz square wave, or breathes softly for slower targets,
   and lowers its own detail whenever drawing would eat into the frame budget, so the flicker
   timing stays exact.
