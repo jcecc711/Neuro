@@ -286,6 +286,8 @@ details.builder[open] summary { margin-bottom: 12px; }
 .switch-row b { font-weight: 500; color: var(--ink); }
 #lightStatus { font-weight: 400; color: var(--muted); font-size: 12px; display: block; }
 #lightConsent { z-index: 70; }
+#journey { position: fixed; inset: 0; width: 100vw; height: 100vh; height: 100dvh; z-index: 58; background: #02030a; display: block; }
+#journey[hidden] { display: none; }
 .light-btn[aria-pressed="true"] { background: #ffd28a; color: #1d1d1f; }
 #lightField { position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0; will-change: opacity; }
 #lightField.square { background: #fff8ee; }
@@ -989,15 +991,16 @@ details.builder summary::marker { color: var(--link); }
     </section>
   </main>
 
+  <canvas id="journey" hidden aria-hidden="true"></canvas>
   <div id="lightField" hidden></div>
   <button type="button" id="lightStop" hidden>Stop light<small id="lightNote"></small></button>
   <div class="overlay" id="lightConsent" hidden>
     <div class="panel dialog" role="dialog" aria-labelledby="lightTitle">
       <h2 id="lightTitle">Before you turn on light sync</h2>
-      <p class="hint">Light sync flashes the whole screen in time with the rhythm: a sharp 40 Hz flicker for gamma programs, a soft glow for slower ones.</p>
+      <p class="hint">Light sync pulses the whole screen in time with the rhythm: a sharp 40 Hz flicker for gamma programs, a soft glow for slower ones. Choose plain light, or a full-screen journey through a neural universe that pulses the same way.</p>
       <p class="hint"><strong>Don't use it if you or a close relative have epilepsy or have ever had a seizure, or if flashing light gives you migraines.</strong> Stop at once if you feel dizzy, nauseous, get a headache or notice any twitching or odd sensations. Not for children without supervision.</p>
       <p class="hint">Use it in a softly lit room, about 50-70 cm from the screen, eyes open and gaze relaxed. A 40 Hz flicker needs a 120 Hz or 240 Hz display. Tap <strong>Stop light</strong>, press Esc or leave the app to stop at any time. This is a wellness feature, not a medical treatment.</p>
-      <div class="row"><button type="button" id="lightCancel">Cancel</button><button type="button" class="btn-primary" id="lightAgree">I understand, turn it on</button></div>
+      <div class="row"><button type="button" id="lightCancel">Cancel</button><button type="button" id="lightAgree">I understand: light only</button><button type="button" class="btn-primary" id="journeyAgree">I understand: full-screen journey</button></div>
     </div>
   </div>
   <div class="overlay" id="connectOverlay" hidden>
@@ -2010,6 +2013,102 @@ const audio = {
    flash-safety limits (<10% luminance change). Off by default; needs
    consent; tap Stop, press Esc or leave the app to stop at once.
    ===================================================================== */
+// The journey: a slow glide through a neural universe. Neurons drift past like stars, linked by
+// filaments that carry travelling signals, inside slowly moving nebula light. Depth wraps around,
+// so the flight never ends. The light engine sets how brightly it glows on each frame.
+const journey = {
+  D: 14, built: false, z: 0, spin: 0,
+  build() {
+    const r = mulberry32(7), N = 760, nodes = [];
+    for (let i = 0; i < N; i++) {
+      const a = r() * Math.PI * 2, rad = 0.25 + Math.pow(r(), 0.7) * 1.9;              // a wide tunnel, sparse in the middle
+      nodes.push({ x: Math.cos(a) * rad, y: Math.sin(a) * rad * 0.8, z: r() * this.D, s: 0.6 + r() * 1.2, hue: r() });
+    }
+    const edges = [];
+    nodes.forEach((n, i) => {
+      const near = nodes.map((m, j) => [j, (m.x - n.x) ** 2 + (m.y - n.y) ** 2 + ((m.z - n.z) * 0.6) ** 2]).filter(([j, d]) => j > i && d < 0.55).sort((a, b) => a[1] - b[1]).slice(0, 2);
+      near.forEach(([j]) => edges.push([i, j]));
+    });
+    this.stars = Array.from({ length: 420 }, () => [r(), r(), 0.3 + r() * 1.1, r() * 6.28]);   // distant stars
+    this.nodes = nodes; this.edges = edges; this.pulses = []; this.r = r; this.built = true;
+    this.px = new Float32Array(N); this.py = new Float32Array(N); this.pd = new Float32Array(N);
+  },
+  draw(cv, dt, glow, accent, q = 2) {
+    if (!this.built) this.build();
+    const dpr = Math.min(window.devicePixelRatio || 1, q > 1 ? 1.5 : 1), w = Math.round(cv.clientWidth * dpr), h = Math.round(cv.clientHeight * dpr);
+    if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+    const ctx = cv.getContext("2d"), cx = w / 2, cy = h / 2, f = Math.min(w, h) * 0.55, D = this.D;
+    this.z = (this.z + dt * 0.55) % D; this.spin += dt * 0.025;
+    const [ar, ag, ab] = hexRgb(accent), cs = Math.cos(this.spin), sn = Math.sin(this.spin), t = performance.now() / 1000;
+    // Cached layers, rebuilt only when needed: drifting nebulae (quarter resolution, every 12 frames),
+    // the star field (on resize) and a halo sprite (when the activity colour changes).
+    this.tick = (this.tick || 0) + 1;
+    if (!this.neb || this.neb.width !== Math.ceil(w / 4) || this.tick % 12 === 0) {
+      const nb = this.neb || (this.neb = document.createElement("canvas")); nb.width = Math.ceil(w / 4); nb.height = Math.ceil(h / 4); const nc = nb.getContext("2d");
+      nc.globalCompositeOperation = "lighter";
+      [[0.28, 0.32, 0.85, [70, 110, 255], 0.16], [0.74, 0.66, 0.8, [150, 80, 255], 0.14], [0.55, 0.45, 0.5, [ar, ag, ab], 0.08], [0.45, 0.6, 0.35, [255, 170, 120], 0.06]].forEach(([nx, ny, nr, [r, g, b], a], k) => {
+        const x = (nx + 0.06 * Math.sin(t * 0.05 + k * 2)) * nb.width, y = (ny + 0.05 * Math.cos(t * 0.04 + k)) * nb.height, rr = nr * Math.max(nb.width, nb.height);
+        const gr = nc.createRadialGradient(x, y, 0, x, y, rr); gr.addColorStop(0, `rgba(${r},${g},${b},${a})`); gr.addColorStop(1, "rgba(0,0,0,0)");
+        nc.fillStyle = gr; nc.fillRect(0, 0, nb.width, nb.height);
+      });
+    }
+    if (!this.starsCv || this.starsCv.width !== w || this.starsCv.height !== h) {
+      const sc = this.starsCv = document.createElement("canvas"); sc.width = w; sc.height = h; const c2 = sc.getContext("2d");
+      for (const [sx, sy, sr] of this.stars) { c2.fillStyle = `rgba(220,225,255,${0.2 + 0.5 * sr / 1.4})`; c2.fillRect(sx * w, sy * h, sr * dpr, sr * dpr); }
+    }
+    if (this.haloFor !== accent) {
+      const hc = this.halo = document.createElement("canvas"); hc.width = hc.height = 64; const c3 = hc.getContext("2d"), g3 = c3.createRadialGradient(32, 32, 0, 32, 32, 32);
+      g3.addColorStop(0, `rgba(${ar},${ag},${ab},0.9)`); g3.addColorStop(1, "rgba(0,0,0,0)"); c3.fillStyle = g3; c3.fillRect(0, 0, 64, 64); this.haloFor = accent;
+    }
+    ctx.globalCompositeOperation = "source-over"; ctx.globalAlpha = 1; ctx.fillStyle = "#02030a"; ctx.fillRect(0, 0, w, h);
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.7 + 0.3 * glow; ctx.drawImage(this.neb, 0, 0, w, h);
+    ctx.globalAlpha = 0.75 + 0.25 * Math.sin(t * 0.6); ctx.drawImage(this.starsCv, 0, 0); ctx.globalAlpha = 1;
+    // Project the neurons (depth wraps so new ones keep arriving from the distance).
+    const { nodes, edges, px, py, pd } = this, stride = q > 1 ? 1 : 2;
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i]; let d = n.z - this.z; if (d <= 0) d += D;
+      if (i % stride) { pd[i] = 0; continue; }
+      const x = n.x * cs - n.y * sn, y = n.x * sn + n.y * cs;
+      pd[i] = d; px[i] = cx + x / d * f; py[i] = cy + y / d * f;
+    }
+    // Filaments, batched by brightness.
+    const buckets = [[], [], [], []];
+    for (const [a, b] of edges) {
+      const da = pd[a], db = pd[b]; if (da < 0.9 || db < 0.9 || Math.abs(da - db) > D / 2) continue;   // fade out before passing the camera
+      if (Math.hypot(px[a] - px[b], py[a] - py[b]) > 0.28 * Math.min(w, h)) continue;
+      const k = Math.min(3, Math.floor(((da + db) / 2) / D * 4)); buckets[k].push(a, b);
+    }
+    buckets.forEach((list, k) => {
+      if (!list.length) return; const fade = (1 - k / 4) ** 2;
+      ctx.strokeStyle = `rgba(${ar},${ag},${ab},${(0.05 + 0.3 * fade) * (0.6 + 0.5 * glow)})`; ctx.lineWidth = (0.6 + 1.4 * fade) * dpr;
+      ctx.beginPath(); for (let i = 0; i < list.length; i += 2) { ctx.moveTo(px[list[i]], py[list[i]]); ctx.lineTo(px[list[i + 1]], py[list[i + 1]]); } ctx.stroke();
+    });
+    // Neurons: tan-white stars, the nearest tinted with the activity colour.
+    for (let i = 0; i < nodes.length; i++) {
+      const d = pd[i]; if (d < 0.12) continue; const near = 1 - d / D, rad = (0.5 + nodes[i].s * 2.6 / d) * dpr;
+      if (px[i] < -20 || px[i] > w + 20 || py[i] < -20 || py[i] > h + 20) continue;
+      const mix = nodes[i].hue * near;
+      ctx.fillStyle = `rgba(${Math.round(lerp(230, ar, mix))},${Math.round(lerp(220, ag, mix))},${Math.round(lerp(200, ab, mix))},${(0.15 + 0.85 * near * near) * (0.65 + 0.45 * glow)})`;
+      ctx.beginPath(); ctx.arc(px[i], py[i], rad, 0, Math.PI * 2); ctx.fill();
+      if (q > 1 && d < 3.2) {                                                         // a soft halo on the nearest neurons
+        const hr = rad * 7; ctx.globalAlpha = 0.25 * near * (0.6 + 0.5 * glow); ctx.drawImage(this.halo, px[i] - hr, py[i] - hr, hr * 2, hr * 2); ctx.globalAlpha = 1;
+      }
+    }
+    // Signals travelling along the filaments.
+    if (q < 2) { ctx.globalCompositeOperation = "source-over"; return; }
+    if (this.pulses.length < 60 && this.r() < dt * 30) this.pulses.push({ e: edges[Math.floor(this.r() * edges.length)], p: 0 });
+    ctx.fillStyle = `rgba(255,255,255,${0.5 + 0.4 * glow})`;
+    this.pulses = this.pulses.filter(q => {
+      q.p += dt * 0.9; if (q.p >= 1) return false;
+      const [a, b] = q.e; if (pd[a] < 0.9 || pd[b] < 0.9 || Math.abs(pd[a] - pd[b]) > D / 2) return true;
+      const x = lerp(px[a], px[b], q.p), y = lerp(py[a], py[b], q.p), rr = (1 + 3 / ((pd[a] + pd[b]) / 2)) * dpr;
+      ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill(); return true;
+    });
+    ctx.globalCompositeOperation = "source-over";
+  },
+};
+
 const light = {
   on: false, hz: 0, frame: 0, k: 0, raf: 0, level: 0.8, status: "",
   // The display's refresh rate, from the median interval of 90 animation frames.
@@ -2017,14 +2116,23 @@ const light = {
     return new Promise(res => { const ts = []; const step = t => { ts.push(t); if (ts.length < 90) requestAnimationFrame(step);
       else { const d = ts.slice(11).map((v, i) => v - ts[i + 10]).sort((a, b) => a - b); res(1000 / d[Math.floor(d.length / 2)]); } }; requestAnimationFrame(step); });
   },
-  async start() {
-    this.hz = await this.measure(); this.on = true; this.frame = 0;
+  async start(style = "light") {
+    this.style = style;
+    if (style === "journey") {
+      $("journey").hidden = false; this.last = 0;
+      // Full screen (allowed here: this runs from the tap on the consent button).
+      const el = document.documentElement, req = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (req && !(document.fullscreenElement || document.webkitFullscreenElement)) { try { const pr = req.call(el); this.ownFs = true; if (pr && pr.catch) pr.catch(() => {}); } catch {} }
+    }
+    this.hz = await this.measure(); this.on = true; this.frame = 0; this.q = 2; this.ema = undefined;
     $("lightField").hidden = false; $("lightStop").hidden = false; document.body.classList.add("light-on"); $("lightBtn").setAttribute("aria-pressed", "true");
     if (audio.cueHz) audio.setCueFreq(audio.cueHz);
     cancelAnimationFrame(this.raf); this.raf = requestAnimationFrame(t => this.tick(t));
   },
   stop() {
     this.on = false; cancelAnimationFrame(this.raf);
+    $("journey").hidden = true;
+    if (this.ownFs) { this.ownFs = false; try { const ex = document.exitFullscreen || document.webkitExitFullscreen; if (document.fullscreenElement || document.webkitFullscreenElement) ex.call(document); } catch {} }
     $("lightField").hidden = true; $("lightStop").hidden = true; document.body.classList.remove("light-on");
     $("lightField").style.opacity = 0; $("lightToggle").checked = false; $("lightBtn").setAttribute("aria-pressed", "false");
     if (audio.ctx && audio.cueHz) audio.setCueFreq(audio.cueHz);
@@ -2041,23 +2149,36 @@ const light = {
   tick(now) {
     if (!this.on) return;
     this.raf = requestAnimationFrame(t => this.tick(t));
-    const el = $("lightField"), f = audio.lightHz || 0, gate = app.session ? (audio.lightGate || 0) : 0;
+    const el = $("lightField"), f = audio.lightHz || 0, gate = app.session ? (audio.lightGate || 0) : 0, jr = this.style === "journey";
     this.frame++;
-    if (!f || gate < 0.02) { el.style.opacity = 0; el.className = ""; this.say(app.session ? "Waiting for training" : "Starts with a session"); return; }
+    // The journey always flies; its glow follows the same pulse as the light.
+    const dt = this.last ? Math.min(0.1, (now - this.last) / 1000) : 1 / 60; this.last = now;
+    // The journey adapts its detail so drawing never eats into the frame budget the flicker relies on.
+    const glowAt = g => {
+      if (!jr || (this.q === 0 && this.frame % 6)) return;
+      const t0 = performance.now(); journey.draw($("journey"), this.q === 0 ? dt * 6 : dt, g, CLOUD_ACCENT, this.q);
+      const ms = performance.now() - t0, budget = 450 / this.hz; this.ema = 0.9 * (this.ema ?? ms) + 0.1 * ms;
+      if (this.ema > budget && this.q > 0) { this.q--; this.ema = budget * 0.7; }
+      else if (this.ema < budget * 0.3 && this.q < 2 && this.frame % 240 === 0) this.q++;
+    };
+    if (!f || gate < 0.02) { el.style.opacity = 0; el.className = ""; glowAt(0.3); this.say(app.session ? "Waiting for training" : "Starts with a session"); return; }
     if (f >= 30) {
       const n = this.hz / f, N = Math.round(n);
-      if (N < 3 || Math.abs(n - N) > 0.05) { el.style.opacity = 0; this.say(`${f} Hz light needs a 120 Hz or 240 Hz display (this one runs at ${Math.round(this.hz)} Hz)`); return; }
+      if (N < 3 || Math.abs(n - N) > 0.05) { el.style.opacity = 0; glowAt(0.3); this.say(`${f} Hz light needs a 120 Hz or 240 Hz display (this one runs at ${Math.round(this.hz)} Hz)`); return; }
       const on = Math.max(1, Math.floor(N / 2));
       // Re-lock to the click train every half second; between, count frames so the pattern never stutters.
       if (this.frame % Math.round(this.hz / 2) === 1 && audio.clickT0) {
         const ph = (((this.audioTime(now) - audio.clickT0) / audio.clickPeriod) % 1 + 1) % 1, want = ((Math.floor(ph * N) - this.frame) % N + N) % N;
         this.drift = want === this.k ? 0 : (this.drift || 0) + 1; if (this.drift >= 3 || this.frame < this.hz) { this.k = want; this.drift = 0; }  // shift only on steady drift
       }
-      el.className = "square"; el.style.opacity = ((this.frame + this.k) % N) < on ? (this.level * Math.min(1, gate)).toFixed(3) : 0;
+      const lit = ((this.frame + this.k) % N) < on;
+      // In the journey the veil is lighter so the scene stays visible; the scene itself also steps bright/dim with it.
+      el.className = "square"; el.style.opacity = lit ? (this.level * Math.min(1, gate) * (jr ? 0.6 : 1)).toFixed(3) : 0; glowAt(lit ? 1 : 0.15);
       this.say(`${f} Hz square wave · ${Math.round(100 * on / N)}% duty · ${Math.round(this.hz)} Hz display`);
     } else {
       const ph = this.audioTime(now) * f;
-      el.className = "soft"; el.style.opacity = (this.level * Math.min(1, gate) * (0.55 + 0.022 * Math.sin(2 * Math.PI * ph))  /* ±4% peak to trough: under the 10% flash limit */).toFixed(3);
+      const breathe = 0.022 * Math.sin(2 * Math.PI * ph);  // ±4% peak to trough: under the 10% flash limit
+      el.className = "soft"; el.style.opacity = (this.level * Math.min(1, gate) * (jr ? 0.5 : 1) * (0.55 + breathe)).toFixed(3); glowAt(0.5 + breathe);
       this.say(`Soft glow at ${f.toFixed(1)} Hz (below flash-safety limits)`);
     }
   },
@@ -3302,7 +3423,8 @@ function wire() {
   $("lightToggle").addEventListener("change", e => { if (!e.target.checked) { light.stop(); return; } e.target.checked = false; askLight(); });
   $("lightBtn").addEventListener("click", () => { if (light.on) light.stop(); else askLight(); });
   $("lightCancel").addEventListener("click", () => { $("lightConsent").hidden = true; });
-  $("lightAgree").addEventListener("click", () => { $("lightConsent").hidden = true; $("lightToggle").checked = true; light.start(); });
+  $("lightAgree").addEventListener("click", () => { $("lightConsent").hidden = true; $("lightToggle").checked = true; light.start("light"); });
+  $("journeyAgree").addEventListener("click", () => { $("lightConsent").hidden = true; $("lightToggle").checked = true; light.start("journey"); });
   $("voicesToggle").addEventListener("change", e => { audio.setVoices(e.target.checked); savePref("nova.voices", e.target.checked); });
   $("cueToggle").addEventListener("change", e => { audio.setCue(e.target.checked); savePref("nova.cue", e.target.checked); if (app.u) $("cueText").textContent = e.target.checked && cueFor(app.u) ? `· ${cueFor(app.u)} Hz` : ""; });
   $("skipBtn").addEventListener("click", () => { if (app.runner) app.runner.skipFlag = true; else api("/api/session/skip", {}).catch(() => {}); });
