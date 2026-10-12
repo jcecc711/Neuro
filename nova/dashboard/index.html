@@ -1445,6 +1445,35 @@ function tunedKey(key, tuning) {
   return key;
 }
 
+// Recorded instruments: notes rendered from Surge XT patches (harp, strings, violins, pad, choir,
+// "ooh"), one every three semitones (see samples/CREDITS.txt). Each note loads the first time it is
+// needed and is pitched to the exact frequency; until it arrives, the built-in synthesis plays.
+const SAMPLES = {
+  manifest: undefined, buffers: new Map(), pending: new Set(), failed: new Set(), base: "samples/",
+  init() {
+    if (this.manifest !== undefined) return; this.manifest = null;
+    try { fetch(this.base + "manifest.json").then(r => r.ok ? r.json() : null).then(m => { this.manifest = m; }).catch(() => {}); } catch {}
+  },
+  // Decode at 24 kHz: plenty for these soft instruments, and half the memory on iPad.
+  decoder() { if (!this.dec) { const OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext; try { this.dec = OAC ? new OAC(1, 1, 24000) : null; } catch { this.dec = null; } } return this.dec; },
+  load(inst, note) {
+    const key = inst + note; if (this.buffers.has(key) || this.pending.has(key) || this.failed.has(key)) return; this.pending.add(key);
+    fetch(`${this.base}${inst}/${note}.mp3`).then(r => { if (!r.ok) throw new Error(r.status); return r.arrayBuffer(); })
+      .then(a => new Promise((res, rej) => (this.decoder() || audio.ctx).decodeAudioData(a, res, rej)))
+      .then(b => this.buffers.set(key, b)).catch(() => this.failed.add(key)).finally(() => this.pending.delete(key));
+  },
+  // The nearest rendered note to a frequency and the playback rate that tunes it; null until loaded.
+  pick(inst, f) {
+    const m = this.manifest && this.manifest[inst]; if (!m) return null;
+    const midi = 69 + 12 * Math.log2(f / 440), near = m.notes.reduce((a, b) => Math.abs(b - midi) < Math.abs(a - midi) ? b : a);
+    this.load(inst, near);
+    const b = this.buffers.get(inst + near); return b ? { buf: b, rate: Math.pow(2, (midi - near) / 12) } : null;
+  },
+};
+SAMPLES.init();
+// Relative loudness of each recorded instrument in the mix.
+const SAMPLE_GAIN = { harp: 1.2, strings: 0.18, violins: 0.13, pad: 0.16, choir: 0.22, ooh: 0.3 };
+
 class Scape {
   constructor(engine, id) {
     const ctx = engine.ctx, p = { ...PRESETS[id], key: tunedKey(PRESETS[id].key, engine.tuning) }; this.ctx = ctx; this.p = p; this.id = id; this.engine = engine; this.nodes = [];
@@ -1500,7 +1529,18 @@ class Scape {
     this.spb = 60 / p.bpm; this.tempo = 1; this.step = 0; this.next = ctx.currentTime + 0.8; this.t0 = ctx.currentTime;
     this.seq = setInterval(() => this.pump(), 100);
     this.mover = setInterval(() => { const t = ctx.currentTime - this.t0; Object.values(this.spots).forEach(s => s.tick(t)); }, 150);
-    this.setBloom(0.3); this.pump();
+    this.setBloom(0.3); this.prefetch(); this.pump();
+  }
+  // Start loading the recorded notes this song will use.
+  prefetch(tries = 0) {
+    if (!SAMPLES.manifest) { if (tries < 20) setTimeout(() => this.prefetch(tries + 1), 250); return; }
+    this.p.prog.forEach((_, bar) => {
+      const c = this.chordAt(bar * 8);
+      [fold(c[0], 98, 196), fold(c[2], 147, 294), fold(c[1], 220, 440), fold(c[3], 294, 588)].forEach((f, i) => { SAMPLES.pick("strings", f); if (i >= 2) SAMPLES.pick("violins", f * 2); });
+      c.slice(0, 3).forEach(f => { SAMPLES.pick("pad", f * 2); SAMPLES.pick("ooh", fold(f, 262, 523)); });
+      [c[0], c[1], c[2], c[3], c[1] * 2, c[2] * 2, c[3] * 2].forEach(f => SAMPLES.pick("harp", fold(f, 130, 1100)));
+    });
+    for (let d = -4; d <= 8; d++) SAMPLES.pick("choir", N(this.vkey, degSemi(d)));
   }
 
   /* ---------- harmony ---------- */
@@ -1565,6 +1605,16 @@ class Scape {
   }
 
   /* ---------- instruments ---------- */
+  // Play a recorded note if it's loaded: shaped by an envelope when sustained, left to ring when plucked.
+  sample(inst, t, f, vel, bus, dur = 0, attack = 0.01, release = 0.5) {
+    const s = SAMPLES.pick(inst, f); if (!s) return false;
+    t = Math.max(t, this.ctx.currentTime);
+    const src = this.ctx.createBufferSource(); src.buffer = s.buf; src.playbackRate.value = s.rate;
+    const peak = SAMPLE_GAIN[inst] * vel, g = dur ? this.env(t, peak, attack, Math.max(0, dur - attack), release) : this.ctx.createGain();
+    if (!dur) g.gain.value = peak;
+    src.connect(g); g.connect(bus); src.start(t); src.stop(t + Math.min(s.buf.duration / s.rate, dur ? dur + release * 2.5 : 99));
+    return true;
+  }
   osc(type, f, t, end) { t = Math.max(t, this.ctx.currentTime); const o = this.ctx.createOscillator(); o.type = type; o.frequency.value = f; o.start(t); o.stop(end); return o; }
   env(t, peak, attack, hold, release) {
     t = Math.max(t, this.ctx.currentTime); const g = this.ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + attack);
@@ -1577,23 +1627,30 @@ class Scape {
     const voicing = [fold(chord[0], 98, 196), fold(chord[2], 147, 294), fold(chord[1], 220, 440), fold(chord[3], 294, 588)];
     const vib = this.osc("sine", 5 + rand() * 0.4, t, end), vg = ctx.createGain(); vg.gain.value = 6; vib.connect(vg);
     voicing.forEach((f, i) => {
-      const e = this.env(t - 0.4, 0.05, 1.8, len - 1.2, 3); e.connect(this.strBus[i % 2]);
-      [-9, 0, 8].forEach(c => { const o = this.osc("sawtooth", f, t - 0.4, end); o.detune.value = c + (rand() - 0.5) * 4; vg.connect(o.detune); o.connect(e); });
+      if (!this.sample("strings", t - 0.4, f, 0.9 + rand() * 0.1, this.strBus[i % 2], len + 0.4, 1.4, 2.5)) {
+        const e = this.env(t - 0.4, 0.05, 1.8, len - 1.2, 3); e.connect(this.strBus[i % 2]);
+        [-9, 0, 8].forEach(c => { const o = this.osc("sawtooth", f, t - 0.4, end); o.detune.value = c + (rand() - 0.5) * 4; vg.connect(o.detune); o.connect(e); });
+      }
+      if (i >= 2 && this.sample("violins", t - 0.2, f * 2, 0.85, this.strHi, len + 0.2, 1.6, 2.5)) return;
       if (i >= 2) { const h = this.env(t - 0.2, 0.028, 2.2, len - 1.4, 3); h.connect(this.strHi); [-6, 7].forEach(c => { const o = this.osc("sawtooth", f * 2, t - 0.2, end); o.detune.value = c; vg.connect(o.detune); o.connect(h); }); }
     });
     // Warm synth pad: soft triangles and sines an octave apart.
     chord.slice(0, 3).forEach(f => {
-      const e = this.env(t - 0.3, 0.035, 2, len - 1.4, 3); e.connect(this.padBus);
-      [["triangle", f * 2, -4], ["sine", f * 2, 4], ["sine", f, 0]].forEach(([type, ff, c]) => { const o = this.osc(type, ff, t - 0.3, end); o.detune.value = c; o.connect(e); });
+      if (!this.sample("pad", t - 0.3, f * 2, 0.9, this.padBus, len + 0.3, 1.5, 3)) {
+        const e = this.env(t - 0.3, 0.035, 2, len - 1.4, 3); e.connect(this.padBus);
+        [["triangle", f * 2, -4], ["sine", f * 2, 4], ["sine", f, 0]].forEach(([type, ff, c]) => { const o = this.osc(type, ff, t - 0.3, end); o.detune.value = c; o.connect(e); });
+      }
       const se = this.env(t, 0.05, 2, len - 1.5, 2.5); se.connect(this.shimBus); this.osc("sine", f * 4, t, end).connect(se);
     });
     if (this.level >= 2 && this.engine.voices) {
-      [chord[1], chord[2], chord[3]].forEach((f, i) => this.voice(this.harmBus[i % 2], t + 0.1, fold(f, 262, 523), len * 0.95, "oo", 0.05, { attack: 0.9, release: 1.8, vib: 10, breath: false }));
+      [chord[1], chord[2], chord[3]].forEach((f, i) => { const ff = fold(f, 262, 523);
+        if (!this.sample("ooh", t + 0.1, ff, 0.9, this.harmBus[i % 2], len * 0.95, 0.9, 1.8)) this.voice(this.harmBus[i % 2], t + 0.1, ff, len * 0.95, "oo", 0.05, { attack: 0.9, release: 1.8, vib: 10, breath: false }); });
     }
   }
   // Harp: a pure, round tone with a little shimmer of overtones; low strings ring longer.
   harp(t, f, vel) {
     t = Math.max(t, this.ctx.currentTime);
+    if (this.sample("harp", t, f, vel, this.harpBus)) return;
     const tau = 1.5 * Math.sqrt(220 / f), end = t + tau * 5;
     const e = this.ctx.createGain(); e.gain.setValueAtTime(0, t); e.gain.linearRampToValueAtTime(0.11 * vel, t + 0.005); e.connect(this.harpBus);
     [[1, 1, 1], [2, 0.22, 0.5], [3.003, 0.06, 0.3]].forEach(([r, a, d]) => {
@@ -1604,7 +1661,7 @@ class Scape {
     tones.sort((a, b) => a - b).forEach((f, i) => this.harp(t + (i / tones.length) * span, f, 0.45 + 0.4 * i / tones.length));
   }
   bass(t, f, dur, vel) {
-    const e = this.env(t, 0.06 * vel, 0.06, Math.max(0, dur - 0.3), 0.8); e.connect(this.bassBus);
+    const e = this.env(t, 0.045 * vel, 0.06, Math.max(0, dur - 0.3), 0.8); e.connect(this.bassBus);
     this.osc("sine", f, t, t + dur + 2).connect(e); const tg = this.ctx.createGain(); tg.gain.value = 0.25; tg.connect(e); this.osc("triangle", f, t, t + dur + 2).connect(tg);
   }
   kick(t, vel) {
@@ -1636,8 +1693,9 @@ class Scape {
     const e8 = this.spb * this.tempo / 2, v = this.p.vowels;
     this.hook.forEach(([step, len, d], k) => {
       const at = this.human(t + step * e8, 20), dur = len * e8 * 0.95, vowel = v[k % v.length];
-      this.voice(this.leadBus, at, N(this.vkey, degSemi(d)), dur, vowel, 0.1, { attack: k ? 0.1 : 0.18 });
-      if (this.level >= 2) this.voice(this.harmBus[k % 2], at + 0.02, N(this.vkey, degSemi(d - 2)), dur, vowel, 0.08, { attack: 0.12, breath: false });
+      const f1 = N(this.vkey, degSemi(d)), f2 = N(this.vkey, degSemi(d - 2));
+      if (!this.sample("choir", at, f1, 0.85 + rand() * 0.15, this.leadBus, dur, k ? 0.08 : 0.15, 0.6)) this.voice(this.leadBus, at, f1, dur, vowel, 0.1, { attack: k ? 0.1 : 0.18 });
+      if (this.level >= 2 && !this.sample("choir", at + 0.02, f2, 0.7, this.harmBus[k % 2], dur, 0.1, 0.6)) this.voice(this.harmBus[k % 2], at + 0.02, f2, dur, vowel, 0.08, { attack: 0.12, breath: false });
     });
   }
   // A rising harp glissando when a reward arrives after a quiet stretch.

@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import queue
+import re
 import threading
 import traceback
 import webbrowser
@@ -56,6 +57,10 @@ MANIFEST = {
         {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
     ],
 }
+
+
+# Recorded instrument notes (samples/<instrument>/<midi>.mp3) and their manifest; nothing else.
+SAMPLE_PATH = re.compile(r"^/samples/(?:manifest\.json|[a-z]+/\d{2,3}\.mp3)$")
 
 
 def _asset(name: str) -> bytes:
@@ -124,6 +129,20 @@ class DashboardServer:
                     body = _asset(self.path.lstrip("/"))
                     self.send_response(200)
                     self.send_header("Content-Type", "image/png")
+                    self.send_header("Content-Length", str(len(body)))
+                    self.send_header("Cache-Control", "max-age=86400")
+                    self.end_headers()
+                    self.wfile.write(body)
+                elif SAMPLE_PATH.match(self.path):
+                    try:
+                        body = _asset(self.path.lstrip("/"))
+                    except (FileNotFoundError, OSError):
+                        self.send_response(404)
+                        self.end_headers()
+                        return
+                    kind = "application/json" if self.path.endswith(".json") else "audio/mpeg"
+                    self.send_response(200)
+                    self.send_header("Content-Type", kind)
                     self.send_header("Content-Length", str(len(body)))
                     self.send_header("Cache-Control", "max-age=86400")
                     self.end_headers()

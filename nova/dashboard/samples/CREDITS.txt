@@ -1,0 +1,15 @@
+NOVA instrument samples
+
+Rendered from Surge XT (https://surge-synthesizer.github.io/), the free and
+open-source synthesizer (GPL-3.0), using patches from its factory and
+contributed libraries:
+
+  harp     "Orchestral Harp For Runs" by John Valentine
+  strings  "Orion Strings" by Vincent Zauhar
+  violins  "Violin Section" by John Valentine
+  pad      "MKS-70 Warm Pad" (Surge XT factory)
+  choir    "Synth Choir MW O-Ah" (Surge XT factory)
+  ooh      "Ooh" (Surge XT factory)
+
+One note every three semitones, mono, 24 kHz MP3. NOVA pitches each sample to
+the nearest note it needs.

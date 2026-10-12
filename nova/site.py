@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -65,6 +66,9 @@ def build(out: str | Path = "_site") -> Path:
     (out / "manifest.webmanifest").write_text(json.dumps(site_manifest(), indent=2), encoding="utf-8")
     for name in ASSETS:
         (out / name).write_bytes(_asset(name))
+    samples = Path(__file__).parent / "dashboard" / "samples"
+    if samples.is_dir():
+        shutil.copytree(samples, out / "samples", dirs_exist_ok=True)
     version = hashlib.sha1(html.encode("utf-8")).hexdigest()[:10]
     (out / "sw.js").write_text(SERVICE_WORKER % {"version": version}, encoding="utf-8")
     (out / ".nojekyll").write_text("", encoding="utf-8")

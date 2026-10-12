@@ -1,0 +1,131 @@
+{
+ "harp": {
+  "notes": [
+   43,
+   46,
+   49,
+   52,
+   55,
+   58,
+   61,
+   64,
+   67,
+   70,
+   73,
+   76,
+   79,
+   82,
+   85,
+   88,
+   91
+  ],
+  "hold": 0.6,
+  "patch": "Orchestral Harp For Runs",
+  "author": "John Valentine"
+ },
+ "strings": {
+  "notes": [
+   36,
+   39,
+   42,
+   45,
+   48,
+   51,
+   54,
+   57,
+   60,
+   63,
+   66,
+   69,
+   72,
+   75,
+   78,
+   81,
+   84
+  ],
+  "hold": 5.0,
+  "patch": "Orion Strings",
+  "author": "Vincent Zauhar"
+ },
+ "violins": {
+  "notes": [
+   55,
+   58,
+   61,
+   64,
+   67,
+   70,
+   73,
+   76,
+   79,
+   82,
+   85,
+   88,
+   91
+  ],
+  "hold": 5.0,
+  "patch": "Violin Section",
+  "author": "John Valentine"
+ },
+ "pad": {
+  "notes": [
+   36,
+   39,
+   42,
+   45,
+   48,
+   51,
+   54,
+   57,
+   60,
+   63,
+   66,
+   69,
+   72,
+   75,
+   78,
+   81,
+   84
+  ],
+  "hold": 5.0,
+  "patch": "MKS-70 Warm Pad",
+  "author": "Surge XT factory"
+ },
+ "choir": {
+  "notes": [
+   52,
+   55,
+   58,
+   61,
+   64,
+   67,
+   70,
+   73,
+   76,
+   79,
+   82
+  ],
+  "hold": 3.0,
+  "patch": "Synth Choir MW O-Ah",
+  "author": "Surge XT factory"
+ },
+ "ooh": {
+  "notes": [
+   48,
+   51,
+   54,
+   57,
+   60,
+   63,
+   66,
+   69,
+   72,
+   75,
+   78,
+   81
+  ],
+  "hold": 5.0,
+  "patch": "Ooh",
+  "author": "Surge XT factory"
+ }
+}

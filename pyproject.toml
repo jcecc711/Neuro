@@ -25,7 +25,7 @@ nova = "nova.cli:main"
 packages = ["nova"]
 
 [tool.setuptools.package-data]
-nova = ["dashboard/*.html", "dashboard/*.png"]
+nova = ["dashboard/*.html", "dashboard/*.png", "dashboard/samples/*.json", "dashboard/samples/*.txt", "dashboard/samples/*/*.mp3"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

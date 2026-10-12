@@ -121,5 +121,17 @@ def test_static_site_build(tmp_path):
     manifest = json.loads((out / "manifest.webmanifest").read_text())
     assert manifest["start_url"] == "./" and manifest["display"] == "fullscreen"
     assert all(not i["src"].startswith("/") for i in manifest["icons"])
-    for name in ("sw.js", "icon-180.png", "icon-512.png", ".nojekyll"):
+    for name in ("sw.js", "icon-180.png", "icon-512.png", ".nojekyll", "samples/manifest.json"):
         assert (out / name).exists()
+    manifest = json.loads((out / "samples/manifest.json").read_text())
+    for inst, spec in manifest.items():
+        for note in spec["notes"]:
+            assert (out / f"samples/{inst}/{note}.mp3").exists()
+
+
+def test_sample_route_only_serves_samples():
+    from nova.live import SAMPLE_PATH
+
+    assert SAMPLE_PATH.match("/samples/manifest.json") and SAMPLE_PATH.match("/samples/harp/61.mp3")
+    for bad in ("/samples/../live.py", "/samples/harp/../../x.mp3", "/samples/harp/61.m4a", "/samples/CREDITS.txt"):
+        assert not SAMPLE_PATH.match(bad)

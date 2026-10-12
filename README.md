@@ -167,6 +167,15 @@ in slow orbits.
 | Nebula | 66 BPM, I-iii-vi-IV in F, slow, dreamy synth pads |
 | Dawn | 84 BPM, the Canon progression in A, uplifting strings and harp |
 
+**Recorded instruments (Surge XT).** The harp, strings, violins, warm pad and voices are real
+renders from [Surge XT](https://surge-synthesizer.github.io/), the free, open-source synthesizer
+(GPL-3.0): "Orchestral Harp For Runs" and "Violin Section" by John Valentine, "Orion Strings" by
+Vincent Zauhar, and the factory "MKS-70 Warm Pad", "Synth Choir MW O-Ah" and "Ooh". One note every
+three semitones is stored in `nova/dashboard/samples/` (about 3.5 MB of MP3); NOVA pitches each to
+the exact frequency it needs, loads notes the first time they're used, and plays its built-in
+synthesis until they arrive (or when offline before they've been cached). The adaptive engine,
+3D placement and entrainment are unchanged.
+
 **Production touches.** A second, 14-second shimmer reverb turns the harp, pads and octave
 shimmer into an endless wash, the long-tail sound of ambient production. Under **Details** you can
 choose the **tuning** (standard A = 440 Hz, A = 432 Hz, or Solfeggio 528 Hz, which nudges the key so
