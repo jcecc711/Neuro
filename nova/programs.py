@@ -76,6 +76,7 @@ class Program:
     evidence_note: str = ""
     sites: tuple[str, ...] = ()
     caution: str = ""
+    suggested_minutes: int | None = None  # a session length to preselect, e.g. the dose used in studies
 
     def __post_init__(self) -> None:
         if not self.phases:
@@ -338,6 +339,43 @@ BUILTIN: tuple[Program, ...] = (
             ],
             warmup=("beta", 2, "Take three energizing breaths, then watch the sound come alive."),
             integrate=2.0,
+        ),
+    ),
+    Program(
+        id="gamma-40",
+        name="Gamma 40",
+        category="condition",
+        target="Brain health: 40 Hz sensory stimulation",
+        summary="An hour of 40 Hz sound (and, if you turn it on, light) modelled on MIT's GENUS research, "
+        "with feedback on your brain's own 40 Hz response so you can see the stimulation taking hold. "
+        "Sit relaxed and still with your eyes open.",
+        soundscape="nebula",
+        eyes="open",
+        evidence="Emerging",
+        evidence_note="In mouse models of Alzheimer's, 40 Hz light and sound reduced amyloid and tau and "
+        "engaged the brain's immune and clearance systems (Tsai lab, MIT). Small early human studies in mild "
+        "Alzheimer's (for example Chan et al., 2022) reported slower brain shrinkage and better daily "
+        "function after months of daily one-hour sessions; larger trials are under way. It has not been shown "
+        "to stop or reverse Alzheimer's, and it does not repair brain injuries. NOVA is a wellness tool, not a "
+        "treatment: use it alongside, never instead of, care from a neurologist.",
+        sites=("Cz", "Fz", "Oz"),
+        caution="After a brain injury or stroke, or with Alzheimer's, seizure risk is higher: get a "
+        "clinician's OK before using flickering light, and keep to sound if unsure. Sessions for someone "
+        "with dementia should be supervised.",
+        suggested_minutes=60,  # studies used one-hour daily sessions
+        phases=tuple(
+            replace(ph, binaural=None) if ph.kind == "baseline" else ph
+            for ph in _arc(
+                [
+                    ("Settle into the rhythm", "gamma-40", 6, 0.6, "Rest your eyes softly on the screen. Let the clicks fill the space."),
+                    ("Steady", "gamma-40", 6, 0.6, "Stay relaxed and still; unclench your jaw and brow."),
+                    ("Deepen", "gamma-40", 6, 0.55, "Nothing to do but let the rhythm carry on around you."),
+                    ("Hold", "gamma-40", 6, 0.55, "Keep a soft gaze and an easy breath."),
+                ],
+                warmup=("gamma-40", 3, "Sit comfortably with eyes open. The 40 Hz rhythm begins."),
+                integrate=3.0,
+                binaural=40.0,
+            )
         ),
     ),
     Program(

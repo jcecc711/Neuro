@@ -231,6 +231,18 @@ NOVA steers the music toward the state being trained, closed-loop, from the live
 - **Tempo and energy suit the goal.** Calming targets (alpha, theta) slow the song by up to 6% and
   keep the drums light; focus targets (SMR, beta) lift it slightly with the full groove.
 
+**Gamma 40 (Conditions).** An hour of 40 Hz stimulation modelled on MIT's GENUS research (Tsai
+lab): a GENUS-style 1 kHz click train at exactly 40 Hz, plus light or the full-screen journey if you
+turn **Light sync** on, with neurofeedback on the brain's own 40 Hz response (38-42 Hz at Cz, Fz and
+the occipital sites; rewards pause when high-beta muscle tension rises, since jaw and face tension
+also shows up near 40 Hz). NOVA preselects 60 minutes, the session length used in studies. The
+evidence note is deliberately plain: 40 Hz stimulation cleared amyloid and tau in mouse models, and
+small early human studies in mild Alzheimer's reported slower brain shrinkage and better daily
+function; it has not been shown to stop or reverse Alzheimer's, and it does not repair brain
+injuries. After a brain injury or stroke, or with Alzheimer's, seizure risk is higher, so the
+program asks for a clinician's OK before using flickering light, and dementia sessions should be
+supervised.
+
 **40 Hz (Clear Mind).** The Clear Mind program pairs alertness training with the soundtrack and
 rhythm cue pulsing at exactly 40 Hz during training, the gamma rhythm used in MIT's GENUS sensory
 stimulation research. That work is mostly in mouse models of Alzheimer's with small early human

@@ -27,11 +27,12 @@ BANDS: dict[str, Band] = {
     "beta": (15.0, 22.0),
     "hibeta": (22.0, 30.0),
     "gamma": (30.0, 40.0),
+    "g40": (38.0, 42.0),  # the brain's response to 40 Hz stimulation (auditory/visual steady state)
     "total": (1.0, 40.0),
 }
 
 # Centre frequency of each band, used for the soundscape's rhythm cue.
-CUE_HZ: dict[str, float] = {"delta": 2.5, "theta": 6.0, "alpha": 10.0, "smr": 13.5, "beta": 18.0, "hibeta": 25.0, "gamma": 35.0}
+CUE_HZ: dict[str, float] = {"delta": 2.5, "theta": 6.0, "alpha": 10.0, "smr": 13.5, "beta": 18.0, "hibeta": 25.0, "gamma": 35.0, "g40": 40.0}
 
 # Homologous left/right pairs, best first, for asymmetry protocols.
 FRONTAL_PAIRS: tuple[tuple[str, str], ...] = (("F3", "F4"), ("AF3", "AF4"), ("AF7", "AF8"), ("F7", "F8"), ("Fp1", "Fp2"))
@@ -155,6 +156,8 @@ class Protocol:
             return f"{self.reward} asymmetry (R-L)"
         if self.ratio_over:
             return f"{self.reward}/{self.ratio_over}"
+        if self.reward == "g40":
+            return "40 Hz response"
         return f"rel. {self.reward}"
 
 
@@ -225,6 +228,15 @@ PROTOCOLS: dict[str, Protocol] = {
             reward="theta",
             inhibits=("delta", "hibeta"),
             sites=("Fz", "FCz", "AFz"),
+        ),
+        Protocol(
+            name="gamma-40",
+            description="The brain's 40 Hz response (38-42 Hz) during 40 Hz sound and light stimulation: "
+            "a readout of how strongly the rhythm is entraining. Muscle tension also shows up near 40 Hz, "
+            "so rewards pause when high-beta rises with it.",
+            reward="g40",
+            inhibits=("hibeta",),
+            sites=("Cz", "Fz", "Oz", "O1", "O2", "Pz"),
         ),
         Protocol(
             name="beta-left",
