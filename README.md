@@ -166,6 +166,25 @@ Every session plays layered, flowing chamber music, composed live so it never re
 | Forest Rain | Mixolydian, oboe and flute over quartet and soft rain, 64 BPM |
 | Nebula | Aeolian, clarinet and violin, dark and floating, 56 BPM |
 | Dawn | warm and rising, flute and oboe over a string quartet, 72 BPM |
+| Crystal Bath | crystal singing bowls and handpan over a phasing binaural pad, with the brain massage, 92 BPM (Positive Action's soundscape) |
+
+**Crystal Bath (trial, on Positive Action).** A sound bath with no orchestral instruments, all
+synthesized live:
+
+- **Phasing binaural pad:** the harmony is held like a ring of singing bowls. Every note is a pair of
+  soft tones in each ear a fraction of a hertz apart (a slow, breathing sweep), and the right ear sits
+  exactly the entrainment frequency above the left, so the whole chord carries the binaural beat
+  (up to 20 Hz; it's off during calibration). A slow phaser drifts through it, and shared notes hold
+  through chord changes.
+- **Crystal singing bowls:** struck softly at six points around your head, ringing for twenty seconds
+  or more; a large low bowl marks each chord, and more are struck as you find the target.
+- **Handpan:** an upbeat groove just in front of you, chosen fresh each bar: a low "ding" on the
+  downbeats, a wandering melody from the chord, and soft finger taps; it fills in when you're on target.
+- **Brain massage:** soft crackling pops at exactly the entrainment rate travel around your head
+  (ear to ear over the top, front to back, circles and figure-eights), in the style of the moving
+  click tracks used with 40 Hz stimulation. At 40 Hz the GENUS click train itself travels. Switch it
+  off with **Brain massage** under Details.
+- Shimmer, a deep sub and the occasional ethereal voice, as in the other soundscapes.
 
 **Recorded instruments (Surge XT).** The strings, winds, harp, warm pad and voices are real
 renders from [Surge XT](https://surge-synthesizer.github.io/), the free, open-source synthesizer
@@ -193,13 +212,15 @@ in time with the entrainment rhythm, during training only:
   photosensitive seizures, so these get a soft warm glow that pulses at the rhythm by under 4%,
   below the standard 10% flash threshold. It's gentle company for the sound, not strong entrainment.
 - **Full-screen journey:** choose "full-screen journey" when turning it on and NOVA goes full screen
-  with a short film drawn live. It opens on the brain side-on, made of flowing blue-cyan fibre
-  strands with an orange network glowing inside and blue and orange bokeh behind; the camera dives
-  in until the fibres stream past, into a field of blue neurons at several depths. Inspired by
-  growth-cone research (Christine Holt and colleagues), axons grow across the scene, each led by a
-  growth cone whose filopodia feel the way, and settle onto real dendrites in small orange terminals
-  whose bright cleft glows with the rhythm; tiny orange points across the field pulse at the session
-  frequency, barely visible. It's an artistic visualization, not a picture of your own brain. The
+  with a short film drawn live that follows the music. It opens on the brain side-on, soft blue
+  fibres and glowing points with an orange network inside and blue and orange bokeh behind; the
+  camera dives in, into a field of blue neurons at several depths. Inspired by growth-cone research
+  (Christine Holt and colleagues), axons grow toward real dendrites, each tipped with a soft white
+  glow, and connect on the notes of the music, warming to orange and forming small terminals that
+  glow with the rhythm. Each new chord swells a soft light and turns the camera; melody notes send
+  warm signals down the connections; the voices bring a wide aurora; the scene brightens and drifts
+  faster as the music swells; and with the brain massage a soft white light travels across the
+  screen with the pops (left ear on the left), leaving tiny orange sparks in time with the rhythm. It's an artistic visualization, not a picture of your own brain. The
   whole scene steps bright/dim with the 40 Hz square wave, or breathes softly for slower targets,
   and lowers its own detail whenever drawing would eat into the frame budget, so the flicker
   timing stays exact.

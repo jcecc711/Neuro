@@ -30,6 +30,8 @@ SOUNDSCAPES = {
     "rain": "Forest Rain: Mixolydian, oboe and flute over quartet and soft rain, 64 BPM",
     "nebula": "Nebula: Aeolian, clarinet and violin, dark and floating, 56 BPM",
     "dawn": "Dawn: warm and rising, flute and oboe over a string quartet, 72 BPM",
+    "crystal": "Crystal Bath: crystal singing bowls and handpan over a phasing binaural pad, "
+    "with soft pops massaging around the head, 92 BPM",
 }
 CUSTOM_DIR = Path.home() / ".nova" / "programs"
 
@@ -506,7 +508,7 @@ BUILTIN = BUILTIN + (
         target="Motivation and follow-through",
         summary="Shifts frontal activity toward the left hemisphere, a pattern linked to approach "
         "motivation and goal pursuit, then builds alert left-frontal beta while you rehearse taking action.",
-        soundscape="dawn",
+        soundscape="crystal",
         eyes="open",
         evidence="Emerging",
         evidence_note="Relatively greater left-frontal activity is associated with approach motivation "
