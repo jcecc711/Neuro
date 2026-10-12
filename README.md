@@ -177,6 +177,28 @@ a voice keeps bowing through a chord change when its note stays the same, and ot
 note fades over a few seconds while the new one swells in. The harp's recorded pluck rings into a
 soft, long-sustaining body so its arpeggios flow together.
 
+**Light sync (optional, off by default).** Under **Details**, **Light sync** adds full-screen light
+in time with the entrainment rhythm, during training only:
+
+- **40 Hz (gamma, e.g. Clear Mind):** a hard on/off square wave, as in MIT's GENUS research, locked
+  to a GENUS-style 1 kHz click train (switched on automatically with the light) using the audio
+  clock. NOVA measures the display's refresh rate and runs it only when 40 Hz can be shown exactly:
+  3 frames per cycle on a 120 Hz display (33% duty), 6 on a 240 Hz display (50% duty). A 60 Hz
+  screen would produce an irregular flicker with a 20 Hz component, so NOVA refuses and says why.
+  On iPad Pro, Safari may cap pages at 60 fps unless "Prefer Page Rendering Updates near 60fps" is
+  turned off in Settings > Apps > Safari > Advanced > Feature Flags.
+- **Slower targets (alpha, SMR, beta, theta):** 3-30 Hz flicker is the range most likely to trigger
+  photosensitive seizures, so these get a soft warm glow that pulses at the rhythm by under 4%,
+  below the standard 10% flash threshold. It's gentle company for the sound, not strong entrainment.
+- **Safety:** turning it on shows a seizure and migraine warning that must be accepted; a **Stop
+  light** button stays on screen, and Esc, leaving the app or ending the session stops it at once.
+  It's disabled when the device asks for reduced motion.
+- **Limits:** a screen is far dimmer than the clinical LED panels used in trials (hundreds of lux at
+  eye level), and trials used 60-minute daily sessions over months; NOVA's light is a wellness
+  feature, not a medical treatment. Pick the 60-minute length for the closest match.
+
+The rhythm cue's **Click train** style can also be chosen on its own.
+
 **Production touches.** A second, 14-second shimmer reverb turns the harp, pads and octave
 shimmer into an endless wash, the long-tail sound of ambient production. Under **Details** you can
 choose the **tuning** (standard A = 440 Hz, A = 432 Hz, or Solfeggio 528 Hz, which nudges the key so

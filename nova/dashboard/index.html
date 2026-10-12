@@ -284,6 +284,13 @@ details.builder[open] summary { margin-bottom: 12px; }
 .switch-row input:checked::after { transform: translateX(16px); }
 .switch-row input:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 .switch-row b { font-weight: 500; color: var(--ink); }
+#lightStatus { font-weight: 400; color: var(--muted); font-size: 12px; display: block; }
+#lightConsent { z-index: 70; }
+#lightField { position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0; will-change: opacity; }
+#lightField.square { background: #fff8ee; }
+#lightField.soft { background: radial-gradient(ellipse at center, rgba(255, 214, 160, 0.55), rgba(255, 190, 130, 0.25) 60%, rgba(255, 180, 120, 0.1)); }
+#lightStop { position: fixed; z-index: 61; top: max(16px, env(safe-area-inset-top)); right: 16px; padding: 10px 18px; border-radius: 999px; border: 0;
+  background: rgba(20, 20, 22, 0.85); color: #fff; font: 600 15px var(--body); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); }
 
 /* Learn */
 .learn { display: grid; gap: 16px; }
@@ -821,8 +828,10 @@ details.builder summary::marker { color: var(--link); }
           <div class="ctl"><label class="eyebrow" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.7"></div>
           <div class="ctl"><label class="eyebrow" for="scapeSwitch">Soundscape</label><select id="scapeSwitch"></select></div>
           <div class="ctl"><label class="eyebrow" for="tuningSel">Tuning</label><select id="tuningSel"><option value="440">Standard (A = 440 Hz)</option><option value="432">A = 432 Hz</option><option value="528">Solfeggio 528 Hz</option></select></div>
-          <div class="ctl"><label class="eyebrow" for="cueStyleSel">Rhythm cue</label><select id="cueStyleSel"><option value="binaural">Binaural + pulse (headphones)</option><option value="isochronic">Isochronic pulses (any speaker)</option></select></div>
+          <div class="ctl"><label class="eyebrow" for="cueStyleSel">Rhythm cue</label><select id="cueStyleSel"><option value="binaural">Binaural + pulse (headphones)</option><option value="isochronic">Isochronic pulses (any speaker)</option><option value="clicks">Click train (GENUS-style 1 kHz clicks)</option></select></div>
           <label class="switch-row"><input type="checkbox" id="voicesToggle" checked><span>Voices</span></label>
+          <label class="switch-row"><input type="checkbox" id="lightToggle"><span>Light sync <b id="lightStatus"></b></span></label>
+          <div class="ctl"><label class="eyebrow" for="lightLevel">Light brightness</label><input id="lightLevel" type="range" min="0.2" max="1" step="0.05" value="0.8"></div>
           <label class="switch-row"><input type="checkbox" id="cueToggle" checked><span>Entrainment <b id="cueText"></b></span></label>
         </div>
         <div class="phase-rows" id="phaseRows" aria-label="Session phases"></div>
@@ -977,6 +986,17 @@ details.builder summary::marker { color: var(--link); }
     </section>
   </main>
 
+  <div id="lightField" hidden></div>
+  <button type="button" id="lightStop" hidden>Stop light</button>
+  <div class="overlay" id="lightConsent" hidden>
+    <div class="panel dialog" role="dialog" aria-labelledby="lightTitle">
+      <h2 id="lightTitle">Before you turn on light sync</h2>
+      <p class="hint">Light sync flashes the whole screen in time with the rhythm: a sharp 40 Hz flicker for gamma programs, a soft glow for slower ones.</p>
+      <p class="hint"><strong>Don't use it if you or a close relative have epilepsy or have ever had a seizure, or if flashing light gives you migraines.</strong> Stop at once if you feel dizzy, nauseous, get a headache or notice any twitching or odd sensations. Not for children without supervision.</p>
+      <p class="hint">Use it in a softly lit room, about 50-70 cm from the screen, eyes open and gaze relaxed. A 40 Hz flicker needs a 120 Hz or 240 Hz display. Tap <strong>Stop light</strong>, press Esc or leave the app to stop at any time. This is a wellness feature, not a medical treatment.</p>
+      <div class="row"><button type="button" id="lightCancel">Cancel</button><button type="button" class="btn-primary" id="lightAgree">I understand, turn it on</button></div>
+    </div>
+  </div>
   <div class="overlay" id="connectOverlay" hidden>
     <div class="panel dialog" role="dialog" aria-labelledby="connTitle">
       <h2 id="connTitle">Connecting</h2>
@@ -1850,12 +1870,30 @@ const audio = {
       this.cueLfo.setPeriodicWave(this.isoWave);
       this.cueDepth.gain.setTargetAtTime(0.5, t, 0.3); this.cueAM.gain.setTargetAtTime(0.5, t, 0.3);
       this.binG.gain.setTargetAtTime(0, t, 0.3); this.toneG.gain.setTargetAtTime(0.045, t, 0.3);
+    } else if (this.cueStyle === "clicks") {
+      // Click train only (the binaural pair and pulsed tone are muted): see setClicks.
+      this.binG.gain.setTargetAtTime(0, t, 0.3); this.toneG.gain.setTargetAtTime(0, t, 0.3);
     } else {
       // Binaural plus a gentle pulse; faster pulses are gentler so they flutter rather than buzz.
       this.cueLfo.type = "sine";
       this.cueDepth.gain.setTargetAtTime(hz > 12 ? 0.25 : 0.4, t, 0.3); this.cueAM.gain.setTargetAtTime(hz > 12 ? 0.75 : 0.6, t, 0.3);
       this.binG.gain.setTargetAtTime(0.03, t, 0.3); this.toneG.gain.setTargetAtTime(0.025, t, 0.3);
     }
+    this.setClicks(this.cueStyle === "clicks" || (light.on && hz >= 30) ? hz : 0);
+  },
+  // GENUS-style click train: short, soft-edged 1 kHz clicks at exactly hz, from a looping buffer whose
+  // start time is known, so the light can lock to the same clock.
+  setClicks(hz) {
+    const ctx = this.ctx; if (!ctx || (this.clickHz || 0) === hz) return;
+    if (this.clickSrc) { try { this.clickSrc.stop(); } catch {} this.clickSrc = null; }
+    this.clickHz = hz; if (!hz) return;
+    const sr = ctx.sampleRate, cycles = Math.max(1, Math.round(hz)), len = Math.round(cycles / hz * sr), buf = ctx.createBuffer(1, len, sr), d = buf.getChannelData(0);
+    const burst = Math.round(sr * 0.002);
+    for (let c = 0; c < cycles; c++) { const at = Math.round(c * len / cycles);
+      for (let i = 0; i < burst && at + i < len; i++) d[at + i] = Math.sin(2 * Math.PI * 1000 * i / sr) * 0.5 * (1 - Math.cos(2 * Math.PI * i / burst)); }
+    if (!this.clickG) { this.clickG = ctx.createGain(); this.clickG.gain.value = 0.09; this.clickG.connect(this.cueOut); }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(this.clickG);
+    this.clickT0 = ctx.currentTime + 0.05; this.clickPeriod = len / cycles / sr; src.start(this.clickT0); this.clickSrc = src;
   },
   setCueStyle(style) { this.cueStyle = style; if (this.ctx && this.scape && this.cueHz) this.setCueFreq(this.cueHz); },
   async setTuning(tuning) { this.tuning = tuning; if (this.scape) { const id = this.scape.id; await this.play(id, true); if (this.cueHz) this.setCueFreq(this.cueHz); } },
@@ -1900,6 +1938,7 @@ const audio = {
     if (kind === "baseline" && u.binaural) level = 0.6; // a cue the program asked for explicitly
     if (kind === "cooldown") level *= 1 - closing;
     this.cueOut.gain.setTargetAtTime(level, t, 2.5);
+    this.lightGate = level; this.lightHz = hz;
   },
   energy(goal) { return !goal ? 2 : goal <= 8 ? 1 : goal <= 11 ? 1.5 : 2; },
   // Adaptive entrainment ("pace and lead"). Each training block starts the rhythm at the brain's
@@ -1949,6 +1988,7 @@ const audio = {
     if (this.am) { this.amDepth.gain.setTargetAtTime(0, this.ctx.currentTime, 0.5); this.am.gain.setTargetAtTime(1, this.ctx.currentTime, 0.5); }
     if (s) setTimeout(() => s.dispose(), seconds * 1000 + 500);
     if (this.cueOut) this.cueOut.gain.setTargetAtTime(0, this.ctx.currentTime, 1);
+    this.lightGate = 0; this.setClicks(0);
   },
   async preview(id, seconds = 20) {
     await this.play(id); if (!this.scape) return;
@@ -1957,6 +1997,70 @@ const audio = {
     this.previewTimer = setTimeout(() => { if (!app.session) this.stop(4); }, seconds * 1000);
   },
 };
+
+/* =====================================================================
+   Light sync. Full-field light that pulses with the entrainment rhythm.
+   40 Hz (gamma) uses a hard on/off square wave locked to the click
+   train, only when the display can show it exactly (120 Hz: 3 frames per
+   cycle; 240 Hz: 6). Slower targets (3-30 Hz, the band most likely to
+   trigger photosensitive seizures) get a soft glow kept under standard
+   flash-safety limits (<10% luminance change). Off by default; needs
+   consent; tap Stop, press Esc or leave the app to stop at once.
+   ===================================================================== */
+const light = {
+  on: false, hz: 0, frame: 0, k: 0, raf: 0, level: 0.8, status: "",
+  // The display's refresh rate, from the median interval of 90 animation frames.
+  measure() {
+    return new Promise(res => { const ts = []; const step = t => { ts.push(t); if (ts.length < 90) requestAnimationFrame(step);
+      else { const d = ts.slice(11).map((v, i) => v - ts[i + 10]).sort((a, b) => a - b); res(1000 / d[Math.floor(d.length / 2)]); } }; requestAnimationFrame(step); });
+  },
+  async start() {
+    this.hz = await this.measure(); this.on = true; this.frame = 0;
+    $("lightField").hidden = false; $("lightStop").hidden = false; document.body.classList.add("light-on");
+    if (audio.cueHz) audio.setCueFreq(audio.cueHz);
+    cancelAnimationFrame(this.raf); this.raf = requestAnimationFrame(t => this.tick(t));
+  },
+  stop() {
+    this.on = false; cancelAnimationFrame(this.raf);
+    $("lightField").hidden = true; $("lightStop").hidden = true; document.body.classList.remove("light-on");
+    $("lightField").style.opacity = 0; $("lightToggle").checked = false;
+    if (audio.ctx && audio.cueHz) audio.setCueFreq(audio.cueHz);
+    this.say("");
+  },
+  say(text) { if (text !== this.status) { this.status = text; $("lightStatus").textContent = text; } },
+  // The audio clock at the moment this frame reaches the screen.
+  audioTime(now) {
+    const ctx = audio.ctx; if (!ctx) return now / 1000;
+    const ts = ctx.getOutputTimestamp ? ctx.getOutputTimestamp() : null;
+    if (ts && ts.performanceTime) return ts.contextTime + (now + 1000 / this.hz - ts.performanceTime) / 1000;
+    return ctx.currentTime - (ctx.outputLatency || 0);
+  },
+  tick(now) {
+    if (!this.on) return;
+    this.raf = requestAnimationFrame(t => this.tick(t));
+    const el = $("lightField"), f = audio.lightHz || 0, gate = app.session ? (audio.lightGate || 0) : 0;
+    this.frame++;
+    if (!f || gate < 0.02) { el.style.opacity = 0; el.className = ""; this.say(app.session ? "Waiting for training" : "Starts with a session"); return; }
+    if (f >= 30) {
+      const n = this.hz / f, N = Math.round(n);
+      if (N < 3 || Math.abs(n - N) > 0.05) { el.style.opacity = 0; this.say(`${f} Hz light needs a 120 Hz or 240 Hz display (this one runs at ${Math.round(this.hz)} Hz)`); return; }
+      const on = Math.max(1, Math.floor(N / 2));
+      // Re-lock to the click train every half second; between, count frames so the pattern never stutters.
+      if (this.frame % Math.round(this.hz / 2) === 1 && audio.clickT0) {
+        const ph = (((this.audioTime(now) - audio.clickT0) / audio.clickPeriod) % 1 + 1) % 1, want = ((Math.floor(ph * N) - this.frame) % N + N) % N;
+        this.drift = want === this.k ? 0 : (this.drift || 0) + 1; if (this.drift >= 3 || this.frame < this.hz) { this.k = want; this.drift = 0; }  // shift only on steady drift
+      }
+      el.className = "square"; el.style.opacity = ((this.frame + this.k) % N) < on ? (this.level * Math.min(1, gate)).toFixed(3) : 0;
+      this.say(`${f} Hz square wave · ${Math.round(100 * on / N)}% duty · ${Math.round(this.hz)} Hz display`);
+    } else {
+      const ph = this.audioTime(now) * f;
+      el.className = "soft"; el.style.opacity = (this.level * Math.min(1, gate) * (0.55 + 0.022 * Math.sin(2 * Math.PI * ph))  /* ±4% peak to trough: under the 10% flash limit */).toFixed(3);
+      this.say(`Soft glow at ${f.toFixed(1)} Hz (below flash-safety limits)`);
+    }
+  },
+};
+document.addEventListener("keydown", e => { if (e.key === "Escape" && light.on) light.stop(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden && light.on) light.stop(); });
 
 /* =====================================================================
    App state
@@ -2774,6 +2878,7 @@ function enterSession(program, deviceLabel, dotClass) {
 }
 function leaveSession() {
   keepAwake(false);
+  if (light.on) light.stop();
   $("sessionView").classList.remove("show-console");
   app.session = null; app.runner = null; app.demo = null; app.u = null;
   $("clockPill").hidden = true; $("rewardPill").hidden = true;
@@ -3185,6 +3290,16 @@ function wire() {
   $("tuningSel").addEventListener("change", e => { audio.setTuning(e.target.value); saveStr("nova.tuning", e.target.value); });
   $("cueStyleSel").addEventListener("change", e => { audio.setCueStyle(e.target.value); saveStr("nova.cueStyle", e.target.value); });
   $("cueToggle").checked = pref("nova.cue", true); audio.cueOn = $("cueToggle").checked;
+  $("lightLevel").addEventListener("input", e => { light.level = Number(e.target.value); });
+  $("lightStop").addEventListener("click", () => light.stop());
+  $("lightToggle").addEventListener("change", e => {
+    if (!e.target.checked) { light.stop(); return; }
+    e.target.checked = false;
+    if (reduceMotion) { $("lightStatus").textContent = "Off: your device asks for reduced motion"; return; }
+    $("lightConsent").hidden = false;
+  });
+  $("lightCancel").addEventListener("click", () => { $("lightConsent").hidden = true; });
+  $("lightAgree").addEventListener("click", () => { $("lightConsent").hidden = true; $("lightToggle").checked = true; light.start(); });
   $("voicesToggle").addEventListener("change", e => { audio.setVoices(e.target.checked); savePref("nova.voices", e.target.checked); });
   $("cueToggle").addEventListener("change", e => { audio.setCue(e.target.checked); savePref("nova.cue", e.target.checked); if (app.u) $("cueText").textContent = e.target.checked && cueFor(app.u) ? `· ${cueFor(app.u)} Hz` : ""; });
   $("skipBtn").addEventListener("click", () => { if (app.runner) app.runner.skipFlag = true; else api("/api/session/skip", {}).catch(() => {}); });
