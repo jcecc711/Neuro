@@ -196,10 +196,10 @@ in time with the entrainment rhythm, during training only:
   at first and then faster and faster as the camera dives into the orange light. From there it flies
   through a wormhole that never ends: walls made of a fine web of fibres, folded like cortex and
   turning like a galaxy around a warm spiral at the far end, with small orange flashes sparkling
-  across its outer walls. The orange flashpoints blink with the session rhythm (at 40 Hz on 40 Hz programs,
-  locked to the click train). New chords bend the tunnel; notes, chimes and rewards set off bursts of
-  flashes; the flight speeds up as the music swells; and with the brain massage a soft white
-  light travels across the screen with the pops. It's an artistic visualization, not a picture of your own brain. The
+  across its outer walls. The orange flashpoints strobe at 40 Hz in every program (locked to the
+  click train on 40 Hz programs; on a 60 Hz screen, which can't show 40 Hz, they glow steadily). New
+  chords bend the tunnel; notes, chimes and rewards set off bursts of flashes; and the flight speeds up
+  as the music swells. It's an artistic visualization, not a picture of your own brain. The
   whole scene steps bright/dim with the 40 Hz square wave, or breathes softly for slower targets,
   and lowers its own detail whenever drawing would eat into the frame budget, so the flicker
   timing stays exact.

@@ -2186,11 +2186,10 @@ const audio = {
 //  2. Through the orange light into a wormhole that never ends: its walls are a fine web of fibres and
 //     glowing points, folded like cortex, turning slowly like a galaxy around a warm spiral at the far
 //     end, with small orange flashes sparkling all over its outer walls.
-// The orange flashpoints all blink with the session rhythm (on 40 Hz programs, locked to the 40 Hz
-// click train), so they strobe at 40 Hz. Following the music: each new chord swells a soft light and
-// bends the tunnel; notes, chimes and rewards set off bursts of flashes; the voices bring a
-// wide aurora; the flight speeds up and brightens as the music swells; and with the brain massage a soft
-// white light travels across the screen with the pops (left ear on the left).
+// The orange flashpoints strobe at 40 Hz in every program (locked to the 40 Hz click train when one is
+// playing; see light.flash40). Following the music: each new chord swells a soft light and bends the
+// tunnel; notes, chimes and rewards set off bursts of flashes; the voices bring a wide aurora; and the
+// flight speeds up and brightens as the music swells.
 // The light engine sets the overall glow on each frame (the 40 Hz square wave, or a soft breath).
 const journey = {
   built: false,
@@ -2207,8 +2206,8 @@ const journey = {
     this.net = net; this.hubP = c.map(v => v / Math.max(1, net.length)); this.built = true;
   },
   reset() {
-    this.t = 0; this.sparks = []; this.flares = []; this.swells = []; this.aurora = null; this.trail = []; this.bflash = []; this.tflash = [];
-    this.energy = 0.3; this.noteGlow = 0; this.burst = 0; this.massageA = 0; this.tz = 0; this.spin = 0; this.phi = 0; this.bend = 0.1; this.bendGoal = 0.1;
+    this.t = 0; this.swells = []; this.aurora = null; this.bflash = []; this.tflash = [];
+    this.energy = 0.3; this.noteGlow = 0; this.burst = 0; this.tz = 0; this.spin = 0; this.phi = 0; this.bend = 0.1; this.bendGoal = 0.1;
   },
   // Soft bokeh lights, rendered once per size.
   bokeh(w, h) {
@@ -2271,28 +2270,6 @@ const journey = {
     else if (e.kind === "chime") this.burst += 25;
     else if (e.kind === "bells") this.burst += 8;
   },
-  // Where the massage pulses are, on screen: left ear on the left, above you higher up, nearer ahead larger.
-  massageAt(w, h) {
-    const P = audio.massagePos; if (!P) return null;
-    return { x: w * (0.5 + 0.36 * P.x), y: h * (0.55 - 0.32 * P.y + 0.08 * P.z), s: 1.15 - 0.35 * P.z };
-  },
-  // A soft white light that travels with the massage pulses and leaves tiny orange sparks in time with the rhythm.
-  drawMassage(ctx, w, h, dpr, alpha, pulse) {
-    const on = audio.clickHz > 0 && (audio.lightGate || 0) > 0.02 && audio.massageOn();
-    this.massageA += ((on ? 1 : 0) - this.massageA) * 0.05; if (this.massageA < 0.01) return;
-    const at = this.massageAt(w, h); if (!at) return;
-    const m = Math.min(w, h), a = this.massageA * alpha, cool = this.sprite("cool", "rgba(235,250,255,1)", "rgba(110,200,255,0.45)"), ember = this.sprite("ember", "rgba(255,240,200,1)", "rgba(255,120,40,0.6)");
-    this.trail.push([at.x, at.y]); if (this.trail.length > 40) this.trail.shift();
-    ctx.globalCompositeOperation = "lighter";
-    this.trail.forEach(([x, y], i) => { const k = i / this.trail.length, s = 0.03 * m * at.s * k; ctx.globalAlpha = 0.1 * k * a; ctx.drawImage(cool, x - s, y - s, s * 2, s * 2); });
-    const halo = 0.22 * m * at.s; ctx.globalAlpha = 0.16 * a; ctx.drawImage(cool, at.x - halo, at.y - halo, halo * 2, halo * 2);
-    const core = (0.035 + 0.012 * pulse) * m * at.s; ctx.globalAlpha = (0.55 + 0.3 * pulse) * a; ctx.drawImage(cool, at.x - core, at.y - core, core * 2, core * 2);
-    if (pulse > 0.85 && !this.popLit) { this.popLit = true; for (let i = 0; i < 2; i++) this.sparks.push({ x: at.x + (this.r() - 0.5) * 0.12 * m, y: at.y + (this.r() - 0.5) * 0.12 * m, life: 0.8 + this.r(), p: 0 }); }
-    if (pulse < 0.3) this.popLit = false;
-    this.sparks = this.sparks.filter(s => { s.p += 1 / 60; if (s.p > s.life) return false; const sz = (1.5 + 1.5 * pulse) * dpr;
-      ctx.globalAlpha = (0.2 + 0.6 * pulse) * Math.min(1, (s.life - s.p) * 2) * a; ctx.drawImage(ember, s.x - sz, s.y - sz, sz * 2, sz * 2); return true; });
-    ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
-  },
   // Light that follows the music: a soft swell for each new chord and a wide, slow aurora when the voices sing.
   drawMusic(ctx, w, h, dt, dpr, alpha) {
     const m = Math.min(w, h), cool = this.sprite("cool", "rgba(235,250,255,1)", "rgba(110,200,255,0.45)");
@@ -2338,7 +2315,7 @@ const journey = {
     const H = Math.min(3 * Math.max(w, h), m * 0.07 * (4.6 + Dh) / camD) * (0.9 + 0.2 * glow + 0.4 * this.noteGlow);
     ctx.globalAlpha = 0.85 * alpha; ctx.drawImage(ember, hx - H, hy - H, H * 2, H * 2);
     this.net.forEach(i => { if (P.d[i] < 0.1) return; const s = Math.min(18, 5 / P.d[i]) * dpr; ctx.globalAlpha = 0.45 * alpha; ctx.drawImage(ember, P.x[i] - s, P.y[i] - s, s * 2, s * 2); });
-    // Orange micro-flashes all over the brain: a few at first, then faster and faster on the way in.
+    // Orange micro-flashes all over the brain, strobing at 40 Hz: a few at first, then faster and faster on the way in.
     const rate = 3 + 140 * Math.pow(smooth((t - 3) / 9), 2);
     for (let n = Math.floor(rate * dt + this.r()); n > 0; n--) {
       const i = this.r() < k * 0.7 ? this.net[Math.floor(this.r() * this.net.length)] : Math.floor(this.r() * C.n);
@@ -2410,7 +2387,7 @@ const journey = {
     // Glowing points on the web.
     for (let i = 0; i < T.n; i += 6) { const x = T.px[i]; if (x !== x) continue; const zr = T.zr[i], s = Math.min(12, 2.6 / zr + 0.6) * dpr;
       ctx.globalAlpha = Math.min(1, (Z - zr) / 2) * 0.6 * alpha; ctx.drawImage(dot, x - s, T.py[i] - s, s * 2, s * 2); }
-    // Small orange flashpoints on the outer walls of the wormhole, blinking with the rhythm: a steady
+    // Small orange flashpoints on the outer walls of the wormhole, strobing at 40 Hz: a steady
     // sparkle, with bursts when the music moves (notes, chords, chimes, rewards).
     const wall = Math.floor(T.n * 0.93), want = (150 + 110 * E) * dt + Math.min(this.burst * 6, 240 * dt); this.burst = Math.max(0, this.burst - 40 * dt);
     for (let n = Math.floor(want + r()); n > 0; n--) {
@@ -2424,7 +2401,8 @@ const journey = {
     ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
   },
 
-  draw(cv, dt, glow, accent, q = 2, pulse = 0.5) {
+  // flash: the 40 Hz on/off state for the orange flashpoints (1 lit, 0 dark).
+  draw(cv, dt, glow, accent, q = 2, pulse = 0.5, flash = 0.6) {
     if (!this.built) this.build();
     if (this.t === undefined) this.reset();
     this.t += dt;
@@ -2442,8 +2420,8 @@ const journey = {
       ctx.globalAlpha = (0.55 + 0.25 * glow + 0.35 * this.energy) * brain; ctx.drawImage(bok, Math.sin(t * 0.05) * w * 0.03, Math.cos(t * 0.04) * h * 0.03);
       ctx.globalAlpha = 1; ctx.globalCompositeOperation = "source-over";
     }
-    if (tunnel > 0) this.drawTunnel(ctx, w, h, dt, dpr, tunnel, glow, pulse, q);
-    if (brain > 0) this.drawBrain(ctx, w, h, dt, dpr, brain * Math.min(1, t / 1.5), glow, pulse);
+    if (tunnel > 0) this.drawTunnel(ctx, w, h, dt, dpr, tunnel, glow, flash, q);
+    if (brain > 0) this.drawBrain(ctx, w, h, dt, dpr, brain * Math.min(1, t / 1.5), glow, flash);
     // Passing through the orange light: the view floods warm white, then opens onto the wormhole.
     const flood = Math.exp(-Math.pow((t - 12) / 0.6, 2));
     if (flood > 0.01) {
@@ -2452,7 +2430,6 @@ const journey = {
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
     }
     this.drawMusic(ctx, w, h, dt, dpr, Math.min(1, t / 2));
-    this.drawMassage(ctx, w, h, dpr, Math.min(1, t / 2), pulse);
   },
 };
 
@@ -2485,6 +2462,14 @@ const light = {
     if (audio.ctx && audio.cueHz) audio.setCueFreq(audio.cueHz);
     this.say("");
   },
+  // The journey's orange flashpoints always strobe at 40 Hz: a whole number of frames per cycle when the
+  // display allows it (120 Hz: 1 lit, 2 dark; 240 Hz: 3 and 3), locked to the 40 Hz click train when one
+  // is playing. On a display that can't show 40 Hz exactly (60 Hz) they glow steadily instead.
+  flash40() {
+    const n = this.hz / 40, N = Math.round(n); if (N < 3 || Math.abs(n - N) > 0.05) return 0.6;
+    const k = audio.lightHz >= 30 && Math.round(this.hz / audio.lightHz) === N ? this.k : 0;
+    return ((this.frame + k) % N) < Math.max(1, Math.floor(N / 2)) ? 1 : 0;
+  },
   say(text) { if (text !== this.status) { this.status = text; $("lightStatus").textContent = text; $("lightNote").textContent = text; } },
   // The audio clock at the moment this frame reaches the screen.
   audioTime(now) {
@@ -2503,7 +2488,7 @@ const light = {
     // The journey adapts its detail so drawing never eats into the frame budget the flicker relies on.
     const glowAt = (g, pulse = 0.3) => {
       if (!jr || (this.q === 0 && this.frame % 6)) return;
-      const t0 = performance.now(); journey.draw($("journey"), this.q === 0 ? dt * 6 : dt, g, CLOUD_ACCENT, this.q, pulse);
+      const t0 = performance.now(); journey.draw($("journey"), this.q === 0 ? dt * 6 : dt, g, CLOUD_ACCENT, this.q, pulse, this.flash40());
       const ms = performance.now() - t0, budget = 450 / this.hz; this.ema = 0.9 * (this.ema ?? ms) + 0.1 * ms;
       if (this.ema > budget && this.q > 0) { this.q--; this.ema = budget * 0.7; }
       else if (this.ema < budget * 0.3 && this.q < 2 && this.frame % 240 === 0) this.q++;
