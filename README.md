@@ -167,6 +167,14 @@ in slow orbits.
 | Nebula | 66 BPM, I-iii-vi-IV in F, slow, dreamy synth pads |
 | Dawn | 84 BPM, the Canon progression in A, uplifting strings and harp |
 
+**Production touches.** A second, 14-second shimmer reverb turns the harp, pads and octave
+shimmer into an endless wash, the long-tail sound of ambient production. Under **Details** you can
+choose the **tuning** (standard A = 440 Hz, A = 432 Hz, or Solfeggio 528 Hz, which nudges the key so
+a scale note lands exactly on 528 Hz) and the **rhythm cue** style: binaural beats with a gentle
+pulse (headphones), or isochronic pulses, a soft-edged tone switching on and off at the exact rate,
+which work on any speaker. There is no scientific evidence that 432 or 528 Hz tuning affects the
+brain; it's a matter of taste, and the entrainment frequencies are exact either way.
+
 Use stereo headphones for the 3D effect. With AirPods, turn **Spatial Audio off** (Control Centre,
 press and hold the volume slider): NOVA does its own 3D placement, and Apple's would remix it.
 

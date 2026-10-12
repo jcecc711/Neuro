@@ -820,6 +820,8 @@ details.builder summary::marker { color: var(--link); }
           </div>
           <div class="ctl"><label class="eyebrow" for="volume">Volume</label><input id="volume" type="range" min="0" max="1" step="0.01" value="0.7"></div>
           <div class="ctl"><label class="eyebrow" for="scapeSwitch">Soundscape</label><select id="scapeSwitch"></select></div>
+          <div class="ctl"><label class="eyebrow" for="tuningSel">Tuning</label><select id="tuningSel"><option value="440">Standard (A = 440 Hz)</option><option value="432">A = 432 Hz</option><option value="528">Solfeggio 528 Hz</option></select></div>
+          <div class="ctl"><label class="eyebrow" for="cueStyleSel">Rhythm cue</label><select id="cueStyleSel"><option value="binaural">Binaural + pulse (headphones)</option><option value="isochronic">Isochronic pulses (any speaker)</option></select></div>
           <label class="switch-row"><input type="checkbox" id="voicesToggle" checked><span>Voices</span></label>
           <label class="switch-row"><input type="checkbox" id="cueToggle" checked><span>Entrainment <b id="cueText"></b></span></label>
         </div>
@@ -1430,9 +1432,22 @@ class Spot {
   }
 }
 
+// Tuning: presets are written at standard pitch (A = 440 Hz). "432" lowers everything by 432/440;
+// "528" nudges the key so one note of its major scale lands exactly on 528 Hz. Both are matters of
+// taste; the entrainment frequencies are exact either way.
+function tunedKey(key, tuning) {
+  if (tuning === "432") return key * 432 / 440;
+  if (tuning === "528") {
+    let best = key, err = Infinity;
+    for (let d = -14; d <= 21; d++) { const f = N(key, degSemi(d)), e = Math.abs(Math.log(528 / f)); if (e < err) { err = e; best = f; } }
+    return key * 528 / best;
+  }
+  return key;
+}
+
 class Scape {
   constructor(engine, id) {
-    const ctx = engine.ctx, p = PRESETS[id]; this.ctx = ctx; this.p = p; this.id = id; this.engine = engine; this.nodes = [];
+    const ctx = engine.ctx, p = { ...PRESETS[id], key: tunedKey(PRESETS[id].key, engine.tuning) }; this.ctx = ctx; this.p = p; this.id = id; this.engine = engine; this.nodes = [];
     const G = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
     const F = (type, f, q = 0.7) => { const b = ctx.createBiquadFilter(); b.type = type; b.frequency.value = f; b.Q.value = q; return b; };
     this.G = G; this.F = F;
@@ -1440,7 +1455,11 @@ class Scape {
     this.dry = G(0.65); this.dry.connect(this.out);
     this.wet = G(0.85); this.wet.connect(this.out);
     this.verb = ctx.createConvolver(); this.verb.buffer = makeImpulse(ctx, 4.8); this.verb.connect(this.wet);
-    this.send = G(1); this.send.connect(this.verb);
+    // Shimmer cloud: a second, 14-second reverb that turns the harp, pads and octave shimmer into an
+    // endless wash (the long-tail "shimmer" sound of ambient production), kept out of the lows.
+    const cloud = ctx.createConvolver(); cloud.buffer = makeImpulse(ctx, 14); const cHP = F("highpass", 220, 0.5), cLP = F("lowpass", 5500, 0.5);
+    this.cloudSend = G(0.32); this.cloudSend.connect(cHP); cHP.connect(cloud); cloud.connect(cLP); const cOut = G(0.55); cLP.connect(cOut); cOut.connect(this.out);
+    this.send = G(1); this.send.connect(this.verb); this.send.connect(this.cloudSend);
 
     // The ensemble around your head: harp front-left, strings spread wide on both sides, warm pads
     // above, a soft heartbeat ahead, backing voices drifting around you, and the lead vocal at the
@@ -1668,7 +1687,7 @@ function cueHz(spec) {
 
 const audio = {
   ctx: null, scape: null, volume: 0.7, env: 0, lastReward: false, quiet: 0, state: null,
-  voices: true, cueOn: true, cueHz: null,
+  voices: true, cueOn: true, cueHz: null, tuning: "440", cueStyle: "binaural",
   async ensure() {
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
@@ -1689,12 +1708,12 @@ const audio = {
       // the cue frequency, and a soft tone pulsing at that rate, placed at the trained region.
       this.cueOut = ctx.createGain(); this.cueOut.gain.value = 0; this.cueOut.connect(this.master);
       this.cueL = ctx.createOscillator(); this.cueR = ctx.createOscillator();
-      const merge = ctx.createChannelMerger(2), binG = ctx.createGain(); binG.gain.value = 0.03;
+      const merge = ctx.createChannelMerger(2), binG = this.binG = ctx.createGain(); binG.gain.value = 0.03;
       this.cueL.connect(merge, 0, 0); this.cueR.connect(merge, 0, 1); merge.connect(binG); binG.connect(this.cueOut);
       this.cueTone = ctx.createOscillator(); this.cueLfo = ctx.createOscillator();
       this.cueAM = ctx.createGain(); this.cueAM.gain.value = 0.6; this.cueDepth = ctx.createGain(); this.cueDepth.gain.value = 0.4;
       this.cueLfo.connect(this.cueDepth); this.cueDepth.connect(this.cueAM.gain);
-      const toneLP = ctx.createBiquadFilter(); toneLP.type = "lowpass"; toneLP.frequency.value = 600; const toneG = ctx.createGain(); toneG.gain.value = 0.025;
+      const toneLP = ctx.createBiquadFilter(); toneLP.type = "lowpass"; toneLP.frequency.value = 600; const toneG = this.toneG = ctx.createGain(); toneG.gain.value = 0.025;
       this.cuePan = ctx.createPanner(); this.cuePan.panningModel = "HRTF"; this.cuePan.distanceModel = "inverse"; this.cuePan.rolloffFactor = 0.5;
       this.cueTone.connect(this.cueAM); this.cueAM.connect(toneLP); toneLP.connect(toneG); toneG.connect(this.cuePan); this.cuePan.connect(this.cueOut);
       [this.cueL, this.cueR, this.cueTone, this.cueLfo].forEach(o => { o.frequency.value = 100; o.start(); });
@@ -1704,10 +1723,10 @@ const audio = {
     if (this.ctx.state === "suspended") await this.ctx.resume();
     return true;
   },
-  async play(id) {
+  async play(id, force = false) {
     if (!(await this.ensure())) return;
     clearTimeout(this.previewTimer);
-    if (this.scape && this.scape.id === id) return;
+    if (this.scape && this.scape.id === id && !force) return;
     const old = this.scape; this.scape = new Scape(this, id); this.scape.fade(1, 6);
     if (this.state) { this.scape.setKind(this.state.phase); this.scape.setTarget(this.target); }
     if (old) { old.fade(0, 6); setTimeout(() => old.dispose(), 8000); }
@@ -1722,9 +1741,22 @@ const audio = {
     const t = this.ctx.currentTime, carrier = fold(this.scape.p.key, 110, 220);
     this.cueL.frequency.setValueAtTime(carrier, t); this.cueR.frequency.setValueAtTime(carrier + hz, t);
     this.cueTone.frequency.setValueAtTime(carrier, t); this.cueLfo.frequency.setValueAtTime(hz, t);
-    // Faster pulses are gentler so they flutter rather than buzz.
-    this.cueDepth.gain.setTargetAtTime(hz > 12 ? 0.25 : 0.4, t, 0.3); this.cueAM.gain.setTargetAtTime(hz > 12 ? 0.75 : 0.6, t, 0.3);
+    if (this.cueStyle === "isochronic") {
+      // Isochronic: a soft-edged tone switching fully on and off at the exact rate. Works on speakers.
+      if (!this.isoWave) { const n = 8, re = new Float32Array(n), im = new Float32Array(n);
+        for (let k = 1; k < n; k += 2) im[k] = (4 / (Math.PI * k)) * Math.sin(Math.PI * k / n) / (Math.PI * k / n); this.isoWave = this.ctx.createPeriodicWave(re, im); }
+      this.cueLfo.setPeriodicWave(this.isoWave);
+      this.cueDepth.gain.setTargetAtTime(0.5, t, 0.3); this.cueAM.gain.setTargetAtTime(0.5, t, 0.3);
+      this.binG.gain.setTargetAtTime(0, t, 0.3); this.toneG.gain.setTargetAtTime(0.045, t, 0.3);
+    } else {
+      // Binaural plus a gentle pulse; faster pulses are gentler so they flutter rather than buzz.
+      this.cueLfo.type = "sine";
+      this.cueDepth.gain.setTargetAtTime(hz > 12 ? 0.25 : 0.4, t, 0.3); this.cueAM.gain.setTargetAtTime(hz > 12 ? 0.75 : 0.6, t, 0.3);
+      this.binG.gain.setTargetAtTime(0.03, t, 0.3); this.toneG.gain.setTargetAtTime(0.025, t, 0.3);
+    }
   },
+  setCueStyle(style) { this.cueStyle = style; if (this.ctx && this.scape && this.cueHz) this.setCueFreq(this.cueHz); },
+  async setTuning(tuning) { this.tuning = tuning; if (this.scape) { const id = this.scape.id; await this.play(id, true); if (this.cueHz) this.setCueFreq(this.cueHz); } },
   placeCue(site) {
     const a = siteAngles(site || "") || HOME, r = 1.3, p = this.cuePan, t = this.ctx.currentTime;
     const az = a.az * Math.PI / 180, el = a.el * Math.PI / 180, x = Math.sin(az) * Math.cos(el) * r, y = Math.sin(el) * r, z = -Math.cos(az) * Math.cos(el) * r;
@@ -3045,6 +3077,11 @@ function wire() {
   const pref = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v === "1"; } catch { return d; } };
   const savePref = (k, v) => { try { localStorage.setItem(k, v ? "1" : "0"); } catch {} };
   $("voicesToggle").checked = pref("nova.voices", true); audio.setVoices($("voicesToggle").checked);
+  const prefStr = (k, d) => { try { return localStorage.getItem(k) || d; } catch { return d; } };
+  const saveStr = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+  $("tuningSel").value = audio.tuning = prefStr("nova.tuning", "440"); $("cueStyleSel").value = audio.cueStyle = prefStr("nova.cueStyle", "binaural");
+  $("tuningSel").addEventListener("change", e => { audio.setTuning(e.target.value); saveStr("nova.tuning", e.target.value); });
+  $("cueStyleSel").addEventListener("change", e => { audio.setCueStyle(e.target.value); saveStr("nova.cueStyle", e.target.value); });
   $("cueToggle").checked = pref("nova.cue", true); audio.cueOn = $("cueToggle").checked;
   $("voicesToggle").addEventListener("change", e => { audio.setVoices(e.target.checked); savePref("nova.voices", e.target.checked); });
   $("cueToggle").addEventListener("change", e => { audio.setCue(e.target.checked); savePref("nova.cue", e.target.checked); if (app.u) $("cueText").textContent = e.target.checked && cueFor(app.u) ? `· ${cueFor(app.u)} Hz` : ""; });
