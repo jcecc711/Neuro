@@ -29,10 +29,14 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET" || new URL(e.request.url).origin !== location.origin) return;
+  // Pages: network first so a new version shows on the next open; the cache covers offline use.
+  // Samples and icons: cache first (they never change at a given address).
+  const page = e.request.mode === "navigate" || /\/(index\.html)?$|\.webmanifest$/.test(new URL(e.request.url).pathname);
   e.respondWith(caches.open(CACHE).then(async c => {
     const hit = await c.match(e.request, { ignoreSearch: true });
-    const net = fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; }).catch(() => hit);
-    return hit || net;
+    const net = fetch(e.request).then(r => { if (r.ok) c.put(e.request, r.clone()); return r; });
+    if (page) return net.catch(() => hit);
+    return hit || net.catch(() => hit);
   }));
 });
 """

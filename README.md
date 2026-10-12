@@ -177,7 +177,8 @@ a voice keeps bowing through a chord change when its note stays the same, and ot
 note fades over a few seconds while the new one swells in. The harp's recorded pluck rings into a
 soft, long-sustaining body so its arpeggios flow together.
 
-**Light sync (optional, off by default).** Under **Details**, **Light sync** adds full-screen light
+**Light sync (optional, off by default).** The **☼ Light sync** button in the session view (also under
+**Details**) adds full-screen light
 in time with the entrainment rhythm, during training only:
 
 - **40 Hz (gamma, e.g. Clear Mind):** a hard on/off square wave, as in MIT's GENUS research, locked

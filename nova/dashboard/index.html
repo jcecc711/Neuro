@@ -286,11 +286,14 @@ details.builder[open] summary { margin-bottom: 12px; }
 .switch-row b { font-weight: 500; color: var(--ink); }
 #lightStatus { font-weight: 400; color: var(--muted); font-size: 12px; display: block; }
 #lightConsent { z-index: 70; }
+.light-btn[aria-pressed="true"] { background: #ffd28a; color: #1d1d1f; }
 #lightField { position: fixed; inset: 0; z-index: 60; pointer-events: none; opacity: 0; will-change: opacity; }
 #lightField.square { background: #fff8ee; }
 #lightField.soft { background: radial-gradient(ellipse at center, rgba(255, 214, 160, 0.55), rgba(255, 190, 130, 0.25) 60%, rgba(255, 180, 120, 0.1)); }
 #lightStop { position: fixed; z-index: 61; top: max(16px, env(safe-area-inset-top)); right: 16px; padding: 10px 18px; border-radius: 999px; border: 0;
-  background: rgba(20, 20, 22, 0.85); color: #fff; font: 600 15px var(--body); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); }
+  background: rgba(20, 20, 22, 0.85); color: #fff; font: 600 15px var(--body); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); text-align: center; max-width: min(320px, calc(100vw - 32px)); }
+#lightStop small { display: block; font: 400 12px var(--body); color: rgba(255, 255, 255, 0.7); margin-top: 2px; }
+#lightStop small:empty { display: none; }
 
 /* Learn */
 .learn { display: grid; gap: 16px; }
@@ -775,7 +778,7 @@ details.builder summary::marker { color: var(--link); }
       <div class="view-metric"><span class="lab">Training metric</span><span class="big" id="metricBig">--</span><span class="lab" id="metricLabel">--</span></div>
       <div class="gauge" aria-hidden="true"><span>Target</span><div class="gauge-track"><i id="gaugeThr"></i><b id="gaugePtr"></b></div><span>Search</span></div>
       <p class="guidance" id="guidance" hidden></p>
-      <div class="view-actions"><button type="button" class="glass-btn details-btn" id="detailsBtn" aria-expanded="false" aria-controls="consolePanel">Details</button><button type="button" class="glass-btn" id="skipBtn">Next phase</button><button type="button" class="glass-btn end" id="endBtn">End session</button></div>
+      <div class="view-actions"><button type="button" class="glass-btn light-btn" id="lightBtn" aria-pressed="false" title="Light synchronized with the rhythm">&#9788; Light sync</button><button type="button" class="glass-btn details-btn" id="detailsBtn" aria-expanded="false" aria-controls="consolePanel">Details</button><button type="button" class="glass-btn" id="skipBtn">Next phase</button><button type="button" class="glass-btn end" id="endBtn">End session</button></div>
       <aside class="target-card" aria-live="polite">
         <div class="ring" aria-hidden="true">
           <svg viewBox="0 0 120 120"><defs><linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f35a"/><stop offset="1" stop-color="#2fd36b"/></linearGradient></defs>
@@ -987,7 +990,7 @@ details.builder summary::marker { color: var(--link); }
   </main>
 
   <div id="lightField" hidden></div>
-  <button type="button" id="lightStop" hidden>Stop light</button>
+  <button type="button" id="lightStop" hidden>Stop light<small id="lightNote"></small></button>
   <div class="overlay" id="lightConsent" hidden>
     <div class="panel dialog" role="dialog" aria-labelledby="lightTitle">
       <h2 id="lightTitle">Before you turn on light sync</h2>
@@ -2016,18 +2019,18 @@ const light = {
   },
   async start() {
     this.hz = await this.measure(); this.on = true; this.frame = 0;
-    $("lightField").hidden = false; $("lightStop").hidden = false; document.body.classList.add("light-on");
+    $("lightField").hidden = false; $("lightStop").hidden = false; document.body.classList.add("light-on"); $("lightBtn").setAttribute("aria-pressed", "true");
     if (audio.cueHz) audio.setCueFreq(audio.cueHz);
     cancelAnimationFrame(this.raf); this.raf = requestAnimationFrame(t => this.tick(t));
   },
   stop() {
     this.on = false; cancelAnimationFrame(this.raf);
     $("lightField").hidden = true; $("lightStop").hidden = true; document.body.classList.remove("light-on");
-    $("lightField").style.opacity = 0; $("lightToggle").checked = false;
+    $("lightField").style.opacity = 0; $("lightToggle").checked = false; $("lightBtn").setAttribute("aria-pressed", "false");
     if (audio.ctx && audio.cueHz) audio.setCueFreq(audio.cueHz);
     this.say("");
   },
-  say(text) { if (text !== this.status) { this.status = text; $("lightStatus").textContent = text; } },
+  say(text) { if (text !== this.status) { this.status = text; $("lightStatus").textContent = text; $("lightNote").textContent = text; } },
   // The audio clock at the moment this frame reaches the screen.
   audioTime(now) {
     const ctx = audio.ctx; if (!ctx) return now / 1000;
@@ -3292,12 +3295,12 @@ function wire() {
   $("cueToggle").checked = pref("nova.cue", true); audio.cueOn = $("cueToggle").checked;
   $("lightLevel").addEventListener("input", e => { light.level = Number(e.target.value); });
   $("lightStop").addEventListener("click", () => light.stop());
-  $("lightToggle").addEventListener("change", e => {
-    if (!e.target.checked) { light.stop(); return; }
-    e.target.checked = false;
-    if (reduceMotion) { $("lightStatus").textContent = "Off: your device asks for reduced motion"; return; }
+  const askLight = () => {
+    if (reduceMotion) { $("lightStatus").textContent = "Off: your device asks for reduced motion"; $("lightBtn").title = "Light sync is off because your device asks for reduced motion"; return; }
     $("lightConsent").hidden = false;
-  });
+  };
+  $("lightToggle").addEventListener("change", e => { if (!e.target.checked) { light.stop(); return; } e.target.checked = false; askLight(); });
+  $("lightBtn").addEventListener("click", () => { if (light.on) light.stop(); else askLight(); });
   $("lightCancel").addEventListener("click", () => { $("lightConsent").hidden = true; });
   $("lightAgree").addEventListener("click", () => { $("lightConsent").hidden = true; $("lightToggle").checked = true; light.start(); });
   $("voicesToggle").addEventListener("change", e => { audio.setVoices(e.target.checked); savePref("nova.voices", e.target.checked); });
